@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+  const router = useRouter();
+
+  const handlePlayClick = () => {
+    router.push("/playnow");
+  };
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
-      {/* left and write animationzzzzzzzzzz pmo pmo pmo  pmopmpompompmpompompompomopmpomo */}
+      {/* animated waves */}
       <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
         <svg
           viewBox="0 0 100 600"
@@ -21,7 +28,6 @@ export default function HomePage() {
           />
         </svg>
       </div>
-
       <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1] opacity-20">
         <svg
           viewBox="0 0 100 600"
@@ -48,13 +54,14 @@ export default function HomePage() {
         </p>
 
         <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
-          <Link
-            href="/game"
+          <button
+            onClick={handlePlayClick}
             className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
           >
             <h3 className="text-2xl font-bold text-yellow-300">Play Now →</h3>
             <p className="text-lg">Start guessing songs in our game mode!</p>
-          </Link>
+          </button>
+
           <Link
             href="/rules"
             className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
@@ -64,7 +71,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* private room stuff */}
+        {/* Private Room section */}
         <div className="mt-12 text-center">
           <h2 className="mb-6 text-3xl font-semibold text-white">
             Private Rooms
@@ -90,7 +97,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* bottom thing */}
       <footer className="mt-auto flex w-full items-center justify-end bg-transparent px-8 py-4 text-white">
         <div className="text-sm">
           <p>© Copyright 2025 Anika. All rights reserved.</p>
