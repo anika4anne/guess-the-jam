@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-// Define types for the response data
-interface Track {
+// Define expected structures
+interface SpotifyTrack {
   name: string;
   artist: string;
   preview_url: string;
@@ -9,22 +9,29 @@ interface Track {
   image: string;
 }
 
-interface TrackSearchResponse {
-  items: {
-    track?: {
-      name: string;
-      artists: { name: string }[];
-      preview_url: string;
-      external_urls: { spotify: string };
-      album: { images: { url: string }[] };
-    };
-  }[];
+interface SpotifyApiTrackItem {
+  track?: {
+    name?: string;
+    artists?: { name?: string }[];
+    preview_url?: string;
+    external_urls?: { spotify?: string };
+    album?: { images?: { url: string }[] };
+  };
 }
 
-// Map of year to Spotify playlist IDs
+interface SpotifyApiTrackResponse {
+  items: SpotifyApiTrackItem[];
+}
+
+interface SpotifyTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+// Year → Playlist ID
 const playlistMap: Record<string, string> = {
   "2024": "0NtZx6ZDoPupjxqGQ6yylo",
-  // You can add more years and playlists here
 };
 
 const clientId = process.env.SPOTIFY_CLIENT_ID!;
@@ -39,7 +46,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Year is required" }, { status: 400 });
     }
 
-    // Find playlist ID for the requested year
     const playlistId = playlistMap[year];
     if (!playlistId) {
       return NextResponse.json(
@@ -48,7 +54,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Step 1: Get Spotify access token
+    // Step 1: Get token
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
     const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
@@ -59,10 +65,22 @@ export async function GET(req: Request) {
       body: "grant_type=client_credentials",
     });
 
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
+    const tokenJson: unknown = await tokenRes.json();
 
-    // Step 2: Get tracks from the specified playlist
+    if (
+      typeof tokenJson !== "object" ||
+      tokenJson === null ||
+      !("access_token" in tokenJson)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid token response" },
+        { status: 500 },
+      );
+    }
+
+    const accessToken = (tokenJson as SpotifyTokenResponse).access_token;
+
+    // Step 2: Fetch playlist tracks
     const tracksRes = await fetch(
       `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`,
       {
@@ -70,33 +88,38 @@ export async function GET(req: Request) {
       },
     );
 
-    const tracksData: TrackSearchResponse = await tracksRes.json();
-
-    const tracks: Track[] = tracksData.items
-      .map((item) => ({
-        name: item.track?.name || "Unknown Track",
-        artist: item.track?.artists?.[0]?.name || "Unknown Artist",
-        preview_url: item.track?.preview_url || "",
-        spotify_url: item.track?.external_urls?.spotify || "",
-        image: item.track?.album?.images?.[0]?.url || "",
-      }))
-      .filter((t) => t.preview_url); // Only keep tracks with a preview URL
-
-    // Shuffle tracks randomly
-    const shuffled = tracks.sort(() => 0.5 - Math.random());
-
-    return NextResponse.json(shuffled.slice(0, 10)); // Return 10 songs
-  } catch (error: unknown) {
-    if (error instanceof Error) {
+    const tracksJson: unknown = await tracksRes.json();
+    if (
+      typeof tracksJson !== "object" ||
+      tracksJson === null ||
+      !("items" in tracksJson)
+    ) {
       return NextResponse.json(
-        { error: "Something went wrong", details: error.message },
-        { status: 500 },
-      );
-    } else {
-      return NextResponse.json(
-        { error: "An unknown error occurred" },
+        { error: "Invalid tracks response" },
         { status: 500 },
       );
     }
+
+    const items = (tracksJson as SpotifyApiTrackResponse).items;
+
+    const formattedTracks: SpotifyTrack[] = items
+      .map(
+        (item): SpotifyTrack => ({
+          name: item.track?.name ?? "Unknown Track",
+          artist: item.track?.artists?.[0]?.name ?? "Unknown Artist",
+          preview_url: item.track?.preview_url ?? "",
+          spotify_url: item.track?.external_urls?.spotify ?? "",
+          image: item.track?.album?.images?.[0]?.url ?? "",
+        }),
+      )
+      .filter((track) => track.preview_url !== "");
+
+    const shuffled = [...formattedTracks].sort(() => 0.5 - Math.random());
+    return NextResponse.json(shuffled.slice(0, 10));
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Unknown error" }, { status: 500 });
   }
 }

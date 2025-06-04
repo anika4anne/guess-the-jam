@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    /* Base Options: */
+    /* Base Options */
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
@@ -23,6 +23,9 @@
     "jsx": "preserve",
     "plugins": [{ "name": "next" }],
     "incremental": true,
+
+    /* Add Node types for process etc */
+    "types": ["node"],
 
     /* Path Aliases */
     "baseUrl": ".",

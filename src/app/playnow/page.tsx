@@ -2,11 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 
+interface Song {
+  title: string;
+  artist: string;
+  // Add any other properties if you have more data
+}
+
 export default function PlayNowPage() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
-  const [songs, setSongs] = useState<any[] | null>(null);
+  const [songs, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showSpotifyPlayer, setShowSpotifyPlayer] = useState(false);
 
@@ -20,7 +26,7 @@ export default function PlayNowPage() {
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
-      const data = await res.json();
+      const data = (await res.json()) as Song[];
       setSongs(data);
 
       // Start countdown BEFORE showing Spotify player and songs
@@ -179,7 +185,7 @@ export default function PlayNowPage() {
             {showSpotifyPlayer &&
               selectedYears.length > 0 &&
               selectedYears.map((year) => {
-                const playlistLinks: { [key: number]: string } = {
+                const playlistLinks: Record<number, string> = {
                   2024: "https://open.spotify.com/embed/playlist/0NtZx6ZDoPupjxqGQ6yylo",
                   2023: "https://open.spotify.com/embed/playlist/6unJBM7ZGitZYFJKkO0e4P",
                   2022: "https://open.spotify.com/embed/playlist/56r5qRUv3jSxADdmBkhcz7",
