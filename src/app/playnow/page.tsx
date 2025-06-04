@@ -14,13 +14,13 @@ export default function PlayNowPage() {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
-  const [showSpotifyPlayer, setShowSpotifyPlayer] = useState(false);
+  const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
 
-  // NEW: countdown states
+  // Countdown states
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState(3);
 
-  // NEW: fade state for countdown
+  // Fade state for countdown
   const [fadeCountdown, setFadeCountdown] = useState(false);
 
   const fetchTopSongs = async (years: number[]) => {
@@ -29,9 +29,9 @@ export default function PlayNowPage() {
       const data = (await res.json()) as Song[];
       setSongs(data);
 
-      // Start countdown BEFORE showing Spotify player and songs
+      // Start countdown BEFORE showing YouTube player and songs
       setShowCountdown(true);
-      setShowSpotifyPlayer(false);
+      setShowYouTubePlayer(false);
       setCountdownNumber(3);
       setFadeCountdown(false); // reset fade on new fetch
     } catch (error) {
@@ -44,23 +44,20 @@ export default function PlayNowPage() {
     if (!showCountdown) return;
 
     if (countdownNumber === 0 && !fadeCountdown) {
-      // Start fade out
       setFadeCountdown(true);
       return;
     }
 
     if (fadeCountdown) {
-      // After fade duration hide countdown and show player
       const timeout = setTimeout(() => {
         setShowCountdown(false);
-        setShowSpotifyPlayer(true);
+        setShowYouTubePlayer(true);
         setFadeCountdown(false);
       }, 500); // fade duration
 
       return () => clearTimeout(timeout);
     }
 
-    // Countdown decrement every second
     const timer = setTimeout(() => {
       setCountdownNumber((prev) => prev - 1);
     }, 1000);
@@ -68,8 +65,7 @@ export default function PlayNowPage() {
     return () => clearTimeout(timer);
   }, [countdownNumber, showCountdown, fadeCountdown]);
 
-  // Rest of your handlers remain unchanged...
-
+  // Handlers (unchanged)
   const handleYearSelect = (year: number) => {
     if (!selectedYears.includes(year)) {
       setSelectedYears((prev) => [...prev, year].sort((a, b) => a - b));
@@ -119,7 +115,7 @@ export default function PlayNowPage() {
   if (songs) {
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[linear-gradient(to_bottom,_black_0%,_#0a0000_15%,_#220000_35%,_#440000_60%,_#660000_100%)] px-6 pt-8 text-white">
-        {/* Decorative Waves */}
+        {/* moving vines */}
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
@@ -151,7 +147,7 @@ export default function PlayNowPage() {
           </svg>
         </div>
 
-        {/* Countdown Popup with fade */}
+        {/* countdown */}
         {showCountdown && (
           <div
             className="bg-opacity-90 fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-6xl font-bold tracking-widest text-white transition-opacity duration-500"
@@ -164,7 +160,7 @@ export default function PlayNowPage() {
           </div>
         )}
 
-        {/* Show content only if countdown is NOT showing */}
+        {/* if no countdown show song */}
         {!showCountdown && (
           <>
             <h1 className="mb-6 text-4xl font-bold">
@@ -181,26 +177,21 @@ export default function PlayNowPage() {
                   </li>
                 ))}
             </ul>
-            {/* Spotify Player if any selected year and after countdown */}
-            {showSpotifyPlayer &&
+            {/* now youtube */}
+            {showYouTubePlayer &&
               selectedYears.length > 0 &&
               selectedYears.map((year) => {
                 const playlistLinks: Record<number, string> = {
-                  2024: "https://open.spotify.com/embed/playlist/0NtZx6ZDoPupjxqGQ6yylo",
-                  2023: "https://open.spotify.com/embed/playlist/6unJBM7ZGitZYFJKkO0e4P",
-                  2022: "https://open.spotify.com/embed/playlist/56r5qRUv3jSxADdmBkhcz7",
-                  2021: "https://open.spotify.com/embed/playlist/5GhQiRkGuqzpWZSE7OU4Se",
-                  2020: "https://open.spotify.com/embed/playlist/2fmTTbBkXi8pewbUvG3CeZ",
-                  2019: "https://open.spotify.com/embed/playlist/37i9dQZF1DWVRSukIED0e9",
-                  2018: "https://open.spotify.com/embed/playlist/5l771HfZDqlBsDFQzO0431",
-                  2017: "https://open.spotify.com/embed/playlist/4JbSoqC2zjkAFiaN8K4NYy",
-                  2016: "https://open.spotify.com/embed/playlist/3JbWD8OGutoTKUbR3RvR8u",
-                  2015: "https://open.spotify.com/embed/playlist/37i9dQZF1DX86diBZjYU2q",
-                  2014: "https://open.spotify.com/embed/playlist/3Y0IIeAeLJMW2Okx4EQCkw",
-                  2013: "https://open.spotify.com/embed/playlist/37i9dQZF1DX8cr9zdmLTqV",
-                  2012: "https://open.spotify.com/embed/playlist/37i9dQZF1DX1lLhvjOZ9Eb",
-                  2011: "https://open.spotify.com/embed/playlist/2z3eLip2NlV9quzTEm37cW",
-                  2010: "https://open.spotify.com/embed/playlist/37i9dQZF1DWVN7yvDyMXUI",
+                  2024: "https://www.youtube.com/embed/videoseries?list=PLxA687tYuMWjS8IGRWkCzwTn10XcEccaZ&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2023: "https://www.youtube.com/embed/videoseries?list=PLdv33Q3_-41Hvf43VtcqsfQQOpWFd1_BF&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2022: "https://www.youtube.com/embed/videoseries?list=PLFI4VRJeIyw3fDbrTa_M864mYNXqZ6t7A&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2021: "https://www.youtube.com/embed/videoseries?list=PLuIAx5_9AFUiVwCbv4UN1V0vOJm4e-gwv&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2020: "https://www.youtube.com/embed/videoseries?list=PLaWhSPDmjQ4oBw1U0ak-TK_Pw4I9OGLsU&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2019: "https://www.youtube.com/embed/videoseries?list=PLZjyOXTKuD2Q_VN-XXHK-HVhQl58-ZI_H&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2018: "https://www.youtube.com/embed/videoseries?list=PLnBHN8ndXwY3ngcQxvrQ4CwH6VQcM0enM&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2017: "https://www.youtube.com/embed/videoseries?list=PLFU8AFaV2B6RfG_ZA6GadvT63ABBZtIKi&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2016: "https://www.youtube.com/embed/videoseries?list=PLAvHlMUITRMlUViWK1BWoawOUTZZIl4tG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2015: "https://www.youtube.com/embed/videoseries?list=PLora6h23WG8UPaQDfC2_cpi4iVPI4Hp0y&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
                 };
 
                 const playlistURL = playlistLinks[year];
@@ -209,13 +200,17 @@ export default function PlayNowPage() {
                 return (
                   <iframe
                     key={year}
-                    style={{ borderRadius: "12px", marginTop: "2rem" }}
+                    style={{
+                      borderRadius: "12px",
+                      marginTop: "2rem",
+                      pointerEvents: "none", // disables mouse interaction
+                    }}
                     src={playlistURL}
-                    width="230"
-                    height="160"
+                    width="320"
+                    height="180"
                     frameBorder="0"
-                    allowFullScreen
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    allowFullScreen={false} // disables fullscreen button
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
                     loading="lazy"
                   ></iframe>
                 );
@@ -226,11 +221,10 @@ export default function PlayNowPage() {
     );
   }
 
-  // ... your initial page return remains unchanged
-
+  // Initial page return remains unchanged
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
-      {/* Decorative Waves */}
+      {/* vines */}
       <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
         <svg
           viewBox="0 0 100 600"
@@ -271,7 +265,7 @@ export default function PlayNowPage() {
           2000 and the current year.
         </p>
 
-        {/* Year Dropdown */}
+        {/* Year form */}
         <div className="mt-6 flex w-full max-w-sm flex-col items-center">
           <div className="relative w-full">
             <button
@@ -306,7 +300,7 @@ export default function PlayNowPage() {
             )}
           </div>
 
-          {/* Selected Year Tags */}
+          {/* remove years */}
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {selectedYears.map((year) => (
               <div
@@ -324,7 +318,7 @@ export default function PlayNowPage() {
             ))}
           </div>
 
-          {/* Player Inputs */}
+          {/* enter player name */}
           <div className="mt-6 flex w-full max-w-sm flex-col items-center">
             {playerNames.map((name, index) => (
               <div key={index} className="mb-4 w-full">
