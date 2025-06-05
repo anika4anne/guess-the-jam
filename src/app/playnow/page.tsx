@@ -58,7 +58,9 @@ export default function PlayNowPage() {
           height: "0",
           width: "0",
           events: {
-            onReady: () => {},
+            onReady: () => {
+              console.log("YouTube Player is ready");
+            },
             onStateChange: (event: YT.OnStateChangeEvent) => {
               if (event.data === window.YT.PlayerState.PLAYING) {
                 const player = playerRefs.current[year];
