@@ -1,11 +1,18 @@
+/// <reference types="youtube" />
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface Song {
   title: string;
   artist: string;
-  // Add any other properties if you have more data
+}
+
+declare global {
+  interface Window {
+    YT: typeof globalThis.YT;
+    onYouTubeIframeAPIReady: () => void;
+  }
 }
 
 export default function PlayNowPage() {
@@ -15,13 +22,71 @@ export default function PlayNowPage() {
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
-
-  // Countdown states
+  const [volumeUnmuted, setVolumeUnmuted] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState(3);
-
-  // Fade state for countdown
   const [fadeCountdown, setFadeCountdown] = useState(false);
+  const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
+  const playerRefs = useRef<
+    Record<number, (YT.Player & { __intervalAttached?: boolean }) | null>
+  >({});
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [currentQuestionYear, setCurrentQuestionYear] = useState<number | null>(
+    null,
+  );
+  const [userSongAnswer, setUserSongAnswer] = useState("");
+  const [userArtistAnswer, setUserArtistAnswer] = useState("");
+
+  useEffect(() => {
+    if (window.YT) return;
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+  }, []);
+
+  useEffect(() => {
+    if (!window.YT || !showYouTubePlayer) return;
+
+    window.onYouTubeIframeAPIReady = () => {
+      selectedYears.forEach((year) => {
+        const iframe = iframeRefs.current[year];
+        if (!iframe) return;
+
+        playerRefs.current[year] = new window.YT.Player(iframe, {
+          height: "0",
+          width: "0",
+          events: {
+            onReady: () => {},
+            onStateChange: (event: YT.OnStateChangeEvent) => {
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                const player = playerRefs.current[year];
+                if (!player || player.__intervalAttached) return;
+
+                player.__intervalAttached = true;
+                const interval = setInterval(() => {
+                  const currentTime = player.getCurrentTime();
+                  if (currentTime >= 15) {
+                    player.pauseVideo();
+                    clearInterval(interval);
+                    player.__intervalAttached = false;
+
+                    setCurrentQuestionYear(year);
+                    setShowPrompt(true);
+                  }
+                }, 500);
+              }
+            },
+          },
+        });
+      });
+    };
+
+    if (window.YT?.Player) {
+      window.onYouTubeIframeAPIReady();
+    }
+  }, [showYouTubePlayer, selectedYears]);
 
   const fetchTopSongs = async (years: number[]) => {
     try {
@@ -29,7 +94,7 @@ export default function PlayNowPage() {
       const data = (await res.json()) as Song[];
       setSongs(data);
 
-      // Start countdown BEFORE showing YouTube player and songs
+      // Start countdown BEFORE showing YouTube player n songs
       setShowCountdown(true);
       setShowYouTubePlayer(false);
       setCountdownNumber(3);
@@ -39,7 +104,7 @@ export default function PlayNowPage() {
     }
   };
 
-  // Handle countdown effect with fade out
+  // countdown effect w fade out
   useEffect(() => {
     if (!showCountdown) return;
 
@@ -65,7 +130,6 @@ export default function PlayNowPage() {
     return () => clearTimeout(timer);
   }, [countdownNumber, showCountdown, fadeCountdown]);
 
-  // Handlers (unchanged)
   const handleYearSelect = (year: number) => {
     if (!selectedYears.includes(year)) {
       setSelectedYears((prev) => [...prev, year].sort((a, b) => a - b));
@@ -192,6 +256,21 @@ export default function PlayNowPage() {
                   2017: "https://www.youtube.com/embed/videoseries?list=PLFU8AFaV2B6RfG_ZA6GadvT63ABBZtIKi&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
                   2016: "https://www.youtube.com/embed/videoseries?list=PLAvHlMUITRMlUViWK1BWoawOUTZZIl4tG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
                   2015: "https://www.youtube.com/embed/videoseries?list=PLora6h23WG8UPaQDfC2_cpi4iVPI4Hp0y&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2014: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtp2pM_BbnRtlc2Y7cyMNVkL&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2013: "https://www.youtube.com/embed/videoseries?list=PLw_s-_bg5n2VuukP3aSQik31jBJ5ICXFq&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2012: "https://www.youtube.com/embed/videoseries?list=PLem9vLZEVqmZ5H67lelbDER05kG8FcF-u&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2011: "https://www.youtube.com/embed/videoseries?list=PL-CYomtw4SPG6XkvXw6AahcSOWTg0PfyA&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2010: "https://www.youtube.com/embed/videoseries?list=PL5579B759A885680C&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2009: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLlMWIyLdp3d2FrN7t1hiXUE&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2008: "https://www.youtube.com/embed/videoseries?list=PLam08HY53ekvPojGF4hzhAdNE609JCUHo&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2007: "https://www.youtube.com/embed/videoseries?list=PL8629BA4D2BFD141B&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2006: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtqxO0cnTTqrjUHGdI0AbzyD&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2005: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOnF7gc5jg6R-aoBerQ8Y5ea&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2004: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4ib0lNXBwNVGZ1xjakmuLdnk&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2003: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOmI1alHexOnn5H6VS948QDd&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2002: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLmeOQ8SA8toBhiVA_3YY54R&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2001: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4iaqktGTn_7iJvJIku6Z5XgG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2000: "https://www.youtube.com/embed/videoseries?list=PLFczJQWL3c0hvajZ3MyNFzUO3QURpY7N0&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
                 };
 
                 const playlistURL = playlistLinks[year];
@@ -200,21 +279,90 @@ export default function PlayNowPage() {
                 return (
                   <iframe
                     key={year}
-                    style={{
-                      borderRadius: "12px",
-                      marginTop: "2rem",
-                      pointerEvents: "none", // disables mouse interaction
+                    ref={(el) => {
+                      iframeRefs.current[year] = el;
                     }}
-                    src={playlistURL}
+                    id={`youtube-player-${year}`}
+                    src={`${playlistURL}&enablejsapi=1`}
                     width="320"
                     height="180"
                     frameBorder="0"
-                    allowFullScreen={false} // disables fullscreen button
+                    allowFullScreen={false}
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                    style={{
+                      borderRadius: "12px",
+                      marginTop: "2rem",
+                      pointerEvents: "none",
+                    }}
                     loading="lazy"
-                  ></iframe>
+                  />
                 );
               })}
+            {showPrompt && currentQuestionYear !== null && (
+              <div className="mt-6 w-full max-w-md rounded-lg bg-black/80 p-6 text-white shadow-lg">
+                <h2 className="mb-4 text-2xl font-bold">📝 Quiz Time!</h2>
+
+                <p className="mb-2">What is the song name?</p>
+                <input
+                  type="text"
+                  className="mb-4 w-full rounded px-3 py-2 text-white"
+                  placeholder="Enter song title"
+                  value={userSongAnswer}
+                  onChange={(e) => setUserSongAnswer(e.target.value)}
+                />
+
+                <p className="mb-2">Who is the artist?</p>
+                <input
+                  type="text"
+                  className="mb-4 w-full rounded px-3 py-2 text-white"
+                  placeholder="Enter artist name"
+                  value={userArtistAnswer}
+                  onChange={(e) => setUserArtistAnswer(e.target.value)}
+                />
+
+                <button
+                  onClick={() => {
+                    console.log("Song:", userSongAnswer);
+                    console.log("Artist:", userArtistAnswer);
+                    setShowPrompt(false);
+                    setUserSongAnswer("");
+                    setUserArtistAnswer("");
+                  }}
+                  className="mt-2 rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
+
+            {!volumeUnmuted && (
+              <button
+                onClick={() => {
+                  try {
+                    selectedYears.forEach((year) => {
+                      const iframeWindow =
+                        iframeRefs.current[year]?.contentWindow;
+                      if (iframeWindow) {
+                        iframeWindow.postMessage(
+                          JSON.stringify({
+                            event: "command",
+                            func: "unMute",
+                            args: [],
+                          }),
+                          "*",
+                        );
+                      }
+                    });
+                    setVolumeUnmuted(true); // hides the button after click
+                  } catch (err) {
+                    console.error("Unmute failed:", err);
+                  }
+                }}
+                className="mt-6 rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
+              >
+                ▶️ Volume Up
+              </button>
+            )}
           </>
         )}
       </main>
