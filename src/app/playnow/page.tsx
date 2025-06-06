@@ -5,11 +5,16 @@ import React, { useState, useEffect, useRef } from "react";
 interface Song {
   title: string;
   artist: string;
+  // Add any other properties if you have more data
+}
+
+interface YouTubePlayer extends YT.Player {
+  __intervalAttached?: boolean;
 }
 
 declare global {
   interface Window {
-    YT: typeof globalThis.YT;
+    YT: typeof YT;
     onYouTubeIframeAPIReady: () => void;
   }
 }
@@ -22,72 +27,31 @@ export default function PlayNowPage() {
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
   const [volumeUnmuted, setVolumeUnmuted] = useState(false);
+
+  // coutdown things
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState(3);
+
+  // fading
   const [fadeCountdown, setFadeCountdown] = useState(false);
   const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
-  const playerRefs = useRef<
-    Record<number, (YT.Player & { __intervalAttached?: boolean }) | null>
-  >({});
-  const [showPrompt, setShowPrompt] = useState(false);
+
   const [currentQuestionYear, setCurrentQuestionYear] = useState<number | null>(
     null,
   );
+  const [showPrompt, setShowPrompt] = useState(false);
   const [userSongAnswer, setUserSongAnswer] = useState("");
   const [userArtistAnswer, setUserArtistAnswer] = useState("");
+  const [currentSong, setCurrentSong] = useState("");
+  const [currentArtist, setCurrentArtist] = useState("");
+  const [score, setScore] = useState(0);
+  const [showScore, setShowScore] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [resultMessage, setResultMessage] = useState<string>("");
+  const [resultColor, setResultColor] = useState<string>("text-green-400");
 
-  useEffect(() => {
-    if (window.YT) return;
-
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName("script")[0];
-    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
-  }, []);
-
-  useEffect(() => {
-    if (!window.YT || !showYouTubePlayer) return;
-
-    window.onYouTubeIframeAPIReady = () => {
-      selectedYears.forEach((year) => {
-        const iframe = iframeRefs.current[year];
-        if (!iframe) return;
-
-        playerRefs.current[year] = new window.YT.Player(iframe, {
-          height: "0",
-          width: "0",
-          events: {
-            onReady: () => {
-              console.log("YouTube Player is ready");
-            },
-            onStateChange: (event: YT.OnStateChangeEvent) => {
-              if (event.data === window.YT.PlayerState.PLAYING) {
-                const player = playerRefs.current[year];
-                if (!player || player.__intervalAttached) return;
-
-                player.__intervalAttached = true;
-                const interval = setInterval(() => {
-                  const currentTime = player.getCurrentTime();
-                  if (currentTime >= 15) {
-                    player.pauseVideo();
-                    clearInterval(interval);
-                    player.__intervalAttached = false;
-
-                    setCurrentQuestionYear(year);
-                    setShowPrompt(true);
-                  }
-                }, 500);
-              }
-            },
-          },
-        });
-      });
-    };
-
-    if (window.YT?.Player) {
-      window.onYouTubeIframeAPIReady();
-    }
-  }, [showYouTubePlayer, selectedYears]);
+  const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
   const fetchTopSongs = async (years: number[]) => {
     try {
@@ -95,7 +59,7 @@ export default function PlayNowPage() {
       const data = (await res.json()) as Song[];
       setSongs(data);
 
-      // Start countdown BEFORE showing YouTube player n songs
+      // countdown before showing songs
       setShowCountdown(true);
       setShowYouTubePlayer(false);
       setCountdownNumber(3);
@@ -105,7 +69,7 @@ export default function PlayNowPage() {
     }
   };
 
-  // countdown effect w fade out
+  // fading out after countdown
   useEffect(() => {
     if (!showCountdown) return;
 
@@ -131,6 +95,69 @@ export default function PlayNowPage() {
     return () => clearTimeout(timer);
   }, [countdownNumber, showCountdown, fadeCountdown]);
 
+  useEffect(() => {
+    if (window.YT) return;
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      console.log("YouTube API is ready");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!window.YT || !showYouTubePlayer) return;
+
+    selectedYears.forEach((year) => {
+      const iframe = iframeRefs.current[year];
+      if (!iframe) return;
+
+      playerRefs.current[year] = new window.YT.Player(iframe, {
+        height: "0",
+        width: "0",
+        events: {
+          onReady: () => {
+            console.log("YouTube Player is ready");
+          },
+          onStateChange: (event: YT.OnStateChangeEvent) => {
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              const player = playerRefs.current[year];
+              if (!player || player.__intervalAttached) return;
+
+              // Get current song info directly from player
+              const videoData = player.getVideoData();
+              if (!videoData) return;
+
+              // Try to extract artist and title from the video title
+              const title = videoData.title || "";
+              const artist = videoData.author || "";
+
+              setCurrentSong(title);
+              setCurrentArtist(artist);
+
+              player.__intervalAttached = true;
+              const interval = setInterval(() => {
+                const currentTime = player.getCurrentTime();
+                if (currentTime >= 15) {
+                  player.pauseVideo();
+                  clearInterval(interval);
+                  player.__intervalAttached = false;
+
+                  setCurrentQuestionYear(year);
+                  setShowPrompt(true);
+                }
+              }, 500);
+            }
+          },
+        },
+      });
+    });
+  }, [showYouTubePlayer, selectedYears]);
+
+  // Handlers (unchanged)
   const handleYearSelect = (year: number) => {
     if (!selectedYears.includes(year)) {
       setSelectedYears((prev) => [...prev, year].sort((a, b) => a - b));
@@ -176,6 +203,19 @@ export default function PlayNowPage() {
       alert("Please complete the form and select valid years.");
     }
   };
+
+  // make the answers all one format
+  function normalize(str: string) {
+    return str
+      .toLowerCase()
+      .replace(
+        /\(.*?\)|\[.*?\]|official|video|audio|lyrics|ft\.?|feat\.?|\"|\'|\-|\_|\:|\s+/g,
+        " ",
+      )
+      .replace(/[^a-z0-9 ]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
   if (songs) {
     return (
@@ -285,8 +325,8 @@ export default function PlayNowPage() {
                     }}
                     id={`youtube-player-${year}`}
                     src={`${playlistURL}&enablejsapi=1`}
-                    width="320"
-                    height="180"
+                    width="640"
+                    height="360"
                     frameBorder="0"
                     allowFullScreen={false}
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
@@ -299,43 +339,6 @@ export default function PlayNowPage() {
                   />
                 );
               })}
-            {showPrompt && currentQuestionYear !== null && (
-              <div className="mt-6 w-full max-w-md rounded-lg bg-black/80 p-6 text-white shadow-lg">
-                <h2 className="mb-4 text-2xl font-bold">📝 Quiz Time!</h2>
-
-                <p className="mb-2">What is the song name?</p>
-                <input
-                  type="text"
-                  className="mb-4 w-full rounded px-3 py-2 text-white"
-                  placeholder="Enter song title"
-                  value={userSongAnswer}
-                  onChange={(e) => setUserSongAnswer(e.target.value)}
-                />
-
-                <p className="mb-2">Who is the artist?</p>
-                <input
-                  type="text"
-                  className="mb-4 w-full rounded px-3 py-2 text-white"
-                  placeholder="Enter artist name"
-                  value={userArtistAnswer}
-                  onChange={(e) => setUserArtistAnswer(e.target.value)}
-                />
-
-                <button
-                  onClick={() => {
-                    console.log("Song:", userSongAnswer);
-                    console.log("Artist:", userArtistAnswer);
-                    setShowPrompt(false);
-                    setUserSongAnswer("");
-                    setUserArtistAnswer("");
-                  }}
-                  className="mt-2 rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700"
-                >
-                  Submit
-                </button>
-              </div>
-            )}
-
             {!volumeUnmuted && (
               <button
                 onClick={() => {
@@ -364,13 +367,168 @@ export default function PlayNowPage() {
                 ▶️ Volume Up
               </button>
             )}
+
+            {/* Quiz Prompt */}
+            {showPrompt && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+                <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
+                  <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
+                  <p className="mb-4">Year: {currentQuestionYear}</p>
+                  {/* Result message (not absolute, in flow) */}
+                  {pointsEarned !== null && showResult && (
+                    <div
+                      className={`mb-6 w-full text-center text-lg font-bold ${resultColor}`}
+                    >
+                      {resultMessage}
+                    </div>
+                  )}
+                  {!showResult && (
+                    <>
+                      <div className="mb-4">
+                        <label htmlFor="artist" className="mb-2 block">
+                          Artist Name:
+                        </label>
+                        <input
+                          type="text"
+                          id="artist"
+                          value={userArtistAnswer}
+                          onChange={(e) => setUserArtistAnswer(e.target.value)}
+                          className="w-full rounded bg-black/50 p-2 text-white"
+                          placeholder="Enter artist name"
+                        />
+                      </div>
+
+                      <div className="mb-6">
+                        <label htmlFor="song" className="mb-2 block">
+                          Song Title:
+                        </label>
+                        <input
+                          type="text"
+                          id="song"
+                          value={userSongAnswer}
+                          onChange={(e) => setUserSongAnswer(e.target.value)}
+                          className="w-full rounded bg-black/50 p-2 text-white"
+                          placeholder="Enter song title"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-4">
+                        <button
+                          onClick={() => {
+                            // Check answers
+                            let points = 0;
+                            const userArtist = normalize(userArtistAnswer);
+                            const correctArtist = normalize(currentArtist);
+                            const userSong = normalize(userSongAnswer);
+                            const correctSong = normalize(currentSong);
+                            if (
+                              userArtist &&
+                              correctArtist &&
+                              userArtist === correctArtist
+                            ) {
+                              points += 5;
+                            }
+                            if (
+                              userSong &&
+                              correctSong &&
+                              userSong === correctSong
+                            ) {
+                              points += 5;
+                            }
+                            setPointsEarned(points);
+                            setShowResult(true);
+                            if (points === 0) {
+                              setResultMessage(
+                                `Wrong. Correct: ${currentArtist} - ${currentSong}`,
+                              );
+                              setResultColor("text-red-500");
+                            } else {
+                              let message = "You got ";
+                              if (
+                                userArtist &&
+                                correctArtist &&
+                                userArtist === correctArtist
+                              ) {
+                                message += "artist ✓ ";
+                              } else {
+                                message += `artist (correct: ${currentArtist}) `;
+                              }
+                              if (
+                                userSong &&
+                                correctSong &&
+                                userSong === correctSong
+                              ) {
+                                message += "song ✓";
+                              } else {
+                                message += `song (correct: ${currentSong})`;
+                              }
+                              setResultMessage(message);
+                              setResultColor("text-green-400");
+                              setScore((prev) => prev + points);
+                              setShowScore(true);
+                            }
+                          }}
+                          className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {showResult && (
+                    <div className="mt-8 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setUserArtistAnswer("");
+                          setUserSongAnswer("");
+                          setShowPrompt(false);
+                          setShowResult(false);
+                          setPointsEarned(null);
+                          setResultMessage("");
+                          setResultColor("text-green-400");
+                          // go to next song
+                          const player =
+                            playerRefs.current[currentQuestionYear!];
+                          if (player) {
+                            player.nextVideo();
+                            player.playVideo();
+                            // reset 15 secs
+                            player.__intervalAttached = false;
+                            const interval = setInterval(() => {
+                              const currentTime = player.getCurrentTime();
+                              if (currentTime >= 15) {
+                                player.pauseVideo();
+                                clearInterval(interval);
+                                player.__intervalAttached = false;
+                                setCurrentQuestionYear(currentQuestionYear);
+                                setShowPrompt(true);
+                              }
+                            }, 500);
+                          }
+                        }}
+                        className="rounded bg-blue-500 px-6 py-2 font-bold text-white hover:bg-blue-600"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* score counter */}
+            {showScore && (
+              <div className="fixed right-4 bottom-4 rounded-lg bg-black/80 p-4 text-white">
+                <p className="text-xl font-bold">Score: {score}</p>
+              </div>
+            )}
           </>
         )}
       </main>
     );
   }
 
-  // Initial page return remains unchanged
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
       {/* vines */}
