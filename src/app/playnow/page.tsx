@@ -53,6 +53,13 @@ export default function PlayNowPage() {
 
   const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
 
+  // Add visualizerTime state for animation
+  const [visualizerTime, setVisualizerTime] = useState(0);
+  // Store random phase offsets for each line
+  const visualizerPhases = useRef(
+    Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
+  );
+
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
@@ -327,6 +334,16 @@ export default function PlayNowPage() {
     return correctWords.some((word) => normalizedUser.includes(word));
   }
 
+  useEffect(() => {
+    let frame: number;
+    const animate = () => {
+      setVisualizerTime(performance.now());
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
     const normalizedCorrectSong = normalize(currentSong);
@@ -451,8 +468,8 @@ export default function PlayNowPage() {
                   >
                     <div
                       style={{
-                        width: "640px",
-                        height: "360px",
+                        width: "1100px",
+                        height: "600px",
                         overflow: "hidden",
                         borderRadius: "12px",
                         position: "relative",
@@ -504,33 +521,88 @@ export default function PlayNowPage() {
                               zIndex: 1,
                             }}
                           />
-                          {/* Only the logo, perfectly centered */}
+                          {/* Circular rainbow line visualizer with logo in the center */}
                           <div
                             style={{
                               position: "absolute",
                               left: "50%",
                               top: "50%",
-                              width: 200,
-                              height: 200,
+                              width: 320,
+                              height: 320,
                               transform: "translate(-50%, -50%)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              pointerEvents: "none",
                               zIndex: 2,
                             }}
                           >
-                            <img
-                              src="/Guess-The-Jam-Logo.png"
-                              alt="Guess the Jam Logo"
+                            <svg
+                              width="320"
+                              height="320"
+                              style={{ position: "absolute", left: 0, top: 0 }}
+                            >
+                              {Array.from({ length: 48 }).map((_, i) => {
+                                const center = 160;
+                                const r0 = 100; // logo radius
+                                // Animate line length with a sine wave for a lively effect, with a random phase offset
+                                const phase = visualizerPhases.current
+                                  ? visualizerPhases.current[i]
+                                  : 0;
+                                const t =
+                                  visualizerTime / 600 +
+                                  i * 0.18 +
+                                  (phase ?? 0);
+                                const len = 24 + 36 * Math.abs(Math.sin(t)); // 24-60px
+                                const angle = i * 7.5;
+                                const rad = (angle * Math.PI) / 180;
+                                const x0 = center + r0 * Math.cos(rad);
+                                const y0 = center + r0 * Math.sin(rad);
+                                const x1 = center + (r0 + len) * Math.cos(rad);
+                                const y1 = center + (r0 + len) * Math.sin(rad);
+                                const color = `hsl(${angle}, 90%, 60%)`;
+                                return (
+                                  <line
+                                    key={i}
+                                    x1={x0}
+                                    y1={y0}
+                                    x2={x1}
+                                    y2={y1}
+                                    stroke={color}
+                                    strokeWidth={5}
+                                    strokeLinecap="round"
+                                    style={{
+                                      filter: `drop-shadow(0 0 6px ${color})`,
+                                    }}
+                                  />
+                                );
+                              })}
+                            </svg>
+                            {/* Logo - perfectly centered */}
+                            <div
                               style={{
+                                position: "absolute",
+                                left: "50%",
+                                top: "50%",
                                 width: 200,
                                 height: 200,
-                                borderRadius: "50%",
-                                boxShadow: "0 0 32px 8px #0008",
+                                transform: "translate(-50%, -50%)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                                 zIndex: 2,
-                                position: "relative",
                               }}
-                            />
+                            >
+                              <img
+                                src="/Guess-The-Jam-Logo.png"
+                                alt="Guess the Jam Logo"
+                                style={{
+                                  width: 200,
+                                  height: 200,
+                                  borderRadius: "50%",
+                                  boxShadow: "0 0 32px 8px #0008",
+                                  zIndex: 2,
+                                  position: "relative",
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -561,7 +633,7 @@ export default function PlayNowPage() {
                     console.error("Unmute failed:", err);
                   }
                 }}
-                className="mt-6 rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
+                className="mt-20 rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
               >
                 ▶️ Volume Up
               </button>
