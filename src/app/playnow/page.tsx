@@ -48,8 +48,6 @@ export default function PlayNowPage() {
   const [showScore, setShowScore] = useState(false);
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [resultMessage, setResultMessage] = useState<string>("");
-  const [resultColor, setResultColor] = useState<string>("text-green-400");
 
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
@@ -113,6 +111,9 @@ export default function PlayNowPage() {
   useEffect(() => {
     if (!window.YT || !showYouTubePlayer) return;
 
+    // Store the current refs at the start of the effect
+    const currentIntervalRefs = { ...intervalRefs.current };
+
     selectedYears.forEach((year) => {
       const iframe = iframeRefs.current[year];
       if (!iframe) return;
@@ -139,19 +140,25 @@ export default function PlayNowPage() {
                 setCurrentArtist(artist);
               }
               // clearrrrr interval
-              if (intervalRefs.current[year]) {
-                clearInterval(intervalRefs.current[year]!);
-                intervalRefs.current[year] = null;
+              if (currentIntervalRefs[year]) {
+                const interval = currentIntervalRefs[year];
+                if (interval) {
+                  clearInterval(interval);
+                }
+                currentIntervalRefs[year] = null;
                 console.log(`Cleared previous interval for year ${year}`);
               }
               // make a newww intervalllll
-              intervalRefs.current[year] = setInterval(() => {
+              currentIntervalRefs[year] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
                 console.log(`Year ${year} currentTime:`, currentTime);
                 if (currentTime >= 15) {
                   player.pauseVideo();
-                  clearInterval(intervalRefs.current[year]!);
-                  intervalRefs.current[year] = null;
+                  const interval = currentIntervalRefs[year];
+                  if (interval) {
+                    clearInterval(interval);
+                  }
+                  currentIntervalRefs[year] = null;
                   setCurrentQuestionYear(year);
                   setShowPrompt(true);
                   console.log(`Paused video for year ${year} at 15 seconds`);
@@ -163,9 +170,12 @@ export default function PlayNowPage() {
               event.data === window.YT.PlayerState.ENDED
             ) {
               // clear interval if da songs paused
-              if (intervalRefs.current[year]) {
-                clearInterval(intervalRefs.current[year]!);
-                intervalRefs.current[year] = null;
+              if (currentIntervalRefs[year]) {
+                const interval = currentIntervalRefs[year];
+                if (interval) {
+                  clearInterval(interval);
+                }
+                currentIntervalRefs[year] = null;
                 console.log(`Cleared interval for year ${year} on pause/end`);
               }
             }
@@ -173,8 +183,13 @@ export default function PlayNowPage() {
         },
       });
     });
+
+    // Update the ref with our local copy
+    intervalRefs.current = currentIntervalRefs;
+
     return () => {
-      Object.entries(intervalRefs.current).forEach(([year, intervalId]) => {
+      // Use the local copy in cleanup
+      Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
         if (intervalId) {
           clearInterval(intervalId);
           console.log(`Cleanup: Cleared interval for year ${year}`);
@@ -313,10 +328,19 @@ export default function PlayNowPage() {
   }
 
   if (songs) {
-    const userSong = normalize(userSongAnswer);
-    const correctSong = normalize(currentSong);
-    const userArtist = normalize(userArtistAnswer);
-    const correctArtist = normalize(currentArtist);
+    const normalizedUserSong = normalize(userSongAnswer);
+    const normalizedCorrectSong = normalize(currentSong);
+    const normalizedUserArtist = normalize(userArtistAnswer);
+    const normalizedCorrectArtist = normalize(currentArtist);
+
+    const songCorrect = isSongCorrect(
+      normalizedUserSong,
+      normalizedCorrectSong,
+    );
+    const artistCorrect = isArtistCorrect(
+      normalizedUserArtist,
+      normalizedCorrectArtist,
+    );
 
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[linear-gradient(to_bottom,_black_0%,_#0a0000_15%,_#220000_35%,_#440000_60%,_#660000_100%)] px-6 pt-8 text-white">
@@ -477,14 +501,6 @@ export default function PlayNowPage() {
                   {pointsEarned !== null && showResult && (
                     <div className="mb-6 w-full text-center text-lg font-bold">
                       {(() => {
-                        const songCorrect = isSongCorrect(
-                          userSongAnswer,
-                          currentSong,
-                        );
-                        const artistCorrect = isArtistCorrect(
-                          userArtistAnswer,
-                          currentArtist,
-                        );
                         const anyWrong = !songCorrect || !artistCorrect;
                         const bothWrong = !songCorrect && !artistCorrect;
                         return (
@@ -611,9 +627,9 @@ export default function PlayNowPage() {
                             setPointsEarned(points);
                             setShowResult(true);
                             if (points === 0) {
-                              setResultColor("text-red-500");
+                              // setResultColor("text-red-500");
                             } else {
-                              setResultColor("text-green-500");
+                              // setResultColor("text-green-500");
                               setScore((prev) => prev + points);
                               setShowScore(true);
                             }
@@ -635,8 +651,6 @@ export default function PlayNowPage() {
                           setShowPrompt(false);
                           setShowResult(false);
                           setPointsEarned(null);
-                          setResultMessage("");
-                          setResultColor("text-green-400");
                           // go to next song
                           const player =
                             playerRefs.current[currentQuestionYear!];
