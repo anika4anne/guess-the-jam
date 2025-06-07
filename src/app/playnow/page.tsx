@@ -411,56 +411,131 @@ export default function PlayNowPage() {
               selectedYears.length > 0 &&
               selectedYears.map((year) => {
                 const playlistLinks: Record<number, string> = {
-                  2024: "https://www.youtube.com/embed/videoseries?list=PLxA687tYuMWjS8IGRWkCzwTn10XcEccaZ&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2023: "https://www.youtube.com/embed/videoseries?list=PLdv33Q3_-41Hvf43VtcqsfQQOpWFd1_BF&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2022: "https://www.youtube.com/embed/videoseries?list=PLFI4VRJeIyw3fDbrTa_M864mYNXqZ6t7A&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2021: "https://www.youtube.com/embed/videoseries?list=PLuIAx5_9AFUiVwCbv4UN1V0vOJm4e-gwv&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2020: "https://www.youtube.com/embed/videoseries?list=PLaWhSPDmjQ4oBw1U0ak-TK_Pw4I9OGLsU&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2019: "https://www.youtube.com/embed/videoseries?list=PLZjyOXTKuD2Q_VN-XXHK-HVhQl58-ZI_H&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2018: "https://www.youtube.com/embed/videoseries?list=PLnBHN8ndXwY3ngcQxvrQ4CwH6VQcM0enM&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2017: "https://www.youtube.com/embed/videoseries?list=PLFU8AFaV2B6RfG_ZA6GadvT63ABBZtIKi&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2016: "https://www.youtube.com/embed/videoseries?list=PLAvHlMUITRMlUViWK1BWoawOUTZZIl4tG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2015: "https://www.youtube.com/embed/videoseries?list=PLora6h23WG8UPaQDfC2_cpi4iVPI4Hp0y&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2014: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtp2pM_BbnRtlc2Y7cyMNVkL&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2013: "https://www.youtube.com/embed/videoseries?list=PLw_s-_bg5n2VuukP3aSQik31jBJ5ICXFq&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2012: "https://www.youtube.com/embed/videoseries?list=PLem9vLZEVqmZ5H67lelbDER05kG8FcF-u&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2011: "https://www.youtube.com/embed/videoseries?list=PL-CYomtw4SPG6XkvXw6AahcSOWTg0PfyA&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2010: "https://www.youtube.com/embed/videoseries?list=PL5579B759A885680C&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2009: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLlMWIyLdp3d2FrN7t1hiXUE&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2008: "https://www.youtube.com/embed/videoseries?list=PLam08HY53ekvPojGF4hzhAdNE609JCUHo&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2007: "https://www.youtube.com/embed/videoseries?list=PL8629BA4D2BFD141B&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2006: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtqxO0cnTTqrjUHGdI0AbzyD&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2005: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOnF7gc5jg6R-aoBerQ8Y5ea&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2004: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4ib0lNXBwNVGZ1xjakmuLdnk&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2003: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOmI1alHexOnn5H6VS948QDd&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2002: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLmeOQ8SA8toBhiVA_3YY54R&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2001: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4iaqktGTn_7iJvJIku6Z5XgG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
-                  2000: "https://www.youtube.com/embed/videoseries?list=PLFczJQWL3c0hvajZ3MyNFzUO3QURpY7N0&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1",
+                  2024: "https://www.youtube.com/embed/videoseries?list=PLxA687tYuMWjS8IGRWkCzwTn10XcEccaZ&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2023: "https://www.youtube.com/embed/videoseries?list=PLdv33Q3_-41Hvf43VtcqsfQQOpWFd1_BF&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2022: "https://www.youtube.com/embed/videoseries?list=PLFI4VRJeIyw3fDbrTa_M864mYNXqZ6t7A&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2021: "https://www.youtube.com/embed/videoseries?list=PLuIAx5_9AFUiVwCbv4UN1V0vOJm4e-gwv&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2020: "https://www.youtube.com/embed/videoseries?list=PLaWhSPDmjQ4oBw1U0ak-TK_Pw4I9OGLsU&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2019: "https://www.youtube.com/embed/videoseries?list=PLZjyOXTKuD2Q_VN-XXHK-HVhQl58-ZI_H&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2018: "https://www.youtube.com/embed/videoseries?list=PLnBHN8ndXwY3ngcQxvrQ4CwH6VQcM0enM&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2017: "https://www.youtube.com/embed/videoseries?list=PLFU8AFaV2B6RfG_ZA6GadvT63ABBZtIKi&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2016: "https://www.youtube.com/embed/videoseries?list=PLAvHlMUITRMlUViWK1BWoawOUTZZIl4tG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2015: "https://www.youtube.com/embed/videoseries?list=PLora6h23WG8UPaQDfC2_cpi4iVPI4Hp0y&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2014: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtp2pM_BbnRtlc2Y7cyMNVkL&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2013: "https://www.youtube.com/embed/videoseries?list=PLw_s-_bg5n2VuukP3aSQik31jBJ5ICXFq&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2012: "https://www.youtube.com/embed/videoseries?list=PLem9vLZEVqmZ5H67lelbDER05kG8FcF-u&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2011: "https://www.youtube.com/embed/videoseries?list=PL-CYomtw4SPG6XkvXw6AahcSOWTg0PfyA&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2010: "https://www.youtube.com/embed/videoseries?list=PL5579B759A885680C&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2009: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLlMWIyLdp3d2FrN7t1hiXUE&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2008: "https://www.youtube.com/embed/videoseries?list=PLam08HY53ekvPojGF4hzhAdNE609JCUHo&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2007: "https://www.youtube.com/embed/videoseries?list=PL8629BA4D2BFD141B&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2006: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtqxO0cnTTqrjUHGdI0AbzyD&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2005: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOnF7gc5jg6R-aoBerQ8Y5ea&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2004: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4ib0lNXBwNVGZ1xjakmuLdnk&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2003: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOmI1alHexOnn5H6VS948QDd&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2002: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLmeOQ8SA8toBhiVA_3YY54R&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2001: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4iaqktGTn_7iJvJIku6Z5XgG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
+                  2000: "https://www.youtube.com/embed/videoseries?list=PLFczJQWL3c0hvajZ3MyNFzUO3QURpY7N0&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
                 };
 
                 const playlistURL = playlistLinks[year];
                 if (!playlistURL) return null;
 
+                // Show visualizer overlay while video is playing
+                const showVisualizer = showYouTubePlayer;
                 return (
-                  <iframe
+                  <div
                     key={year}
-                    ref={(el) => {
-                      iframeRefs.current[year] = el;
-                    }}
-                    id={`youtube-player-${year}`}
-                    src={`${playlistURL}&enablejsapi=1`}
-                    width="640"
-                    height="360"
-                    frameBorder="0"
-                    allowFullScreen={false}
-                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                    style={{
-                      borderRadius: "12px",
-                      marginTop: "2rem",
-                      pointerEvents: "none",
-                    }}
-                    loading="lazy"
-                  />
+                    className="relative mx-auto w-fit"
+                    style={{ zIndex: 0 }}
+                  >
+                    <div
+                      style={{
+                        width: "640px",
+                        height: "360px",
+                        overflow: "hidden",
+                        borderRadius: "12px",
+                        position: "relative",
+                        marginTop: "2rem",
+                      }}
+                    >
+                      <iframe
+                        ref={(el) => {
+                          iframeRefs.current[year] = el;
+                        }}
+                        id={`youtube-player-${year}`}
+                        src={`${playlistURL}&enablejsapi=1`}
+                        width="640"
+                        height="390"
+                        frameBorder="0"
+                        allowFullScreen={false}
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                        style={{
+                          borderRadius: "12px",
+                          marginTop: "-30px",
+                          pointerEvents: "none",
+                          zIndex: 1,
+                          position: "relative",
+                        }}
+                        loading="lazy"
+                      />
+                      {showVisualizer && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            width: "100%",
+                            height: "100%",
+                            zIndex: 9999,
+                            pointerEvents: "none",
+                          }}
+                        >
+                          {/* Black box background */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              top: 0,
+                              width: "100%",
+                              height: "100%",
+                              background: "black",
+                              opacity: 1,
+                              zIndex: 1,
+                            }}
+                          />
+                          {/* Only the logo, perfectly centered */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "50%",
+                              width: 200,
+                              height: 200,
+                              transform: "translate(-50%, -50%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              zIndex: 2,
+                            }}
+                          >
+                            <img
+                              src="/Guess-The-Jam-Logo.png"
+                              alt="Guess the Jam Logo"
+                              style={{
+                                width: 200,
+                                height: 200,
+                                borderRadius: "50%",
+                                boxShadow: "0 0 32px 8px #0008",
+                                zIndex: 2,
+                                position: "relative",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             {!volumeUnmuted && (
@@ -494,7 +569,7 @@ export default function PlayNowPage() {
 
             {/* pop up  */}
             {showPrompt && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+              <div className="prompt-z fixed inset-0 z-[10001] flex items-center justify-center bg-black/80">
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
                   <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
                   <p className="mb-4">Year: {currentQuestionYear}</p>
