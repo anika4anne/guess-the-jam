@@ -53,6 +53,8 @@ export default function PlayNowPage() {
 
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
+  const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
+
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
@@ -63,7 +65,7 @@ export default function PlayNowPage() {
       setShowCountdown(true);
       setShowYouTubePlayer(false);
       setCountdownNumber(3);
-      setFadeCountdown(false); // reset fade on new fetch
+      setFadeCountdown(false);
     } catch (error) {
       console.error("Error fetching top songs:", error);
     }
@@ -120,44 +122,67 @@ export default function PlayNowPage() {
         width: "0",
         events: {
           onReady: () => {
-            console.log("YouTube Player is ready");
+            console.log(`YouTube Player for year ${year} is ready`);
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
+            const player = playerRefs.current[year];
+            if (!player) return;
             if (event.data === window.YT.PlayerState.PLAYING) {
-              const player = playerRefs.current[year];
-              if (!player || player.__intervalAttached) return;
-
-              // Get current song info directly from player
+              // get current song from player
               const videoData = player.getVideoData();
-              if (!videoData) return;
-
-              // Try to extract artist and title from the video title
-              const title = videoData.title || "";
-              const artist = videoData.author || "";
-
-              setCurrentSong(title);
-              setCurrentArtist(artist);
-
-              player.__intervalAttached = true;
-              const interval = setInterval(() => {
+              if (videoData) {
+                const { artist, song } = extractArtistAndSong(
+                  videoData.title || "",
+                  videoData.author || "",
+                );
+                setCurrentSong(song);
+                setCurrentArtist(artist);
+              }
+              // clearrrrr interval
+              if (intervalRefs.current[year]) {
+                clearInterval(intervalRefs.current[year]!);
+                intervalRefs.current[year] = null;
+                console.log(`Cleared previous interval for year ${year}`);
+              }
+              // make a newww intervalllll
+              intervalRefs.current[year] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
+                console.log(`Year ${year} currentTime:`, currentTime);
                 if (currentTime >= 15) {
                   player.pauseVideo();
-                  clearInterval(interval);
-                  player.__intervalAttached = false;
-
+                  clearInterval(intervalRefs.current[year]!);
+                  intervalRefs.current[year] = null;
                   setCurrentQuestionYear(year);
                   setShowPrompt(true);
+                  console.log(`Paused video for year ${year} at 15 seconds`);
                 }
               }, 500);
+              console.log(`Set up interval for year ${year}`);
+            } else if (
+              event.data === window.YT.PlayerState.PAUSED ||
+              event.data === window.YT.PlayerState.ENDED
+            ) {
+              // clear interval if da songs paused
+              if (intervalRefs.current[year]) {
+                clearInterval(intervalRefs.current[year]!);
+                intervalRefs.current[year] = null;
+                console.log(`Cleared interval for year ${year} on pause/end`);
+              }
             }
           },
         },
       });
     });
+    return () => {
+      Object.entries(intervalRefs.current).forEach(([year, intervalId]) => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          console.log(`Cleanup: Cleared interval for year ${year}`);
+        }
+      });
+    };
   }, [showYouTubePlayer, selectedYears]);
 
-  // Handlers (unchanged)
   const handleYearSelect = (year: number) => {
     if (!selectedYears.includes(year)) {
       setSelectedYears((prev) => [...prev, year].sort((a, b) => a - b));
@@ -204,7 +229,7 @@ export default function PlayNowPage() {
     }
   };
 
-  // make the answers all one format
+  // make players answers lowercased
   function normalize(str: string) {
     return str
       .toLowerCase()
@@ -217,7 +242,82 @@ export default function PlayNowPage() {
       .trim();
   }
 
+  // get short song name from a youtube titele
+  function extractSongName(title: string) {
+    // remove stuff in brackets like offical songs and stuff
+    let shortTitle = title.replace(/\(.*?\)|\[.*?\]/g, "");
+    // remove 'official', 'video', 'audio', 'lyrics', 'ft.', 'feat.'
+    shortTitle = shortTitle.replace(
+      /official|video|audio|lyrics|ft\.?|feat\.?/gi,
+      "",
+    );
+    // if theres a dashtake the part after the first dash
+    const dashIndex = shortTitle.indexOf("-");
+    if (dashIndex !== -1) {
+      shortTitle = shortTitle.slice(dashIndex + 1);
+    }
+    return shortTitle.trim();
+  }
+
+  // get artist and song from youtube titel
+  function extractArtistAndSong(title: string, author: string) {
+    const dashIndex = title.indexOf(" - ");
+    if (dashIndex !== -1) {
+      const artist = title.slice(0, dashIndex).trim();
+      const song = title.slice(dashIndex + 3).trim();
+      return { artist, song };
+    }
+    // use channel as artist & the title as a song
+    return { artist: author, song: title };
+  }
+
+  // check if user artist matches any correct artist
+  function isArtistCorrect(userArtist: string, correctArtist: string) {
+    const normalizedUser = normalize(userArtist);
+    const userWords = normalizedUser.split(" ").filter((w) => w.length > 2);
+    const correctArtists = correctArtist
+      .split(/,|&|feat\.|ft\.|and/gi)
+      .map((a) => normalize(a.trim()))
+      .filter(Boolean);
+    const correctWords = correctArtists.flatMap((a) =>
+      a.split(" ").filter((w) => w.length > 2),
+    );
+    return userWords.some((uw) => correctWords.includes(uw));
+  }
+
+  // Encouraging messages for both correct
+  const encouragements = [
+    "Good Job!",
+    "Keep it up!",
+    "You're on fire!",
+    "Amazing!",
+    "Nailed it!",
+    "Rockstar!",
+    "Impressive!",
+    "You crushed it!",
+    "Legend!",
+    "Fantastic!",
+  ];
+  function getRandomEncouragement() {
+    return encouragements[Math.floor(Math.random() * encouragements.length)];
+  }
+
+  // check if user song guess contains one right word
+  function isSongCorrect(userSong: string, correctSong: string) {
+    const normalizedUser = normalize(userSong);
+    const normalizedCorrect = normalize(correctSong);
+    const correctWords = normalizedCorrect
+      .split(" ")
+      .filter((w) => w.length > 2);
+    return correctWords.some((word) => normalizedUser.includes(word));
+  }
+
   if (songs) {
+    const userSong = normalize(userSongAnswer);
+    const correctSong = normalize(currentSong);
+    const userArtist = normalize(userArtistAnswer);
+    const correctArtist = normalize(currentArtist);
+
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[linear-gradient(to_bottom,_black_0%,_#0a0000_15%,_#220000_35%,_#440000_60%,_#660000_100%)] px-6 pt-8 text-white">
         {/* moving vines */}
@@ -368,18 +468,93 @@ export default function PlayNowPage() {
               </button>
             )}
 
-            {/* Quiz Prompt */}
+            {/* pop up  */}
             {showPrompt && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
                   <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
                   <p className="mb-4">Year: {currentQuestionYear}</p>
-                  {/* Result message (not absolute, in flow) */}
                   {pointsEarned !== null && showResult && (
-                    <div
-                      className={`mb-6 w-full text-center text-lg font-bold ${resultColor}`}
-                    >
-                      {resultMessage}
+                    <div className="mb-6 w-full text-center text-lg font-bold">
+                      {(() => {
+                        const songCorrect = isSongCorrect(
+                          userSongAnswer,
+                          currentSong,
+                        );
+                        const artistCorrect = isArtistCorrect(
+                          userArtistAnswer,
+                          currentArtist,
+                        );
+                        const anyWrong = !songCorrect || !artistCorrect;
+                        const bothWrong = !songCorrect && !artistCorrect;
+                        return (
+                          <>
+                            <span className="mt-6 block text-yellow-400">
+                              Your guess:{" "}
+                              <span
+                                className={
+                                  songCorrect
+                                    ? "text-green-500"
+                                    : "text-red-500"
+                                }
+                              >
+                                {userSongAnswer || "(no guess)"}
+                              </span>
+                              {" - "}
+                              <span
+                                className={
+                                  artistCorrect
+                                    ? "text-green-500"
+                                    : "text-red-500"
+                                }
+                              >
+                                {userArtistAnswer || "(no guess)"}
+                              </span>
+                              {bothWrong && (
+                                <span className="text-red-500"> ❌</span>
+                              )}
+                              {!anyWrong && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    verticalAlign: "middle",
+                                    marginLeft: 4,
+                                  }}
+                                >
+                                  <svg
+                                    width="22"
+                                    height="22"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M5 13l4 4L19 7"
+                                      stroke="#22c55e"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </span>
+                              )}
+                            </span>
+                            {anyWrong ? (
+                              <div className="mt-2">
+                                <span className="text-yellow-400">Ans:</span>{" "}
+                                <span className="text-white">
+                                  {extractSongName(currentSong) || "-"} -{" "}
+                                  {currentArtist || "-"}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="mt-6 text-white">
+                                {getRandomEncouragement()}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                   {!showResult && (
@@ -415,17 +590,15 @@ export default function PlayNowPage() {
                       <div className="flex justify-end gap-4">
                         <button
                           onClick={() => {
-                            // Check answers
+                            // check answers
                             let points = 0;
-                            const userArtist = normalize(userArtistAnswer);
-                            const correctArtist = normalize(currentArtist);
+                            const artistCorrect = isArtistCorrect(
+                              userArtistAnswer,
+                              currentArtist,
+                            );
                             const userSong = normalize(userSongAnswer);
                             const correctSong = normalize(currentSong);
-                            if (
-                              userArtist &&
-                              correctArtist &&
-                              userArtist === correctArtist
-                            ) {
+                            if (artistCorrect) {
                               points += 5;
                             }
                             if (
@@ -438,32 +611,9 @@ export default function PlayNowPage() {
                             setPointsEarned(points);
                             setShowResult(true);
                             if (points === 0) {
-                              setResultMessage(
-                                `Wrong. Correct: ${currentArtist} - ${currentSong}`,
-                              );
                               setResultColor("text-red-500");
                             } else {
-                              let message = "You got ";
-                              if (
-                                userArtist &&
-                                correctArtist &&
-                                userArtist === correctArtist
-                              ) {
-                                message += "artist ✓ ";
-                              } else {
-                                message += `artist (correct: ${currentArtist}) `;
-                              }
-                              if (
-                                userSong &&
-                                correctSong &&
-                                userSong === correctSong
-                              ) {
-                                message += "song ✓";
-                              } else {
-                                message += `song (correct: ${currentSong})`;
-                              }
-                              setResultMessage(message);
-                              setResultColor("text-green-400");
+                              setResultColor("text-green-500");
                               setScore((prev) => prev + points);
                               setShowScore(true);
                             }
@@ -493,18 +643,6 @@ export default function PlayNowPage() {
                           if (player) {
                             player.nextVideo();
                             player.playVideo();
-                            // reset 15 secs
-                            player.__intervalAttached = false;
-                            const interval = setInterval(() => {
-                              const currentTime = player.getCurrentTime();
-                              if (currentTime >= 15) {
-                                player.pauseVideo();
-                                clearInterval(interval);
-                                player.__intervalAttached = false;
-                                setCurrentQuestionYear(currentQuestionYear);
-                                setShowPrompt(true);
-                              }
-                            }, 500);
                           }
                         }}
                         className="rounded bg-blue-500 px-6 py-2 font-bold text-white hover:bg-blue-600"
