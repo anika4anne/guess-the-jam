@@ -2,10 +2,21 @@
 
 import React, { useState, useEffect, useRef } from "react";
 
+// import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu"
+
+import { Button } from "~/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+
 interface Song {
   title: string;
   artist: string;
-  // Add any other properties if you have more data
 }
 
 interface YouTubePlayer extends YT.Player {
@@ -52,6 +63,7 @@ export default function PlayNowPage() {
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
   const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
+  const [index, setIndex] = useState(Math.floor(Math.random() * 80));
 
   // Add visualizerTime state for animation
   const [visualizerTime, setVisualizerTime] = useState(0);
@@ -320,9 +332,18 @@ export default function PlayNowPage() {
     "Legend!",
     "Fantastic!",
   ];
-  function getRandomEncouragement() {
-    return encouragements[Math.floor(Math.random() * encouragements.length)];
-  }
+  const [currentEncouragement, setCurrentEncouragement] = useState<string>(
+    encouragements[0]!,
+  );
+  useEffect(() => {
+    if (score > 0) {
+      const interval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * encouragements.length);
+        setCurrentEncouragement(encouragements[randomIndex]!);
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, [score]);
 
   // check if user song guess contains one right word
   function isSongCorrect(userSong: string, correctSong: string) {
@@ -481,7 +502,7 @@ export default function PlayNowPage() {
                           iframeRefs.current[year] = el;
                         }}
                         id={`youtube-player-${year}`}
-                        src={`${playlistURL}&enablejsapi=1`}
+                        src={`${playlistURL}&enablejsapi=1&index=${index}`}
                         width="640"
                         height="390"
                         frameBorder="0"
@@ -712,7 +733,7 @@ export default function PlayNowPage() {
                               </div>
                             ) : (
                               <div className="mt-6 text-white">
-                                {getRandomEncouragement()}
+                                {currentEncouragement}
                               </div>
                             )}
                           </>
@@ -873,37 +894,42 @@ export default function PlayNowPage() {
 
         {/* Year form */}
         <div className="mt-6 flex w-full max-w-sm flex-col items-center">
-          <div className="relative w-full">
-            <button
-              onClick={() => setShowDropdown((prev) => !prev)}
-              className="w-full rounded-lg bg-black px-4 py-2 text-xl text-white"
-            >
-              {selectedYears.length === 0
-                ? "Select a Year"
-                : `${selectedYears.length} Year(s) Selected`}
-            </button>
-            {showDropdown && (
-              <select
-                onChange={(e) => handleYearSelect(parseInt(e.target.value))}
-                className="absolute top-full left-0 mt-2 w-full rounded-lg bg-black px-4 py-2 text-white"
-              >
-                <option value="" disabled>
-                  Select a Year
-                </option>
+          <div className="relative flex w-full justify-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="px-6 py-3 text-lg"
+                  style={{ minWidth: "px", marginLeft: "5%" }}
+                >
+                  Choose A Year
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Years</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 {Array.from(
                   { length: new Date().getFullYear() - 2000 + 1 },
                   (_, i) => 2000 + i,
                 ).map((year) => (
-                  <option
+                  <DropdownMenuCheckboxItem
                     key={year}
-                    value={year}
-                    disabled={selectedYears.includes(year)}
+                    checked={selectedYears.includes(year)}
+                    onCheckedChange={() => {
+                      if (selectedYears.includes(year)) {
+                        setSelectedYears((prev) =>
+                          prev.filter((y) => y !== year),
+                        );
+                      } else {
+                        setSelectedYears((prev) => [...prev, year]);
+                      }
+                    }}
                   >
                     {year}
-                  </option>
+                  </DropdownMenuCheckboxItem>
                 ))}
-              </select>
-            )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* remove years */}
