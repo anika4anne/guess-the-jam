@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-
+import { useMemo } from "react";
 // import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu"
 
 import { Button } from "~/components/ui/button";
@@ -33,7 +33,6 @@ declare global {
 export default function PlayNowPage() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
-  const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
@@ -63,7 +62,7 @@ export default function PlayNowPage() {
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
   const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
-  const [index, setIndex] = useState(Math.floor(Math.random() * 80));
+  const [index] = useState(Math.floor(Math.random() * 80));
 
   // Add visualizerTime state for animation
   const [visualizerTime, setVisualizerTime] = useState(0);
@@ -217,13 +216,6 @@ export default function PlayNowPage() {
     };
   }, [showYouTubePlayer, selectedYears]);
 
-  const handleYearSelect = (year: number) => {
-    if (!selectedYears.includes(year)) {
-      setSelectedYears((prev) => [...prev, year].sort((a, b) => a - b));
-    }
-    setShowDropdown(false);
-  };
-
   const handleDeleteYear = (year: number) => {
     setSelectedYears((prev) => prev.filter((item) => item !== year));
   };
@@ -343,7 +335,7 @@ export default function PlayNowPage() {
       }, 200);
       return () => clearInterval(interval);
     }
-  }, [score]);
+  }, [score, encouragements]);
 
   // check if user song guess contains one right word
   function isSongCorrect(userSong: string, correctSong: string) {
