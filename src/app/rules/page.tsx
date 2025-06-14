@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 const rules = [
@@ -36,8 +37,26 @@ const rules = [
 ];
 
 export default function RulesPage() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch((err) => {
+        console.warn("Autoplay blocked:", err);
+      });
+    }
+  }, []);
+
   return (
     <main className="bg-stars relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-gradient-to-br from-[#0b0f29] via-[#0d1a40] to-[#010314] px-6 py-20 font-sans text-white">
+      {/* 🔊 Hidden Background Audio */}
+      <audio
+        ref={audioRef}
+        src="/src/music.mp3"
+        preload="auto"
+        style={{ display: "none" }}
+      />
+
       {/* Vine Waves Left */}
       <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24">
         <svg
@@ -91,7 +110,7 @@ export default function RulesPage() {
         Scroll down and vibe with the rules.
       </motion.p>
 
-      {/* Rules */}
+      {/* Rules List */}
       <section className="mx-auto mt-24 w-full max-w-4xl space-y-48">
         {rules.map((rule, index) => (
           <motion.div
@@ -116,7 +135,7 @@ export default function RulesPage() {
         </div>
       </footer>
 
-      {/* Animation Styling */}
+      {/* Animations */}
       <style jsx>{`
         @keyframes wave {
           0% {
@@ -133,7 +152,7 @@ export default function RulesPage() {
           animation: wave 2s ease-in-out infinite;
         }
         .bg-stars {
-          background-image: url("https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_2560/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_300/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_1024/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_768/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_1536/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_2048/https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_800/https://asgsr.org/wp-content/uploads/2020/01/iStock-697020460-scaled.jpg");
+          background-image: url("https://asgsr.org/wp-content/uploads/2020/01/iStock-697020460-scaled.jpg");
           background-size: cover;
         }
       `}</style>

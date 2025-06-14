@@ -24,7 +24,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable} dark`}>
-      <body>{children}</body>
+      <body>
+        {children}{" "}
+        <audio controls={false} autoPlay loop className="hidden">
+          <source src="/bg-music.mp3" type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
+      </body>
     </html>
   );
 }

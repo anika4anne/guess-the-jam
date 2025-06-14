@@ -19,6 +19,7 @@ export default function HomePage() {
           content="zEZGZzIJs883ISjbIKObStMehRR8Hoxkoo1bL5KQDmk"
         />
       </Head>
+
       <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
         {/* animated waves */}
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
