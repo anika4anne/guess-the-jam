@@ -1,38 +1,12 @@
-"use client";
+import { headers } from "next/headers";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-
-export default function PrivateRoom({
+export default async function PrivateRoom({
   params,
 }: {
-  params: { roomId: string };
+  params: Promise<{ roomId: string }>;
 }) {
-  const { roomId } = params;
-  const searchParams = useSearchParams();
-  const name = searchParams.get("name") || "Guest";
-
-  const storageKey = `room-${roomId}-players`;
-  const [players, setPlayers] = useState<string[]>([]);
-
-  useEffect(() => {
-    // Load existing players
-    const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-
-    // Prevent duplicate name
-    if (!existing.includes(name)) {
-      const updated = [...existing, name];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-      setPlayers(updated);
-    } else {
-      setPlayers(existing);
-    }
-
-    // Clean up on unmount (optional)
-    return () => {
-      // You can also implement a timeout-based remove here
-    };
-  }, [name]);
+  const { roomId } = await params;
+  const name = "Guest";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-6 text-white">
@@ -45,14 +19,9 @@ export default function PrivateRoom({
       <div className="mb-8 space-y-2 rounded-xl bg-white/10 p-6 shadow-md">
         <h2 className="text-xl font-semibold text-white">Players in Lobby</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {players.map((player, index) => (
-            <div
-              key={index}
-              className="rounded-xl bg-white/10 px-4 py-2 text-center text-white/80"
-            >
-              {player}
-            </div>
-          ))}
+          <div className="rounded-xl bg-white/10 px-4 py-2 text-center text-white/80">
+            {name}
+          </div>
         </div>
       </div>
     </main>
