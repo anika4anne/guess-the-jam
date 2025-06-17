@@ -15,6 +15,11 @@ export default function CreatePrivateRoom() {
     }
 
     const newRoomId = uuidv4().split("-")[0];
+
+    // Initialize the player list with the creator's name
+    const storageKey = `room-${newRoomId}-players`;
+    localStorage.setItem(storageKey, JSON.stringify([name]));
+
     router.push(`/private/${newRoomId}?name=${encodeURIComponent(name)}`);
   };
 

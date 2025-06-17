@@ -1,12 +1,64 @@
-import { headers } from "next/headers";
+"use client";
 
-export default async function PrivateRoom({
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+export default function PrivateRoom({
   params,
 }: {
-  params: Promise<{ roomId: string }>;
+  params: { roomId: string };
 }) {
-  const { roomId } = await params;
-  const name = "Guest";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const name = searchParams.get("name");
+  const roomId = params.roomId;
+  const [players, setPlayers] = useState<string[]>([]);
+
+  // Redirect if no name is provided
+  useEffect(() => {
+    if (!name) {
+      router.push(`/private/join?roomId=${roomId}`);
+    }
+  }, [name, roomId, router]);
+
+  // Handle player list
+  useEffect(() => {
+    if (!name) return;
+
+    const storageKey = `room-${roomId}-players`;
+
+    // Load existing players
+    const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+    // Add current player if not already in list
+    if (!existing.includes(name)) {
+      const updated = [...existing, name];
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      setPlayers(updated);
+    } else {
+      setPlayers(existing);
+    }
+
+    // Set up interval to check for updates
+    const interval = setInterval(() => {
+      const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      setPlayers(current);
+    }, 1000);
+
+    // Clean up on unmount
+    return () => {
+      clearInterval(interval);
+      // Remove player from list when they leave
+      const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const updated = current.filter((p: string) => p !== name);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    };
+  }, [name, roomId]);
+
+  // If no name, don't render anything while redirecting
+  if (!name) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-6 text-white">
@@ -19,9 +71,14 @@ export default async function PrivateRoom({
       <div className="mb-8 space-y-2 rounded-xl bg-white/10 p-6 shadow-md">
         <h2 className="text-xl font-semibold text-white">Players in Lobby</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-white/10 px-4 py-2 text-center text-white/80">
-            {name}
-          </div>
+          {players.map((player, index) => (
+            <div
+              key={index}
+              className="rounded-xl bg-white/10 px-4 py-2 text-center text-white/80"
+            >
+              {player} {player === name ? "(You)" : ""}
+            </div>
+          ))}
         </div>
       </div>
     </main>

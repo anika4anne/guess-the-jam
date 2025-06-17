@@ -1,13 +1,23 @@
 // src/app/private/join/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function JoinPrivateRoom() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [roomCode, setRoomCode] = useState("");
   const [name, setName] = useState("");
+
+  // Set room code from URL if provided
+  useEffect(() => {
+    const roomId = searchParams.get("roomId");
+    if (roomId) {
+      setRoomCode(roomId);
+    }
+  }, [searchParams]);
 
   const handleJoin = () => {
     if (!roomCode || !name) return;
