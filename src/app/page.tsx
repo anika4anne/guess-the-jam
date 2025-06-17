@@ -88,14 +88,18 @@ export default function HomePage() {
               Private Rooms
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
-              <div className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-8 text-white shadow-md transition-all hover:bg-white/20 sm:max-w-md">
+              <Link
+                href="/private/create"
+                className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-8 text-white shadow-md transition-all hover:bg-white/20 sm:max-w-md"
+              >
                 <h3 className="text-center text-2xl font-bold text-green-300">
                   Create Private Room →
                 </h3>
                 <p className="text-center text-lg">
                   Start a private game with friends!
                 </p>
-              </div>
+              </Link>
+
               <div className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20">
                 <h3 className="text-center text-2xl font-bold text-pink-300">
                   Join Private Room →
