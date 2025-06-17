@@ -988,12 +988,6 @@ export default function PlayNowPage() {
         </div>
       </div>
 
-      <footer className="mt-auto flex w-full items-center justify-end bg-transparent px-8 py-4 text-white">
-        <div className="text-sm">
-          <p>© Copyright 2025 Anika. All rights reserved.</p>
-        </div>
-      </footer>
-
       <style jsx>{`
         @keyframes wave {
           0% {

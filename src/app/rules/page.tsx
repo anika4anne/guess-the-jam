@@ -128,13 +128,6 @@ export default function RulesPage() {
         ))}
       </section>
 
-      {/* Footer */}
-      <footer className="mt-32 flex w-full items-center justify-end px-8 py-4 text-white">
-        <div className="text-sm">
-          <p>© Copyright 2025 Anika. All rights reserved.</p>
-        </div>
-      </footer>
-
       {/* Animations */}
       <style jsx>{`
         @keyframes wave {

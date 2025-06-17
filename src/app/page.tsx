@@ -100,23 +100,20 @@ export default function HomePage() {
                 </p>
               </Link>
 
-              <div className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20">
+              <Link
+                href="/private/join"
+                className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
+              >
                 <h3 className="text-center text-2xl font-bold text-pink-300">
                   Join Private Room →
                 </h3>
                 <p className="text-center text-lg">
                   Enter a private room with a code!
                 </p>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
-
-        <footer className="mt-auto flex w-full items-center justify-end bg-transparent px-8 py-4 text-white">
-          <div className="text-sm">
-            <p>© Copyright 2025 Anika. All rights reserved.</p>
-          </div>
-        </footer>
 
         <style jsx>{`
           @keyframes wave {
