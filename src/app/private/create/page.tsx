@@ -76,23 +76,34 @@ export default function CreatePrivateRoom() {
         Create Private Room
       </button>
 
-      {/* Error Popup */}
+      {/* Enhanced Error Popup with Flowing Border */}
       {showError && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 max-w-sm rounded-lg bg-white p-6 text-center">
-            <div className="mb-4 text-4xl text-red-500">⚠️</div>
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
-              Name Required
-            </h3>
-            <p className="mb-4 text-gray-600">
-              Please enter your name to create a room.
-            </p>
-            <Button
-              onClick={() => setShowError(false)}
-              className="bg-green-600 text-white hover:bg-green-700"
-            >
-              OK
-            </Button>
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
+          <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
+            <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
+              {/* Icon Container */}
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg">
+                <div className="text-2xl text-white">⚠️</div>
+              </div>
+
+              {/* Title */}
+              <h3 className="mb-3 text-xl font-bold text-gray-900">
+                Name Required
+              </h3>
+
+              {/* Message */}
+              <p className="mb-6 leading-relaxed text-gray-600">
+                Please enter your name to create a room.
+              </p>
+
+              {/* Action Button */}
+              <Button
+                onClick={() => setShowError(false)}
+                className="transform rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-green-600 hover:to-green-700"
+              >
+                Got it
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -119,12 +130,48 @@ export default function CreatePrivateRoom() {
           border-radius: 0.375rem;
         }
 
+        .flowing-border {
+          --borderWidth: 6px;
+          padding: var(--borderWidth);
+          border-radius: 1rem;
+          background: linear-gradient(
+            45deg,
+            #ff0080,
+            #8000ff,
+            #0080ff,
+            #00ff80,
+            #ff8000,
+            #ff0080
+          );
+          background-size: 400% 400%;
+          animation: flowingGradient 3s ease infinite;
+          display: inline-block;
+        }
+
         @keyframes gradientMove {
           0% {
             background-position: 0% 50%;
           }
           50% {
             background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        @keyframes flowingGradient {
+          0% {
+            background-position: 0% 50%;
+          }
+          25% {
+            background-position: 100% 50%;
+          }
+          50% {
+            background-position: 100% 100%;
+          }
+          75% {
+            background-position: 0% 100%;
           }
           100% {
             background-position: 0% 50%;
