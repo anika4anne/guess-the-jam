@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { Button } from "~/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const rules = [
   {
@@ -17,7 +19,7 @@ const rules = [
   {
     title: "⏳ Beat the Clock",
     description:
-      "You’ve got limited time each round. Answer quickly before the beat fades away.",
+      "You've got limited time each round. Answer quickly before the beat fades away.",
   },
   {
     title: "👯 One Player at a Time",
@@ -38,6 +40,7 @@ const rules = [
 
 export default function RulesPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (audioRef.current) {
@@ -46,6 +49,10 @@ export default function RulesPage() {
       });
     }
   }, []);
+
+  const handleBack = () => {
+    router.push("/");
+  };
 
   return (
     <main className="bg-stars relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-gradient-to-br from-[#0b0f29] via-[#0d1a40] to-[#010314] px-6 py-20 font-sans text-white">
@@ -89,6 +96,17 @@ export default function RulesPage() {
             fill="none"
           />
         </svg>
+      </div>
+
+      {/* Back Button */}
+      <div className="absolute top-6 left-6">
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+        >
+          ← Back
+        </Button>
       </div>
 
       {/* Title */}
