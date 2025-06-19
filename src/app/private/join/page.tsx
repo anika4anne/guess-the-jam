@@ -34,12 +34,15 @@ export default function JoinPrivateRoom() {
     roomCode: string,
     playerName: string,
   ): boolean => {
-    // Check if name is already taken in the room
+    // Check if name is already taken in the room (case-insensitive)
     const storageKey = `room-${roomCode}-players`;
     const roomData = localStorage.getItem(storageKey);
     if (roomData) {
       const players = JSON.parse(roomData);
-      return !players.includes(playerName.trim());
+      const normalizedPlayerName = playerName.trim().toLowerCase();
+      return !players.some(
+        (player: string) => player.toLowerCase() === normalizedPlayerName,
+      );
     }
     return true;
   };
@@ -178,7 +181,7 @@ export default function JoinPrivateRoom() {
 
       <style jsx>{`
         .flowing-border {
-          --borderWidth: 6px;
+          --borderWidth: 10px;
           padding: var(--borderWidth);
           border-radius: 1rem;
           background: linear-gradient(
