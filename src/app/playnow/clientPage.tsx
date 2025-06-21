@@ -425,12 +425,13 @@ export default function PlayNowPage() {
           <>
             <div className="mb-6 flex w-full items-center justify-between">
               <h1 className="text-4xl font-bold">🎵 Let the Game Begin! 🎵</h1>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => router.push("/")}
-                className="rounded-full bg-red-600 px-4 py-2 text-white transition-all hover:bg-red-700"
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20"
               >
-                Exit Game
-              </button>
+                Exit
+              </Button>
             </div>
             <p className="mb-4">
               Now playing songs from: {selectedYears.join(", ")}
@@ -994,12 +995,13 @@ export default function PlayNowPage() {
             Play
           </button>
 
-          <button
+          <Button
+            variant="outline"
             onClick={() => router.push("/")}
-            className="mt-4 rounded-full bg-gray-600 px-6 py-2 text-lg text-white transition-all hover:bg-gray-700"
+            className="mt-4 border-white/20 bg-white/10 text-white hover:bg-white/20"
           >
-            ← Back to Home
-          </button>
+            ← Back
+          </Button>
         </div>
       </div>
 

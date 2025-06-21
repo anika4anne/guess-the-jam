@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { Button } from "~/components/ui/button";
 
 export default function CreatePrivateRoom() {
   const router = useRouter();
@@ -47,12 +48,13 @@ export default function CreatePrivateRoom() {
         Create Private Room
       </button>
 
-      <button
+      <Button
+        variant="outline"
         onClick={() => router.push("/")}
-        className="mt-4 rounded-lg bg-gray-600 px-6 py-3 font-semibold text-white transition hover:bg-gray-700"
+        className="mt-4 border-white/20 bg-white/10 text-white hover:bg-white/20"
       >
-        ← Back to Home
-      </button>
+        ← Back
+      </Button>
 
       <style jsx>{`
         .animated-border {
