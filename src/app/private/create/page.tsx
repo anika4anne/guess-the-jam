@@ -47,6 +47,13 @@ export default function CreatePrivateRoom() {
         Create Private Room
       </button>
 
+      <button
+        onClick={() => router.push("/")}
+        className="mt-4 rounded-lg bg-gray-600 px-6 py-3 font-semibold text-white transition hover:bg-gray-700"
+      >
+        ← Back to Home
+      </button>
+
       <style jsx>{`
         .animated-border {
           --borderWidth: 4px;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 // import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu"
 
 import { Button } from "~/components/ui/button";
@@ -30,6 +31,7 @@ declare global {
 }
 
 export default function PlayNowPage() {
+  const router = useRouter();
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
   const [songs, setSongs] = useState<Song[] | null>(null);
@@ -421,9 +423,15 @@ export default function PlayNowPage() {
         {/* if no countdown show song */}
         {!showCountdown && (
           <>
-            <h1 className="mb-6 text-4xl font-bold">
-              🎵 Let the Game Begin! 🎵
-            </h1>
+            <div className="mb-6 flex w-full items-center justify-between">
+              <h1 className="text-4xl font-bold">🎵 Let the Game Begin! 🎵</h1>
+              <button
+                onClick={() => router.push("/")}
+                className="rounded-full bg-red-600 px-4 py-2 text-white transition-all hover:bg-red-700"
+              >
+                Exit Game
+              </button>
+            </div>
             <p className="mb-4">
               Now playing songs from: {selectedYears.join(", ")}
             </p>
@@ -984,6 +992,13 @@ export default function PlayNowPage() {
             className="mt-6 rounded-full bg-yellow-400 px-6 py-2 text-lg text-white transition-all hover:bg-yellow-500"
           >
             Play
+          </button>
+
+          <button
+            onClick={() => router.push("/")}
+            className="mt-4 rounded-full bg-gray-600 px-6 py-2 text-lg text-white transition-all hover:bg-gray-700"
+          >
+            ← Back to Home
           </button>
         </div>
       </div>
