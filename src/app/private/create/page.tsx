@@ -25,6 +25,17 @@ export default function CreatePrivateRoom() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] px-6 text-white">
+      {/* Back Button */}
+      <div className="absolute top-6 left-6">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/")}
+          className="border-white/20 bg-white/10 px-6 py-3 text-lg text-white hover:bg-white/20"
+        >
+          ← Back
+        </Button>
+      </div>
+
       <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
         🎶 Create a Private Room
       </h1>
@@ -47,14 +58,6 @@ export default function CreatePrivateRoom() {
       >
         Create Private Room
       </button>
-
-      <Button
-        variant="outline"
-        onClick={() => router.push("/")}
-        className="mt-4 border-white/20 bg-white/10 text-white hover:bg-white/20"
-      >
-        ← Back
-      </Button>
 
       <style jsx>{`
         .animated-border {
