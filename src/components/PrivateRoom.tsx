@@ -43,9 +43,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const readyKey = `room-${roomId}-ready`;
 
     // Load existing players, banned players, and ready players
-    const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    const banned = JSON.parse(localStorage.getItem(bannedKey) || "[]");
-    const ready = JSON.parse(localStorage.getItem(readyKey) || "[]");
+    const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+    const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
+    const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
     setBannedPlayers(banned);
     setReadyPlayers(ready);
 
@@ -79,9 +79,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
     // Set up interval to check for updates
     const interval = setInterval(() => {
-      const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const currentBanned = JSON.parse(localStorage.getItem(bannedKey) || "[]");
-      const currentReady = JSON.parse(localStorage.getItem(readyKey) || "[]");
+      const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
+      const currentReady = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
       setPlayers(current);
       setBannedPlayers(currentBanned);
       setReadyPlayers(currentReady);
@@ -107,7 +107,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       clearInterval(interval);
       // Remove player from list when they leave (unless they were kicked/banned)
       if (!showKickedPopup) {
-        const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
         const updated = current.filter(
           (p: string) => p.toLowerCase() !== name.toLowerCase(),
         );
@@ -177,7 +177,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   const handleKickPlayer = () => {
     const storageKey = `room-${roomId}-players`;
-    const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     const updated = current.filter(
       (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
     );
@@ -190,8 +190,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const handleBanPlayer = () => {
     const storageKey = `room-${roomId}-players`;
     const bannedKey = `room-${roomId}-banned`;
-    const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    const currentBanned = JSON.parse(localStorage.getItem(bannedKey) || "[]");
+    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+    const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
 
     // Remove from players and add to banned
     const updated = current.filter(
@@ -215,7 +215,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   const toggleReady = () => {
     const readyKey = `room-${roomId}-ready`;
-    const currentReady = JSON.parse(localStorage.getItem(readyKey) || "[]");
+    const currentReady = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
 
     if (currentReady.includes(name)) {
       const updated = currentReady.filter((p: string) => p !== name);
