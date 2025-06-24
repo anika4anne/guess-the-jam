@@ -26,6 +26,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [countdown, setCountdown] = useState(5);
   const [hoveredForReady, setHoveredForReady] = useState("");
   const [showCopied, setShowCopied] = useState(false);
+  const [showScore, setShowScore] = useState(false);
+  const [gameMode, setGameMode] = useState("single");
+  const [score, setScore] = useState(0);
+  const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
 
   // Redirect if no name is provided
   useEffect(() => {
@@ -364,7 +368,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   </Button>
                 </div>
               ) : (
-                /* Non-host: Ready/Not Ready and Waiting */
                 <>
                   <div
                     className={`rounded-full px-6 py-2 text-lg font-semibold ${readyPlayers.includes(name) ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}
@@ -480,6 +483,29 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showScore && gameMode === "single" && (
+        <div className="fixed right-4 bottom-20 rounded-lg bg-black/80 p-4 text-white">
+          <p className="text-xl font-bold">Score: {score}</p>
+        </div>
+      )}
+
+      {gameMode === "multiplayer" && Object.keys(playerScores).length > 0 && (
+        <div className="fixed right-4 bottom-20 rounded-lg bg-black/80 p-4 text-white">
+          <p className="mb-2 text-lg font-bold">Player Scores:</p>
+          {Object.entries(playerScores).map(([playerName, playerScore]) => (
+            <div
+              key={playerName}
+              className="mb-1 flex items-center justify-between"
+            >
+              <span className="text-sm">{playerName}:</span>
+              <span className="text-sm font-bold text-yellow-400">
+                {playerScore}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 

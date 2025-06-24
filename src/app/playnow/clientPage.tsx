@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 // import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu"
 
 import { Button } from "~/components/ui/button";
@@ -22,7 +23,6 @@ interface Song {
 interface YouTubePlayer extends YT.Player {
   __intervalAttached?: boolean;
 }
-
 declare global {
   interface Window {
     YT: typeof YT;
@@ -39,11 +39,9 @@ export default function PlayNowPage() {
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
   const [volumeUnmuted, setVolumeUnmuted] = useState(false);
 
-  // coutdown things
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState(3);
 
-  // fading
   const [fadeCountdown, setFadeCountdown] = useState(false);
   const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
 
@@ -60,6 +58,24 @@ export default function PlayNowPage() {
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
 
+  // Multiplayer state
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
+  const [playerAnswers, setPlayerAnswers] = useState<
+    Record<
+      string,
+      {
+        song: string;
+        artist: string;
+        points: number;
+        songCorrect: boolean;
+        artistCorrect: boolean;
+      }
+    >
+  >({});
+  const [showAllResults, setShowAllResults] = useState(false);
+  const [gameMode, setGameMode] = useState<"single" | "multiplayer">("single");
+
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
   const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
@@ -72,11 +88,41 @@ export default function PlayNowPage() {
     Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
   );
 
+  // Add at the top of the component, after other useState hooks
+  const [showArtist, setShowArtist] = useState(false);
+  const [showSong, setShowSong] = useState(false);
+  const [inputError, setInputError] = useState("");
+
+  // Calculate the current round number (based on how many songs have been played)
+  const [round, setRound] = useState(1);
+  useEffect(() => {
+    // Increment round when a new song starts (showPrompt is false and showAllResults is false)
+    if (!showPrompt && !showAllResults && songs) {
+      setRound((prev) => prev + 1);
+    }
+    // Reset round if songs reset
+    if (!songs) setRound(1);
+  }, [showPrompt, showAllResults, songs]);
+
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
       const data = (await res.json()) as Song[];
       setSongs(data);
+
+      // Initialize player scores and determine game mode
+      const validPlayers = playerNames.filter((name) => name.trim() !== "");
+      const isMultiplayer = validPlayers.length > 1;
+      setGameMode(isMultiplayer ? "multiplayer" : "single");
+
+      if (isMultiplayer) {
+        const initialScores: Record<string, number> = {};
+        validPlayers.forEach((player) => {
+          initialScores[player] = 0;
+        });
+        setPlayerScores(initialScores);
+        setCurrentPlayerIndex(0);
+      }
 
       // countdown before showing songs
       setShowCountdown(true);
@@ -167,7 +213,7 @@ export default function PlayNowPage() {
                 currentIntervalRefs[year] = null;
                 console.log(`Cleared previous interval for year ${year}`);
               }
-              // make a newww intervalllll
+
               currentIntervalRefs[year] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
                 console.log(`Year ${year} currentTime:`, currentTime);
@@ -203,11 +249,9 @@ export default function PlayNowPage() {
       });
     });
 
-    // Update the ref with our local copy
     intervalRefs.current = currentIntervalRefs;
 
     return () => {
-      // Use the local copy in cleanup
       Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
         if (intervalId) {
           clearInterval(intervalId);
@@ -243,25 +287,33 @@ export default function PlayNowPage() {
       (year) => year >= 2000 && year < currentYear,
     );
 
+    const validPlayers = playerNames.filter((name) => name.trim() !== "");
+    if (validPlayers.length === 0) {
+      alert("Please enter at least one player name.");
+      return;
+    }
+
     const emptyIndexes = playerNames
       .map((name, i) => (name.trim() === "" ? i : -1))
       .filter((i) => i !== -1);
 
     setErrorIndexes(emptyIndexes);
 
-    if (validYears.length > 0 && emptyIndexes.length === 0) {
+    if (validYears.length > 0 && validPlayers.length > 0) {
       await fetchTopSongs(validYears);
     } else {
       alert("Please complete the form and select valid years.");
     }
   };
 
-  // make players answers lowercased
+  // Update the normalize function to remove accents/diacritics
   function normalize(str: string) {
     return str
       .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "") // remove accents
       .replace(
-        /\(.*?\)|\[.*?\]|official|video|audio|lyrics|ft\.?|feat\.?|\"|\'|\-|\_|\:|\s+/g,
+        /\(.*?\)|\[.*?\]|official|video|audio|lyrics|ft\.?|feat\.?|"|'|-|_|:|\s+/g,
         " ",
       )
       .replace(/[^a-z0-9 ]/g, "")
@@ -278,7 +330,7 @@ export default function PlayNowPage() {
       /official|video|audio|lyrics|ft\.?|feat\.?/gi,
       "",
     );
-    // if theres a dashtake the part after the first dash
+
     const dashIndex = shortTitle.indexOf("-");
     if (dashIndex !== -1) {
       shortTitle = shortTitle.slice(dashIndex + 1);
@@ -286,7 +338,6 @@ export default function PlayNowPage() {
     return shortTitle.trim();
   }
 
-  // get artist and song from youtube titel
   function extractArtistAndSong(title: string, author: string) {
     const dashIndex = title.indexOf(" - ");
     if (dashIndex !== -1) {
@@ -294,11 +345,10 @@ export default function PlayNowPage() {
       const song = title.slice(dashIndex + 3).trim();
       return { artist, song };
     }
-    // use channel as artist & the title as a song
+
     return { artist: author, song: title };
   }
 
-  // check if user artist matches any correct artist
   function isArtistCorrect(userArtist: string, correctArtist: string) {
     const normalizedUser = normalize(userArtist);
     const userWords = normalizedUser.split(" ").filter((w) => w.length > 2);
@@ -312,19 +362,22 @@ export default function PlayNowPage() {
     return userWords.some((uw) => correctWords.includes(uw));
   }
 
-  // Encouraging messages for both correct
-  const encouragements = [
-    "Good Job!",
-    "Keep it up!",
-    "You're on fire!",
-    "Amazing!",
-    "Nailed it!",
-    "Rockstar!",
-    "Impressive!",
-    "You crushed it!",
-    "Legend!",
-    "Fantastic!",
-  ];
+  // Wrap encouragements in useMemo
+  const encouragements = useMemo(
+    () => [
+      "Great job!",
+      "You're doing amazing!",
+      "Keep it up!",
+      "Fantastic!",
+      "You've got this!",
+      "Incredible!",
+      "Outstanding!",
+      "Brilliant!",
+      "Excellent!",
+      "Superb!",
+    ],
+    [],
+  );
   const [currentEncouragement, setCurrentEncouragement] = useState<string>(
     encouragements[0]!,
   );
@@ -423,18 +476,23 @@ export default function PlayNowPage() {
         {/* if no countdown show song */}
         {!showCountdown && (
           <>
-            <div className="mb-6 flex w-full items-center justify-between">
-              <h1 className="text-4xl font-bold">🎵 Let the Game Begin! 🎵</h1>
+            <div className="relative mb-6 flex w-full items-center justify-center">
+              <h1 className="w-full text-center text-4xl font-bold">
+                🎵 Let the Game Begin! 🎵
+              </h1>
               <Button
                 variant="outline"
                 onClick={() => router.push("/")}
-                className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                className="absolute top-1/2 right-0 -translate-y-1/2 border-white/20 bg-white/10 text-white hover:bg-white/20"
               >
                 Exit
               </Button>
             </div>
             <p className="mb-4">
               Now playing songs from: {selectedYears.join(", ")}
+            </p>
+            <p className="mb-4">
+              Don&apos;t forget to unmute the video to hear the song!
             </p>
             <ul className="max-w-xl list-inside list-disc">
               {songs.length > 0 &&
@@ -611,12 +669,12 @@ export default function PlayNowPage() {
                                 zIndex: 2,
                               }}
                             >
-                              <img
+                              <Image
                                 src="/Guess-The-Jam-Logo.png"
                                 alt="Guess the Jam Logo"
+                                width={200}
+                                height={200}
                                 style={{
-                                  width: 200,
-                                  height: 200,
                                   borderRadius: "50%",
                                   boxShadow: "0 0 32px 8px #0008",
                                   zIndex: 2,
@@ -631,33 +689,27 @@ export default function PlayNowPage() {
                   </div>
                 );
               })}
+            {/* Volume Up Button - only one, centered, with margin */}
             {!volumeUnmuted && (
-              <button
-                onClick={() => {
-                  try {
-                    selectedYears.forEach((year) => {
-                      const iframeWindow =
-                        iframeRefs.current[year]?.contentWindow;
-                      if (iframeWindow) {
-                        iframeWindow.postMessage(
-                          JSON.stringify({
-                            event: "command",
-                            func: "unMute",
-                            args: [],
-                          }),
-                          "*",
-                        );
-                      }
-                    });
-                    setVolumeUnmuted(true); // hides the button after click
-                  } catch (err) {
-                    console.error("Unmute failed:", err);
-                  }
-                }}
-                className="mt-20 rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
-              >
-                ▶️ Volume Up
-              </button>
+              <div className="mt-8 mb-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    try {
+                      Object.values(playerRefs.current).forEach((player) => {
+                        if (player && typeof player.unMute === "function") {
+                          player.unMute();
+                        }
+                      });
+                      setVolumeUnmuted(true); // hides the button after click
+                    } catch (err) {
+                      console.error("Unmute failed:", err);
+                    }
+                  }}
+                  className="rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
+                >
+                  ▶️ Volume Up
+                </button>
+              </div>
             )}
 
             {/* pop up  */}
@@ -666,151 +718,326 @@ export default function PlayNowPage() {
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
                   <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
                   <p className="mb-4">Year: {currentQuestionYear}</p>
-                  {pointsEarned !== null && showResult && (
-                    <div className="mb-6 w-full text-center text-lg font-bold">
-                      {(() => {
-                        const anyWrong = !songCorrect || !artistCorrect;
-                        const bothWrong = !songCorrect && !artistCorrect;
-                        return (
-                          <>
-                            <span className="mt-6 block text-yellow-400">
-                              Your guess:{" "}
-                              <span
-                                className={
-                                  songCorrect
-                                    ? "text-green-500"
-                                    : "text-red-500"
-                                }
-                              >
-                                {userSongAnswer || "(no guess)"}
-                              </span>
-                              {" - "}
-                              <span
-                                className={
-                                  artistCorrect
-                                    ? "text-green-500"
-                                    : "text-red-500"
-                                }
-                              >
-                                {userArtistAnswer || "(no guess)"}
-                              </span>
-                              {bothWrong && (
-                                <span className="text-red-500"> ❌</span>
-                              )}
-                              {!anyWrong && (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    verticalAlign: "middle",
-                                    marginLeft: 4,
-                                  }}
-                                >
-                                  <svg
-                                    width="22"
-                                    height="22"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M5 13l4 4L19 7"
-                                      stroke="#22c55e"
-                                      strokeWidth="3"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
-                              )}
-                            </span>
-                            {anyWrong ? (
-                              <div className="mt-2">
-                                <span className="text-yellow-400">Ans:</span>{" "}
-                                <span className="text-white">
-                                  {extractSongName(currentSong) || "-"} -{" "}
-                                  {currentArtist || "-"}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="mt-6 text-white">
-                                {currentEncouragement}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
+
+                  {inputError && (
+                    <div className="mb-2 text-center font-semibold text-red-400">
+                      {inputError}
                     </div>
                   )}
-                  {!showResult && (
+
+                  {gameMode === "multiplayer" && (
+                    <div className="mb-4 text-center">
+                      <p className="text-lg font-semibold text-yellow-400">
+                        {playerNames[currentPlayerIndex]}&apos;s Turn
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        Player {currentPlayerIndex + 1} of{" "}
+                        {
+                          playerNames.filter((name) => name.trim() !== "")
+                            .length
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {pointsEarned !== null &&
+                    showResult &&
+                    gameMode === "single" && (
+                      <div className="mb-6 w-full text-center text-lg font-bold">
+                        {(() => {
+                          const anyWrong = !songCorrect || !artistCorrect;
+                          const bothWrong = !songCorrect && !artistCorrect;
+                          return (
+                            <>
+                              <span className="mt-6 block text-yellow-400">
+                                Your guess:{" "}
+                                <span
+                                  className={
+                                    songCorrect
+                                      ? "text-green-500"
+                                      : "text-red-500"
+                                  }
+                                >
+                                  {userSongAnswer || "(no guess)"}
+                                </span>
+                                {" - "}
+                                <span
+                                  className={
+                                    artistCorrect
+                                      ? "text-green-500"
+                                      : "text-red-500"
+                                  }
+                                >
+                                  {userArtistAnswer || "(no guess)"}
+                                </span>
+                                {bothWrong && (
+                                  <span className="text-red-500"> ❌</span>
+                                )}
+                                {!anyWrong && (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      verticalAlign: "middle",
+                                      marginLeft: 4,
+                                    }}
+                                  >
+                                    <svg
+                                      width="22"
+                                      height="22"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M5 13l4 4L19 7"
+                                        stroke="#22c55e"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </span>
+                                )}
+                              </span>
+                              {anyWrong ? (
+                                <div className="mt-2">
+                                  <span className="text-yellow-400">Ans:</span>{" "}
+                                  <span className="text-white">
+                                    {extractSongName(currentSong) || "-"} -{" "}
+                                    {currentArtist || "-"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="mt-6 text-white">
+                                  {currentEncouragement}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                  {showAllResults && gameMode === "multiplayer" && (
+                    <div className="mb-6 w-full text-center text-lg font-bold">
+                      <h3 className="mb-4 text-xl font-bold text-yellow-400">
+                        Round Results
+                      </h3>
+                      {Object.entries(playerAnswers).map(
+                        ([playerName, answer]) => {
+                          const bothWrong =
+                            !answer.songCorrect && !answer.artistCorrect;
+                          const bothRight =
+                            answer.songCorrect && answer.artistCorrect;
+                          return (
+                            <div
+                              key={playerName}
+                              className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/40" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
+                            >
+                              <p className="font-semibold text-blue-400">
+                                {playerName}
+                              </p>
+                              <p className="text-sm">
+                                Song:{" "}
+                                <span
+                                  className={
+                                    answer.songCorrect
+                                      ? "text-green-500"
+                                      : "text-red-500"
+                                  }
+                                >
+                                  {answer.song || "(no guess)"}
+                                </span>
+                              </p>
+                              <p className="text-sm">
+                                Artist:{" "}
+                                <span
+                                  className={
+                                    answer.artistCorrect
+                                      ? "text-green-500"
+                                      : "text-red-500"
+                                  }
+                                >
+                                  {answer.artist || "(no guess)"}
+                                </span>
+                              </p>
+                              <p className="text-sm font-bold">
+                                Points:{" "}
+                                <span className="text-yellow-400">
+                                  {answer.points}
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        },
+                      )}
+                      <div className="mt-4 rounded-lg bg-yellow-500/20 p-3">
+                        <p className="font-bold text-yellow-400">
+                          Correct Answer:
+                        </p>
+                        <p className="text-white">
+                          {extractSongName(currentSong) || "-"} -{" "}
+                          {currentArtist || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!showResult && !showAllResults && (
                     <>
-                      <div className="mb-4">
+                      <div className="relative mb-4">
                         <label htmlFor="artist" className="mb-2 block">
                           Artist Name:
                         </label>
                         <input
-                          type="text"
+                          type={
+                            gameMode === "multiplayer" && !showArtist
+                              ? "password"
+                              : "text"
+                          }
                           id="artist"
                           value={userArtistAnswer}
                           onChange={(e) => setUserArtistAnswer(e.target.value)}
-                          className="w-full rounded bg-black/50 p-2 text-white"
+                          className="w-full rounded bg-black/50 p-2 pr-10 text-white"
                           placeholder="Enter artist name"
+                          autoComplete="off"
                         />
+                        {gameMode === "multiplayer" && (
+                          <button
+                            type="button"
+                            onClick={() => setShowArtist((v) => !v)}
+                            className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center text-xl text-gray-300 hover:text-white focus:outline-none"
+                            tabIndex={-1}
+                            aria-label={
+                              showArtist ? "Hide artist" : "Show artist"
+                            }
+                          >
+                            {showArtist ? "🙈" : "👁️"}
+                          </button>
+                        )}
                       </div>
-
-                      <div className="mb-6">
+                      <div className="relative mb-6">
                         <label htmlFor="song" className="mb-2 block">
                           Song Title:
                         </label>
                         <input
-                          type="text"
+                          type={
+                            gameMode === "multiplayer" && !showSong
+                              ? "password"
+                              : "text"
+                          }
                           id="song"
                           value={userSongAnswer}
                           onChange={(e) => setUserSongAnswer(e.target.value)}
-                          className="w-full rounded bg-black/50 p-2 text-white"
+                          className="w-full rounded bg-black/50 p-2 pr-10 text-white"
                           placeholder="Enter song title"
+                          autoComplete="off"
                         />
+                        {gameMode === "multiplayer" && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSong((v) => !v)}
+                            className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center text-xl text-gray-300 hover:text-white focus:outline-none"
+                            tabIndex={-1}
+                            aria-label={showSong ? "Hide song" : "Show song"}
+                          >
+                            {showSong ? "🙈" : "👁️"}
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex justify-end gap-4">
                         <button
                           onClick={() => {
+                            if (
+                              !userArtistAnswer.trim() &&
+                              !userSongAnswer.trim()
+                            ) {
+                              setInputError("You have to guess at least one!");
+                              return;
+                            } else {
+                              setInputError("");
+                            }
+
                             // check answers
                             let points = 0;
                             const artistCorrect = isArtistCorrect(
                               userArtistAnswer,
                               currentArtist,
                             );
-                            const userSong = normalize(userSongAnswer);
-                            const correctSong = normalize(currentSong);
+                            const songCorrect = isSongCorrect(
+                              userSongAnswer,
+                              currentSong,
+                            );
                             if (artistCorrect) {
                               points += 5;
                             }
-                            if (
-                              userSong &&
-                              correctSong &&
-                              userSong === correctSong
-                            ) {
+                            if (songCorrect) {
                               points += 5;
                             }
-                            setPointsEarned(points);
-                            setShowResult(true);
-                            if (points === 0) {
-                              // setResultColor("text-red-500");
+
+                            if (gameMode === "single") {
+                              // Single player mode - show result immediately
+                              setPointsEarned(points);
+                              setShowResult(true);
+                              if (points > 0) {
+                                setScore((prev) => prev + points);
+                                setShowScore(true);
+                              }
                             } else {
-                              // setResultColor("text-green-500");
-                              setScore((prev) => prev + points);
-                              setShowScore(true);
+                              // Multiplayer mode - store answer and move to next player
+                              const currentPlayerName =
+                                playerNames[currentPlayerIndex];
+                              if (
+                                currentPlayerName &&
+                                currentPlayerName.trim() !== ""
+                              ) {
+                                const newAnswers = { ...playerAnswers };
+                                newAnswers[currentPlayerName] = {
+                                  song: userSongAnswer,
+                                  artist: userArtistAnswer,
+                                  points,
+                                  songCorrect,
+                                  artistCorrect,
+                                };
+                                setPlayerAnswers(newAnswers);
+
+                                // Update player score
+                                setPlayerScores((prev) => ({
+                                  ...prev,
+                                  [currentPlayerName]:
+                                    (prev[currentPlayerName] ?? 0) + points,
+                                }));
+
+                                // Move to next player or show all results
+                                const validPlayers = playerNames.filter(
+                                  (name) => name.trim() !== "",
+                                );
+                                if (
+                                  currentPlayerIndex <
+                                  validPlayers.length - 1
+                                ) {
+                                  setCurrentPlayerIndex(currentPlayerIndex + 1);
+                                  setUserSongAnswer("");
+                                  setUserArtistAnswer("");
+                                } else {
+                                  // All players have answered, show results
+                                  setShowAllResults(true);
+                                }
+                              }
                             }
                           }}
                           className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
                         >
-                          Submit
+                          {gameMode === "multiplayer"
+                            ? "Submit & Next"
+                            : "Submit"}
                         </button>
                       </div>
                     </>
                   )}
 
-                  {showResult && (
+                  {showResult && gameMode === "single" && (
                     <div className="mt-8 flex justify-end">
                       <button
                         onClick={() => {
@@ -833,16 +1060,75 @@ export default function PlayNowPage() {
                       </button>
                     </div>
                   )}
+
+                  {showAllResults && gameMode === "multiplayer" && (
+                    <div className="mt-8 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setUserArtistAnswer("");
+                          setUserSongAnswer("");
+                          setShowPrompt(false);
+                          setShowAllResults(false);
+                          setPlayerAnswers({});
+                          setCurrentPlayerIndex(0);
+                          // go to next song
+                          const player =
+                            playerRefs.current[currentQuestionYear!];
+                          if (player) {
+                            player.nextVideo();
+                            player.playVideo();
+                          }
+                        }}
+                        className="rounded bg-blue-500 px-6 py-2 font-bold text-white hover:bg-blue-600"
+                      >
+                        Next Song
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* score counter */}
-            {showScore && (
+            {showScore && gameMode === "single" && (
               <div className="fixed right-4 bottom-4 rounded-lg bg-black/80 p-4 text-white">
                 <p className="text-xl font-bold">Score: {score}</p>
               </div>
             )}
+
+            {/* multiplayer score counter */}
+            {gameMode === "multiplayer" &&
+              playerNames.filter((name) => name.trim() !== "").length > 0 && (
+                <div className="mt-8 flex w-full flex-col items-center">
+                  <div className="mb-2 text-center text-lg font-bold text-white">
+                    Round {round}
+                  </div>
+                  <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
+                    {playerNames
+                      .filter((name) => name.trim() !== "")
+                      .sort(
+                        (a, b) =>
+                          (playerScores[b] ?? 0) - (playerScores[a] ?? 0),
+                      )
+                      .map((playerName, idx) => (
+                        <div
+                          key={playerName}
+                          className="flex min-w-[60px] flex-col items-center"
+                        >
+                          <span className="text-xs font-bold text-yellow-300">
+                            #{idx + 1}
+                          </span>
+                          <span className="text-sm font-semibold text-white">
+                            {playerName}
+                          </span>
+                          <span className="text-lg font-bold text-yellow-400">
+                            {playerScores[playerName] ?? 0}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
           </>
         )}
       </main>
