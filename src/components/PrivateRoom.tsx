@@ -31,14 +31,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [score, setScore] = useState(0);
   const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
 
-  // Redirect if no name is provided
+
   useEffect(() => {
     if (!name) {
       router.push(`/private/join?roomId=${roomId}`);
     }
   }, [name, roomId, router]);
 
-  // keep track of players and who is host
+
   useEffect(() => {
     if (!name) return;
 
@@ -46,14 +46,13 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const bannedKey = `room-${roomId}-banned`;
     const readyKey = `room-${roomId}-ready`;
 
-    // Load existing players, banned players, and ready players
+
     const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
     const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
     setBannedPlayers(banned);
     setReadyPlayers(ready);
 
-    // Check if current player is banned (case-insensitive)
     const isBanned = banned.some(
       (bannedPlayer: string) =>
         bannedPlayer.toLowerCase() === name.toLowerCase(),
@@ -64,7 +63,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       return;
     }
 
-    // Add current player if not already in list (case-insensitive)
     if (
       !existing.some(
         (player: string) => player.toLowerCase() === name.toLowerCase(),
@@ -77,11 +75,11 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setPlayers(existing);
     }
 
-    // Determine if current player is host (first player in the room)
+  
     const isCurrentPlayerHost = existing.length === 0 || existing[0] === name;
     setIsHost(isCurrentPlayerHost);
 
-    // Set up interval to check for updates
+
     const interval = setInterval(() => {
       const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
       const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
@@ -90,7 +88,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setBannedPlayers(currentBanned);
       setReadyPlayers(currentReady);
 
-      // Check if current player was kicked or banned (case-insensitive)
+
       const isCurrentlyBanned = currentBanned.some(
         (bannedPlayer: string) =>
           bannedPlayer.toLowerCase() === name.toLowerCase(),
@@ -106,10 +104,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       }
     }, 1000);
 
-    // clean up when leaving
     return () => {
       clearInterval(interval);
-      // Remove player from list when they leave (unless they were kicked/banned)
+
       if (!showKickedPopup) {
         const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
         const updated = current.filter(
@@ -120,7 +117,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
   }, [name, roomId, showKickedPopup]);
 
-  // Check if game is starting and handle countdown
+ 
   useEffect(() => {
     const gameStartKey = `room-${roomId}-gameStarting`;
 
@@ -133,7 +130,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     return () => clearInterval(interval);
   }, [roomId]);
 
-  // Handle countdown once game is starting
+
   useEffect(() => {
     if (isGameStarting && countdown > 0) {
       const timer = setTimeout(() => {
@@ -145,7 +142,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   }, [isGameStarting, countdown, roomId, name, router]);
 
-  // Determine if all players are ready
   const allReady =
     players.length >= 2 && readyPlayers.length === players.length;
 
@@ -157,7 +153,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
       setHoveredPlayer(playerName);
     }
-    // Handle hover for ready state
+    
     if (playerName.toLowerCase() === name?.toLowerCase()) {
       setHoveredForReady(playerName);
     }
@@ -173,7 +169,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setPlayerToKick(playerName);
       setShowKickPopup(true);
     }
-    // Handle click for ready state
+
     if (playerName.toLowerCase() === name?.toLowerCase()) {
       toggleReady();
     }
@@ -197,7 +193,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
 
-    // Remove from players and add to banned
+ 
     const updated = current.filter(
       (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
     );
@@ -250,7 +246,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   };
 
-  // If no name, don't render anything while redirecting
+
   if (!name) {
     return null;
   }
@@ -270,14 +266,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
       {/* Main Content */}
       {isGameStarting ? (
-        // Countdown screen (shown to all players)
+
         <div className="flex flex-col items-center justify-center">
           <div className="animate-pulse bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-8xl font-extrabold text-transparent drop-shadow-lg">
             Starting in {countdown}...
           </div>
         </div>
       ) : (
-        // Regular room content
+
         <>
           <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
             🎧 Room <span className="text-green-500">{roomId}</span>

@@ -582,17 +582,11 @@ export default function PlayNowPage() {
                           className="flex items-center justify-between rounded-lg bg-white/10 px-6 py-3"
                         >
                           <span className="flex items-center gap-2 text-xl">
-                            <span className="font-bold">
-                              {index === 0 && <span className="mr-1">🏆</span>}
-                              {index === 0
-                                ? "1st"
-                                : index === 1
-                                  ? "2nd"
-                                  : index === 2
-                                    ? "3rd"
-                                    : `${index + 1}th`}
+                            <span className="font-bold">#{index + 1}</span>
+                            <span className="font-bold text-yellow-400">
+                              {playerName}
                             </span>
-                            {playerName}
+                            {index === 0 && <span className="ml-2">🏆</span>}
                           </span>
                           <span className="text-2xl font-bold text-yellow-400">
                             {score} pts
