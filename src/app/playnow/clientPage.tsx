@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Confetti from "react-confetti";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -97,6 +98,15 @@ export default function PlayNowPage() {
 
   const [showVolumeReminder, setShowVolumeReminder] = useState(true);
 
+  const [numberOfRounds, setNumberOfRounds] = useState(25);
+
+  const [gameFinished, setGameFinished] = useState(false);
+
+  const [decrementInterval, setDecrementInterval] =
+    useState<NodeJS.Timeout | null>(null);
+  const [incrementInterval, setIncrementInterval] =
+    useState<NodeJS.Timeout | null>(null);
+
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
@@ -117,6 +127,7 @@ export default function PlayNowPage() {
       setShowYouTubePlayer(false);
       setCountdownNumber(3);
       setFadeCountdown(false);
+      setGameFinished(false);
     } catch (error) {
       console.error("Error fetching top songs:", error);
     }
@@ -271,6 +282,52 @@ export default function PlayNowPage() {
   const handleRemovePlayer = (index: number) => {
     setPlayerNames((prev) => prev.filter((_, i) => i !== index));
     setErrorIndexes((prev) => prev.filter((i) => i !== index));
+  };
+
+  const startDecrement = () => {
+    if (numberOfRounds > 1) {
+      setNumberOfRounds((prev) => Math.max(1, prev - 1));
+      const interval = setInterval(() => {
+        setNumberOfRounds((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 1;
+          }
+          return prev - 1;
+        });
+      }, 100);
+      setDecrementInterval(interval);
+    }
+  };
+
+  const stopDecrement = () => {
+    if (decrementInterval) {
+      clearInterval(decrementInterval);
+      setDecrementInterval(null);
+    }
+  };
+
+  const startIncrement = () => {
+    if (numberOfRounds < 100000) {
+      setNumberOfRounds((prev) => Math.min(100000, prev + 1));
+      const interval = setInterval(() => {
+        setNumberOfRounds((prev) => {
+          if (prev >= 100000) {
+            clearInterval(interval);
+            return 100000;
+          }
+          return prev + 1;
+        });
+      }, 100);
+      setIncrementInterval(interval);
+    }
+  };
+
+  const stopIncrement = () => {
+    if (incrementInterval) {
+      clearInterval(incrementInterval);
+      setIncrementInterval(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -434,23 +491,6 @@ export default function PlayNowPage() {
     }
   }, [showPrompt]);
 
-  useEffect(() => {
-    if (showPrompt && !hasStartedFirstQuestion) {
-      setHasStartedFirstQuestion(true);
-    } else if (
-      !showPrompt &&
-      !showAllResults &&
-      songs &&
-      hasStartedFirstQuestion
-    ) {
-      setRound((prev) => prev + 1);
-    }
-    if (!songs) {
-      setRound(1);
-      setHasStartedFirstQuestion(false);
-    }
-  }, [showPrompt, showAllResults, songs, hasStartedFirstQuestion]);
-
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
     const normalizedCorrectSong = normalize(currentSong);
@@ -511,19 +551,136 @@ export default function PlayNowPage() {
           </div>
         )}
 
-        {!showCountdown && (
+        {gameFinished && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 text-white">
+            <Confetti
+              width={window.innerWidth}
+              height={window.innerHeight}
+              numberOfPieces={350}
+              recycle={false}
+            />
+            <div className="text-center">
+              <h1 className="mb-8 text-6xl font-bold text-yellow-400">
+                🎉 Game Complete! 🎉
+              </h1>
+              <p className="mb-8 text-2xl">
+                {round >= numberOfRounds
+                  ? `You've finished all ${numberOfRounds} rounds!!!!!!!`
+                  : `Game ended after ${round} round${round !== 1 ? "s" : ""}`}
+              </p>
+              {gameMode === "multiplayer" && (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-3xl font-bold text-white">
+                    Final Leaderboard
+                  </h2>
+                  <div className="space-y-2">
+                    {Object.entries(playerScores)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([playerName, score], index) => (
+                        <div
+                          key={playerName}
+                          className="flex items-center justify-between rounded-lg bg-white/10 px-6 py-3"
+                        >
+                          <span className="flex items-center gap-2 text-xl">
+                            <span className="font-bold">
+                              {index === 0 && <span className="mr-1">🏆</span>}
+                              {index === 0
+                                ? "1st"
+                                : index === 1
+                                  ? "2nd"
+                                  : index === 2
+                                    ? "3rd"
+                                    : `${index + 1}th`}
+                            </span>
+                            {playerName}
+                          </span>
+                          <span className="text-2xl font-bold text-yellow-400">
+                            {score} pts
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              {gameMode === "single" && (
+                <div className="mb-8">
+                  <h2 className="mb-4 text-3xl font-bold text-white">
+                    Final Score
+                  </h2>
+                  <p className="text-4xl font-bold text-yellow-400">
+                    {score} points
+                  </p>
+                </div>
+              )}
+              <div className="space-x-4">
+                <Button
+                  onClick={() => {
+                    setSongs(null);
+                    setGameFinished(false);
+                    setRound(1);
+                    setHasStartedFirstQuestion(false);
+                    setScore(0);
+                    setPlayerScores({});
+                    setPlayerAnswers({});
+                    setCurrentPlayerIndex(0);
+                    setShowPrompt(false);
+                    setShowAllResults(false);
+                    setShowYouTubePlayer(false);
+                    setShowCountdown(false);
+                    setUserSongAnswer("");
+                    setUserArtistAnswer("");
+                    setCurrentSong("");
+                    setCurrentArtist("");
+                    setShowScore(false);
+                    setShowResult(false);
+                    setPointsEarned(null);
+                    setShowArtist(false);
+                    setShowSong(false);
+                    setInputError("");
+                    setDuplicateNameError("");
+                    setShowVolumeReminder(true);
+                    setCurrentQuestionYear(null);
+                    setVisualizerTime(0);
+                    setVolumeUnmuted(false);
+                  }}
+                  className="bg-yellow-400 px-8 py-4 text-lg font-bold text-black hover:bg-yellow-500"
+                >
+                  Play Again
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/")}
+                  className="border-white/20 bg-white/10 px-8 py-4 text-lg text-white hover:bg-white/20"
+                >
+                  Back to Menu
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!showCountdown && !gameFinished && (
           <>
             <div className="relative mb-6 flex w-full items-center justify-center">
               <h1 className="w-full text-center text-4xl font-bold">
                 🎵 Let the Game Begin! 🎵
               </h1>
-              <Button
-                variant="outline"
-                onClick={() => router.push("/")}
-                className="absolute top-1/2 right-0 -translate-y-1/2 border-white/20 bg-white/10 text-white hover:bg-white/20"
-              >
-                Exit
-              </Button>
+              <div className="absolute top-1/2 right-0 flex -translate-y-1/2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setGameFinished(true)}
+                  className="border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                >
+                  End Now
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/")}
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+                >
+                  Exit
+                </Button>
+              </div>
             </div>
             <p className="mb-4">
               Now playing songs from: {selectedYears.join(", ")}
@@ -1081,16 +1238,21 @@ export default function PlayNowPage() {
                     <div className="mt-8 flex justify-end">
                       <button
                         onClick={() => {
-                          setUserArtistAnswer("");
-                          setUserSongAnswer("");
-                          setShowPrompt(false);
-                          setShowResult(false);
-                          setPointsEarned(null);
-                          const player =
-                            playerRefs.current[currentQuestionYear!];
-                          if (player) {
-                            player.nextVideo();
-                            player.playVideo();
+                          if (round + 1 > numberOfRounds) {
+                            setGameFinished(true);
+                          } else {
+                            setRound(round + 1);
+                            setUserArtistAnswer("");
+                            setUserSongAnswer("");
+                            setShowPrompt(false);
+                            setShowResult(false);
+                            setPointsEarned(null);
+                            const player =
+                              playerRefs.current[currentQuestionYear!];
+                            if (player) {
+                              player.nextVideo();
+                              player.playVideo();
+                            }
                           }
                         }}
                         className="rounded bg-blue-500 px-6 py-2 font-bold text-white hover:bg-blue-600"
@@ -1104,17 +1266,22 @@ export default function PlayNowPage() {
                     <div className="mt-8 flex justify-end">
                       <button
                         onClick={() => {
-                          setUserArtistAnswer("");
-                          setUserSongAnswer("");
-                          setShowPrompt(false);
-                          setShowAllResults(false);
-                          setPlayerAnswers({});
-                          setCurrentPlayerIndex(0);
-                          const player =
-                            playerRefs.current[currentQuestionYear!];
-                          if (player) {
-                            player.nextVideo();
-                            player.playVideo();
+                          if (round + 1 > numberOfRounds) {
+                            setGameFinished(true);
+                          } else {
+                            setRound(round + 1);
+                            setUserArtistAnswer("");
+                            setUserSongAnswer("");
+                            setShowPrompt(false);
+                            setShowAllResults(false);
+                            setPlayerAnswers({});
+                            setCurrentPlayerIndex(0);
+                            const player =
+                              playerRefs.current[currentQuestionYear!];
+                            if (player) {
+                              player.nextVideo();
+                              player.playVideo();
+                            }
                           }
                         }}
                         className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
@@ -1137,7 +1304,7 @@ export default function PlayNowPage() {
               playerNames.filter((name) => name.trim() !== "").length > 0 && (
                 <div className="mt-8 flex w-full flex-col items-center">
                   <div className="mb-2 text-center text-lg font-bold text-white">
-                    Round {round}
+                    Round {round} of {numberOfRounds}
                   </div>
                   <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
                     {playerNames
@@ -1315,6 +1482,52 @@ export default function PlayNowPage() {
           </div>
 
           <div className="mt-6 flex w-full max-w-sm flex-col items-center">
+            <label htmlFor="rounds" className="mb-2 block text-xl text-white">
+              Number of Rounds
+            </label>
+            <div className="flex items-center gap-4">
+              <button
+                onMouseDown={startDecrement}
+                onMouseUp={stopDecrement}
+                onMouseLeave={stopDecrement}
+                onTouchStart={startDecrement}
+                onTouchEnd={stopDecrement}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+                disabled={numberOfRounds <= 1}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                value={numberOfRounds}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value) && value >= 1 && value <= 100000) {
+                    setNumberOfRounds(value);
+                  }
+                }}
+                className="min-w-[4rem] border-none bg-transparent text-center text-2xl font-bold text-white outline-none"
+                min="1"
+                max="100000"
+              />
+              <button
+                onMouseDown={startIncrement}
+                onMouseUp={stopIncrement}
+                onMouseLeave={stopIncrement}
+                onTouchStart={startIncrement}
+                onTouchEnd={stopIncrement}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+                disabled={numberOfRounds >= 100000}
+              >
+                +
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-white/60">
+              Choose between 1-100,000 rounds
+            </p>
+          </div>
+
+          <div className="mt-8 flex w-full max-w-sm flex-col items-center">
             {playerNames.map((name, index) => (
               <div key={index} className="mb-4 flex w-full items-center gap-2">
                 <div className="flex-1">
