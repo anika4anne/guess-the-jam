@@ -178,8 +178,8 @@ export default function PlayNowPage() {
               const videoData = player.getVideoData();
               if (videoData) {
                 const { artist, song } = extractArtistAndSong(
-                  videoData.title || "",
-                  videoData.author || "",
+                  videoData.title ?? "",
+                  videoData.author ?? "",
                 );
                 setCurrentSong(song);
                 setCurrentArtist(artist);
@@ -416,17 +416,6 @@ export default function PlayNowPage() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  function maskInputWithSpaces(str: string) {
-    return str.replace(/[^ ]/g, "•");
-  }
-
-  function unmaskInput(str: string, masked: string) {
-    if (/^[• ]+$/.test(masked)) {
-      return str;
-    }
-    return masked;
-  }
-
   function getUnmaskedAnswer(masked: string, original: string) {
     if (masked.includes("•")) return original;
     return masked;
@@ -434,7 +423,8 @@ export default function PlayNowPage() {
 
   useEffect(() => {
     return () => {
-      Object.values(playerRefs.current).forEach((player) => {
+      const currentPlayerRefs = { ...playerRefs.current };
+      Object.values(currentPlayerRefs).forEach((player) => {
         if (player && typeof player.destroy === "function") {
           player.destroy();
         }
@@ -528,7 +518,7 @@ export default function PlayNowPage() {
             </p>
             {showVolumeReminder && (
               <div className="mb-4 font-bold text-green-400">
-                Don't forget to press Volume Up
+                Don&apos;t forget to press Volume Up
               </div>
             )}
             <ul className="max-w-xl list-inside list-disc">
@@ -788,7 +778,7 @@ export default function PlayNowPage() {
                                       : "text-red-500"
                                   }
                                 >
-                                  {userSongAnswer || "(no guess)"}
+                                  {userSongAnswer ?? "(no guess)"}
                                 </span>
                                 {" - "}
                                 <span
@@ -798,7 +788,7 @@ export default function PlayNowPage() {
                                       : "text-red-500"
                                   }
                                 >
-                                  {userArtistAnswer || "(no guess)"}
+                                  {userArtistAnswer ?? "(no guess)"}
                                 </span>
                                 {bothWrong && (
                                   <span className="text-red-500"> ❌</span>
@@ -833,8 +823,8 @@ export default function PlayNowPage() {
                                 <div className="mt-2">
                                   <span className="text-yellow-400">Ans:</span>{" "}
                                   <span className="text-white">
-                                    {extractSongName(currentSong) || "-"} -{" "}
-                                    {currentArtist || "-"}
+                                    {extractSongName(currentSong) ?? "-"} -{" "}
+                                    {currentArtist ?? "-"}
                                   </span>
                                 </div>
                               ) : (
@@ -878,8 +868,8 @@ export default function PlayNowPage() {
                                 >
                                   {getUnmaskedAnswer(
                                     answer.song,
-                                    answer.songRaw || answer.song,
-                                  ) || "(no guess)"}
+                                    answer.songRaw ?? answer.song,
+                                  ) ?? "(no guess)"}
                                 </span>
                               </p>
                               <p className="text-sm">
@@ -893,8 +883,8 @@ export default function PlayNowPage() {
                                 >
                                   {getUnmaskedAnswer(
                                     answer.artist,
-                                    answer.artistRaw || answer.artist,
-                                  ) || "(no guess)"}
+                                    answer.artistRaw ?? answer.artist,
+                                  ) ?? "(no guess)"}
                                 </span>
                               </p>
                               <p className="text-sm font-bold">
@@ -912,8 +902,8 @@ export default function PlayNowPage() {
                           Correct Answer:
                         </p>
                         <p className="text-white">
-                          {extractSongName(currentSong) || "-"} -{" "}
-                          {currentArtist || "-"}
+                          {extractSongName(currentSong) ?? "-"} -{" "}
+                          {currentArtist ?? "-"}
                         </p>
                       </div>
                     </div>
