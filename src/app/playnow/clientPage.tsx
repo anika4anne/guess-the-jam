@@ -91,12 +91,7 @@ export default function PlayNowPage() {
   const [inputError, setInputError] = useState("");
 
   const [round, setRound] = useState(1);
-  useEffect(() => {
-    if (!showPrompt && !showAllResults && songs && round > 1) {
-      setRound((prev) => prev + 1);
-    }
-    if (!songs) setRound(1);
-  }, [showPrompt, showAllResults, songs]);
+  const [hasStartedFirstQuestion, setHasStartedFirstQuestion] = useState(false);
 
   const [duplicateNameError, setDuplicateNameError] = useState<string>("");
 
@@ -438,6 +433,23 @@ export default function PlayNowPage() {
       setShowSong(false);
     }
   }, [showPrompt]);
+
+  useEffect(() => {
+    if (showPrompt && !hasStartedFirstQuestion) {
+      setHasStartedFirstQuestion(true);
+    } else if (
+      !showPrompt &&
+      !showAllResults &&
+      songs &&
+      hasStartedFirstQuestion
+    ) {
+      setRound((prev) => prev + 1);
+    }
+    if (!songs) {
+      setRound(1);
+      setHasStartedFirstQuestion(false);
+    }
+  }, [showPrompt, showAllResults, songs, hasStartedFirstQuestion]);
 
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
