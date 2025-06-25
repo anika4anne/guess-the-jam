@@ -18,7 +18,6 @@ export default function JoinPrivateRoomClientPage({
   const [isLoading, setIsLoading] = useState(false);
 
   const validateRoomCode = (code: string): boolean => {
-
     const storageKey = `room-${code}-players`;
     const roomData = localStorage.getItem(storageKey);
     return roomData !== null;
@@ -28,7 +27,6 @@ export default function JoinPrivateRoomClientPage({
     roomCode: string,
     playerName: string,
   ): boolean => {
-    
     const storageKey = `room-${roomCode}-players`;
     const roomData = localStorage.getItem(storageKey);
     if (roomData) {
@@ -50,7 +48,6 @@ export default function JoinPrivateRoomClientPage({
 
     setIsLoading(true);
 
-  
     if (!validateRoomCode(roomCode.trim())) {
       setErrorMessage(
         "The room code you entered doesn't exist. Please check the code and try again.",
@@ -60,7 +57,6 @@ export default function JoinPrivateRoomClientPage({
       return;
     }
 
- 
     if (!validatePlayerName(roomCode.trim(), name.trim())) {
       setErrorMessage(
         "A player with this name already exists in the room. Please choose a different name.",
@@ -69,7 +65,6 @@ export default function JoinPrivateRoomClientPage({
       setIsLoading(false);
       return;
     }
-
 
     router.push(
       `/private/${roomCode.trim()}?name=${encodeURIComponent(name.trim())}`,

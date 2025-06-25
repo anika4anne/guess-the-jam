@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Head from "next/head";
+import Image from "next/image";
 
 export default function HomePage() {
   const router = useRouter();
@@ -112,6 +113,26 @@ export default function HomePage() {
                 </p>
               </Link>
             </div>
+          </div>
+
+          {/* Discord Invite section */}
+          <div className="mt-10 flex flex-col items-center">
+            <a
+              href="https://discord.gg/Ny8Vr8zjYK"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-[#5865F2] bg-white/5 px-4 py-2 text-white shadow-sm transition-all hover:bg-[#5865F2]/20 focus:ring-2 focus:ring-[#5865F2] focus:ring-offset-2 focus:outline-none"
+              style={{ textDecoration: "none" }}
+            >
+              <Image
+                src="/discord.png"
+                alt="Discord logo"
+                width={28}
+                height={28}
+                className="rounded"
+              />
+              <span className="text-base font-semibold">Join the server!</span>
+            </a>
           </div>
         </div>
 

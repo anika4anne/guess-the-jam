@@ -491,6 +491,16 @@ export default function PlayNowPage() {
     }
   }, [showPrompt]);
 
+  useEffect(() => {
+    const bgMusic = document.getElementById(
+      "bg-music",
+    ) as HTMLAudioElement | null;
+    if (bgMusic && !bgMusic.paused) {
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
+    }
+  }, []);
+
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
     const normalizedCorrectSong = normalize(currentSong);

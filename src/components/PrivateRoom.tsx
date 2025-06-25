@@ -30,7 +30,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [gameMode, setGameMode] = useState("single");
   const [score, setScore] = useState(0);
   const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
-
+  const [rounds, setRounds] = useState<number>(10);
+  const [mode, setMode] = useState<"default" | "playlist">("default");
+  const [playlists, setPlaylists] = useState<string[]>([""]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!name) {
@@ -38,14 +41,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   }, [name, roomId, router]);
 
-
   useEffect(() => {
     if (!name) return;
 
     const storageKey = `room-${roomId}-players`;
     const bannedKey = `room-${roomId}-banned`;
     const readyKey = `room-${roomId}-ready`;
-
 
     const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
@@ -75,10 +76,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setPlayers(existing);
     }
 
-  
     const isCurrentPlayerHost = existing.length === 0 || existing[0] === name;
     setIsHost(isCurrentPlayerHost);
-
 
     const interval = setInterval(() => {
       const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
@@ -87,7 +86,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setPlayers(current);
       setBannedPlayers(currentBanned);
       setReadyPlayers(currentReady);
-
 
       const isCurrentlyBanned = currentBanned.some(
         (bannedPlayer: string) =>
@@ -117,7 +115,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
   }, [name, roomId, showKickedPopup]);
 
- 
   useEffect(() => {
     const gameStartKey = `room-${roomId}-gameStarting`;
 
@@ -130,7 +127,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     return () => clearInterval(interval);
   }, [roomId]);
 
-
   useEffect(() => {
     if (isGameStarting && countdown > 0) {
       const timer = setTimeout(() => {
@@ -141,6 +137,48 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       router.push(`/playnow?roomId=${roomId}&name=${name}`);
     }
   }, [isGameStarting, countdown, roomId, name, router]);
+
+  useEffect(() => {
+    if (!name) return;
+    setIsHost(players[0]?.toLowerCase() === name.toLowerCase());
+  }, [players, name]);
+
+  useEffect(() => {
+    const roundsKey = `room-${roomId}-rounds`;
+    const stored = localStorage.getItem(roundsKey);
+    if (stored) setRounds(Number(stored));
+    const interval = setInterval(() => {
+      const updated = localStorage.getItem(roundsKey);
+      if (updated && Number(updated) !== rounds) setRounds(Number(updated));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [roomId]);
+
+  useEffect(() => {
+    const modeKey = `room-${roomId}-mode`;
+    const playlistsKey = `room-${roomId}-playlists`;
+    const storedMode = localStorage.getItem(modeKey);
+    if (storedMode === "playlist" || storedMode === "default")
+      setMode(storedMode);
+    const storedPlaylists = localStorage.getItem(playlistsKey);
+    if (storedPlaylists) setPlaylists(JSON.parse(storedPlaylists));
+    const interval = setInterval(() => {
+      const updatedMode = localStorage.getItem(modeKey);
+      if (
+        (updatedMode === "playlist" || updatedMode === "default") &&
+        updatedMode !== mode
+      )
+        setMode(updatedMode);
+      const updatedPlaylists = localStorage.getItem(playlistsKey);
+      if (
+        updatedPlaylists &&
+        JSON.stringify(JSON.parse(updatedPlaylists)) !==
+          JSON.stringify(playlists)
+      )
+        setPlaylists(JSON.parse(updatedPlaylists));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [roomId]);
 
   const allReady =
     players.length >= 2 && readyPlayers.length === players.length;
@@ -153,7 +191,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
       setHoveredPlayer(playerName);
     }
-    
+
     if (playerName.toLowerCase() === name?.toLowerCase()) {
       setHoveredForReady(playerName);
     }
@@ -193,7 +231,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
 
- 
     const updated = current.filter(
       (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
     );
@@ -246,6 +283,50 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   };
 
+  const handleRoundsChange = (value: number) => {
+    const roundsKey = `room-${roomId}-rounds`;
+    setRounds(value);
+    localStorage.setItem(roundsKey, String(value));
+  };
+
+  const handleModeChange = (val: "default" | "playlist") => {
+    const modeKey = `room-${roomId}-mode`;
+    setMode(val);
+    localStorage.setItem(modeKey, val);
+  };
+
+  const handlePlaylistChange = (idx: number, value: string) => {
+    const playlistsKey = `room-${roomId}-playlists`;
+    const updated = [...playlists];
+    updated[idx] = value;
+    setPlaylists(updated);
+    localStorage.setItem(playlistsKey, JSON.stringify(updated));
+  };
+
+  const handleAddPlaylist = () => {
+    const playlistsKey = `room-${roomId}-playlists`;
+    const updated = [...playlists, ""];
+    setPlaylists(updated);
+    localStorage.setItem(playlistsKey, JSON.stringify(updated));
+  };
+
+  const handleRemovePlaylist = (idx: number) => {
+    const playlistsKey = `room-${roomId}-playlists`;
+    const updated = playlists.filter((_, i) => i !== idx);
+    setPlaylists(updated.length ? updated : [""]);
+    localStorage.setItem(
+      playlistsKey,
+      JSON.stringify(updated.length ? updated : [""]),
+    );
+  };
+
+  const startDecrement = () => {
+    if (rounds > 1) handleRoundsChange(rounds - 1);
+  };
+
+  const startIncrement = () => {
+    if (rounds < 100) handleRoundsChange(rounds + 1);
+  };
 
   if (!name) {
     return null;
@@ -266,14 +347,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
       {/* Main Content */}
       {isGameStarting ? (
-
         <div className="flex flex-col items-center justify-center">
           <div className="animate-pulse bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-8xl font-extrabold text-transparent drop-shadow-lg">
             Starting in {countdown}...
           </div>
         </div>
       ) : (
-
         <>
           <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
             🎧 Room <span className="text-green-500">{roomId}</span>
@@ -293,6 +372,122 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             >
               {showCopied ? "Copied!" : "Copy Room ID"}
             </Button>
+          </div>
+
+          {/* Collapsible Game Settings box */}
+          <div className="mx-auto mb-6 w-full max-w-md">
+            <div
+              className="flex cursor-pointer items-center justify-between rounded-t-xl bg-white/10 px-6 py-3 shadow-md select-none"
+              onClick={() => setSettingsOpen((open) => !open)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={settingsOpen}
+            >
+              <span className="flex items-center gap-2 text-lg font-bold text-white">
+                Game Settings{" "}
+                <span role="img" aria-label="settings">
+                  ⚙️
+                </span>
+              </span>
+              <span
+                className={`text-white transition-transform duration-200 ${settingsOpen ? "rotate-90" : ""}`}
+                style={{ fontSize: 24 }}
+              >
+                ▶
+              </span>
+            </div>
+            <div
+              className={`overflow-hidden rounded-b-xl bg-white/5 transition-all duration-300 ${settingsOpen ? "max-h-[1000px] px-6 py-4" : "max-h-0 px-6 py-0"}`}
+              style={{}}
+            >
+              {settingsOpen && (
+                <>
+                  <div className="mt-2 mb-4 flex items-center gap-4">
+                    <button
+                      onClick={() => isHost && handleModeChange("default")}
+                      className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                      disabled={!isHost}
+                    >
+                      Default Songs Per Year
+                    </button>
+                    <button
+                      onClick={() => isHost && handleModeChange("playlist")}
+                      className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                      disabled={!isHost}
+                    >
+                      Choose Playlist(s)
+                    </button>
+                  </div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <label htmlFor="rounds" className="text-white">
+                      Number of Rounds:
+                    </label>
+                    <button
+                      onClick={isHost ? startDecrement : undefined}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds <= 1 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
+                      disabled={rounds <= 1 || !isHost}
+                    >
+                      -
+                    </button>
+                    <span className="min-w-[3rem] text-center text-2xl font-bold text-white">
+                      {rounds}
+                    </span>
+                    <button
+                      onClick={isHost ? startIncrement : undefined}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds >= 100 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
+                      disabled={rounds >= 100 || !isHost}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {mode === "playlist" && (
+                    <div className="mt-2 flex w-full flex-col items-center gap-2">
+                      <div className="mb-1 text-white">Playlists:</div>
+                      {playlists.map((playlist, idx) => (
+                        <div
+                          key={idx}
+                          className="flex w-full max-w-xs items-center gap-2"
+                        >
+                          <input
+                            type="text"
+                            value={playlist}
+                            onChange={(e) =>
+                              isHost &&
+                              handlePlaylistChange(idx, e.target.value)
+                            }
+                            className="flex-1 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-white transition-all focus:ring-2 focus:ring-yellow-400 focus:outline-none"
+                            placeholder="Enter playlist URL or name"
+                            disabled={!isHost}
+                          />
+                          {isHost && (
+                            <>
+                              <button
+                                onClick={() => handleAddPlaylist()}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-500 bg-transparent text-green-500 transition-all duration-150 hover:bg-green-500 hover:text-white focus:outline-none"
+                                title="Add Playlist"
+                                type="button"
+                              >
+                                <span className="text-xl font-bold">+</span>
+                              </button>
+                              {playlists.length > 1 && (
+                                <button
+                                  onClick={() => handleRemovePlaylist(idx)}
+                                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500 bg-transparent text-red-500 transition-all duration-150 hover:bg-red-500 hover:text-white focus:outline-none"
+                                  title="Remove Playlist"
+                                  type="button"
+                                >
+                                  <span className="text-xl font-bold">×</span>
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="mb-8 space-y-2 rounded-xl bg-white/10 p-6 shadow-md">
@@ -327,7 +522,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   <div
                     className={`${players[0]?.toLowerCase() === player.toLowerCase() ? "font-bold" : ""}`}
                   >
-                    {player}{" "}
+                    {player}
+                    {!readyPlayers.includes(player) && (
+                      <span className="ml-2 text-xs font-bold text-yellow-400">
+                        (Not Ready)
+                      </span>
+                    )}
                     {player.toLowerCase() === name.toLowerCase() ? "(You)" : ""}
                   </div>
                   {isHost && player.toLowerCase() !== name.toLowerCase() && (

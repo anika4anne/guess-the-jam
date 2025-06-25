@@ -29,7 +29,7 @@ export default function RootLayout({
         <footer className="fixed right-4 bottom-4 z-50 text-sm text-white">
           <p>© Copyright 2025. Developed by Anika Anne</p>
         </footer>
-        <audio controls={false} autoPlay loop className="hidden">
+        <audio id="bg-music" controls={false} autoPlay loop className="hidden">
           <source src="/bg-music.mp3" type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
