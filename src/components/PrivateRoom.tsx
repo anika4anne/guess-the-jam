@@ -38,7 +38,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   }, [name, roomId, router]);
 
-  // Handle player list and determine host
+  // keep track of players and who is host
   useEffect(() => {
     if (!name) return;
 
@@ -106,7 +106,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       }
     }, 1000);
 
-    // Clean up on unmount
+    // clean up when leaving
     return () => {
       clearInterval(interval);
       // Remove player from list when they leave (unless they were kicked/banned)

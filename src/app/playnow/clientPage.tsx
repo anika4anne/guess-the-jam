@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-// import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu"
 
 import { Button } from "~/components/ui/button";
 import {
@@ -58,7 +57,6 @@ export default function PlayNowPage() {
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
 
-  // Multiplayer state
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
   const [playerAnswers, setPlayerAnswers] = useState<
@@ -70,6 +68,8 @@ export default function PlayNowPage() {
         points: number;
         songCorrect: boolean;
         artistCorrect: boolean;
+        songRaw?: string;
+        artistRaw?: string;
       }
     >
   >({});
@@ -81,40 +81,35 @@ export default function PlayNowPage() {
   const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
   const [index] = useState(Math.floor(Math.random() * 80));
 
-  // Add visualizerTime state for animation
   const [visualizerTime, setVisualizerTime] = useState(0);
-  // Store random phase offsets for each line
   const visualizerPhases = useRef(
     Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
   );
 
-  // Add at the top of the component, after other useState hooks
   const [showArtist, setShowArtist] = useState(false);
   const [showSong, setShowSong] = useState(false);
   const [inputError, setInputError] = useState("");
 
-  // Calculate the current round number (based on how many songs have been played)
   const [round, setRound] = useState(1);
   useEffect(() => {
-    // Increment round when a new song starts (showPrompt is false and showAllResults is false)
-    if (!showPrompt && !showAllResults && songs) {
+    if (!showPrompt && !showAllResults && songs && round > 1) {
       setRound((prev) => prev + 1);
     }
-    // Reset round if songs reset
     if (!songs) setRound(1);
   }, [showPrompt, showAllResults, songs]);
+
+  const [duplicateNameError, setDuplicateNameError] = useState<string>("");
+
+  const [showVolumeReminder, setShowVolumeReminder] = useState(true);
 
   const fetchTopSongs = async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
       const data = (await res.json()) as Song[];
       setSongs(data);
-
-      // Initialize player scores and determine game mode
       const validPlayers = playerNames.filter((name) => name.trim() !== "");
       const isMultiplayer = validPlayers.length > 1;
       setGameMode(isMultiplayer ? "multiplayer" : "single");
-
       if (isMultiplayer) {
         const initialScores: Record<string, number> = {};
         validPlayers.forEach((player) => {
@@ -123,8 +118,6 @@ export default function PlayNowPage() {
         setPlayerScores(initialScores);
         setCurrentPlayerIndex(0);
       }
-
-      // countdown before showing songs
       setShowCountdown(true);
       setShowYouTubePlayer(false);
       setCountdownNumber(3);
@@ -134,40 +127,32 @@ export default function PlayNowPage() {
     }
   };
 
-  // fading out after countdown
   useEffect(() => {
     if (!showCountdown) return;
-
     if (countdownNumber === 0 && !fadeCountdown) {
       setFadeCountdown(true);
       return;
     }
-
     if (fadeCountdown) {
       const timeout = setTimeout(() => {
         setShowCountdown(false);
         setShowYouTubePlayer(true);
         setFadeCountdown(false);
-      }, 500); // fade duration
-
+      }, 500);
       return () => clearTimeout(timeout);
     }
-
     const timer = setTimeout(() => {
       setCountdownNumber((prev) => prev - 1);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [countdownNumber, showCountdown, fadeCountdown]);
 
   useEffect(() => {
     if (window.YT) return;
-
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName("script")[0];
     firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
-
     window.onYouTubeIframeAPIReady = () => {
       console.log("YouTube API is ready");
     };
@@ -175,14 +160,10 @@ export default function PlayNowPage() {
 
   useEffect(() => {
     if (!window.YT || !showYouTubePlayer) return;
-
-    // Store the current refs at the start of the effect
     const currentIntervalRefs = { ...intervalRefs.current };
-
     selectedYears.forEach((year) => {
       const iframe = iframeRefs.current[year];
       if (!iframe) return;
-
       playerRefs.current[year] = new window.YT.Player(iframe, {
         height: "0",
         width: "0",
@@ -194,7 +175,6 @@ export default function PlayNowPage() {
             const player = playerRefs.current[year];
             if (!player) return;
             if (event.data === window.YT.PlayerState.PLAYING) {
-              // get current song from player
               const videoData = player.getVideoData();
               if (videoData) {
                 const { artist, song } = extractArtistAndSong(
@@ -204,7 +184,6 @@ export default function PlayNowPage() {
                 setCurrentSong(song);
                 setCurrentArtist(artist);
               }
-              // clearrrrr interval
               if (currentIntervalRefs[year]) {
                 const interval = currentIntervalRefs[year];
                 if (interval) {
@@ -213,7 +192,6 @@ export default function PlayNowPage() {
                 currentIntervalRefs[year] = null;
                 console.log(`Cleared previous interval for year ${year}`);
               }
-
               currentIntervalRefs[year] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
                 console.log(`Year ${year} currentTime:`, currentTime);
@@ -234,23 +212,19 @@ export default function PlayNowPage() {
               event.data === window.YT.PlayerState.PAUSED ||
               event.data === window.YT.PlayerState.ENDED
             ) {
-              // clear interval if da songs paused
               if (currentIntervalRefs[year]) {
                 const interval = currentIntervalRefs[year];
                 if (interval) {
                   clearInterval(interval);
                 }
                 currentIntervalRefs[year] = null;
-                console.log(`Cleared interval for year ${year} on pause/end`);
               }
             }
           },
         },
       });
     });
-
     intervalRefs.current = currentIntervalRefs;
-
     return () => {
       Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
         if (intervalId) {
@@ -278,7 +252,30 @@ export default function PlayNowPage() {
 
     if (name.trim() !== "") {
       setErrorIndexes((prev) => prev.filter((i) => i !== index));
+
+      const normalizedName = name.toLowerCase().trim();
+      const duplicates = updatedNames
+        .map((n, i) => ({ name: n, index: i }))
+        .filter(
+          (item, i) =>
+            i !== index &&
+            item.name.toLowerCase().trim() === normalizedName &&
+            item.name.trim() !== "",
+        );
+
+      if (duplicates.length > 0) {
+        setDuplicateNameError(`"${name}" is already taken!`);
+      } else {
+        setDuplicateNameError("");
+      }
+    } else {
+      setDuplicateNameError("");
     }
+  };
+
+  const handleRemovePlayer = (index: number) => {
+    setPlayerNames((prev) => prev.filter((_, i) => i !== index));
+    setErrorIndexes((prev) => prev.filter((i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -290,6 +287,20 @@ export default function PlayNowPage() {
     const validPlayers = playerNames.filter((name) => name.trim() !== "");
     if (validPlayers.length === 0) {
       alert("Please enter at least one player name.");
+      return;
+    }
+
+    if (playerNames.some((name) => name.trim() === "")) {
+      alert("Please fill in all player names or remove empty players.");
+      return;
+    }
+
+    const normalizedNames = validPlayers.map((name) =>
+      name.toLowerCase().trim(),
+    );
+    const uniqueNames = new Set(normalizedNames);
+    if (uniqueNames.size !== normalizedNames.length) {
+      alert("Please fix duplicate player names before starting the game.");
       return;
     }
 
@@ -306,12 +317,11 @@ export default function PlayNowPage() {
     }
   };
 
-  // Update the normalize function to remove accents/diacritics
   function normalize(str: string) {
     return str
       .toLowerCase()
       .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "") // remove accents
+      .replace(/\p{Diacritic}/gu, "")
       .replace(
         /\(.*?\)|\[.*?\]|official|video|audio|lyrics|ft\.?|feat\.?|"|'|-|_|:|\s+/g,
         " ",
@@ -321,11 +331,8 @@ export default function PlayNowPage() {
       .trim();
   }
 
-  // get short song name from a youtube titele
   function extractSongName(title: string) {
-    // remove stuff in brackets like offical songs and stuff
     let shortTitle = title.replace(/\(.*?\)|\[.*?\]/g, "");
-    // remove 'official', 'video', 'audio', 'lyrics', 'ft.', 'feat.'
     shortTitle = shortTitle.replace(
       /official|video|audio|lyrics|ft\.?|feat\.?/gi,
       "",
@@ -362,7 +369,6 @@ export default function PlayNowPage() {
     return userWords.some((uw) => correctWords.includes(uw));
   }
 
-  // Wrap encouragements in useMemo
   const encouragements = useMemo(
     () => [
       "Great job!",
@@ -391,7 +397,6 @@ export default function PlayNowPage() {
     }
   }, [score, encouragements]);
 
-  // check if user song guess contains one right word
   function isSongCorrect(userSong: string, correctSong: string) {
     const normalizedUser = normalize(userSong);
     const normalizedCorrect = normalize(correctSong);
@@ -411,6 +416,39 @@ export default function PlayNowPage() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  function maskInputWithSpaces(str: string) {
+    return str.replace(/[^ ]/g, "•");
+  }
+
+  function unmaskInput(str: string, masked: string) {
+    if (/^[• ]+$/.test(masked)) {
+      return str;
+    }
+    return masked;
+  }
+
+  function getUnmaskedAnswer(masked: string, original: string) {
+    if (masked.includes("•")) return original;
+    return masked;
+  }
+
+  useEffect(() => {
+    return () => {
+      Object.values(playerRefs.current).forEach((player) => {
+        if (player && typeof player.destroy === "function") {
+          player.destroy();
+        }
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showPrompt) {
+      setShowArtist(false);
+      setShowSong(false);
+    }
+  }, [showPrompt]);
+
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
     const normalizedCorrectSong = normalize(currentSong);
@@ -428,7 +466,6 @@ export default function PlayNowPage() {
 
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[linear-gradient(to_bottom,_black_0%,_#0a0000_15%,_#220000_35%,_#440000_60%,_#660000_100%)] px-6 pt-8 text-white">
-        {/* moving vines */}
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
@@ -460,7 +497,6 @@ export default function PlayNowPage() {
           </svg>
         </div>
 
-        {/* countdown */}
         {showCountdown && (
           <div
             className="bg-opacity-90 fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-6xl font-bold tracking-widest text-white transition-opacity duration-500"
@@ -473,7 +509,6 @@ export default function PlayNowPage() {
           </div>
         )}
 
-        {/* if no countdown show song */}
         {!showCountdown && (
           <>
             <div className="relative mb-6 flex w-full items-center justify-center">
@@ -491,9 +526,11 @@ export default function PlayNowPage() {
             <p className="mb-4">
               Now playing songs from: {selectedYears.join(", ")}
             </p>
-            <p className="mb-4">
-              Don&apos;t forget to unmute the video to hear the song!
-            </p>
+            {showVolumeReminder && (
+              <div className="mb-4 font-bold text-green-400">
+                Don't forget to press Volume Up
+              </div>
+            )}
             <ul className="max-w-xl list-inside list-disc">
               {songs.length > 0 &&
                 songs.map((song, idx) => (
@@ -502,7 +539,6 @@ export default function PlayNowPage() {
                   </li>
                 ))}
             </ul>
-            {/* now youtube */}
             {showYouTubePlayer &&
               selectedYears.length > 0 &&
               selectedYears.map((year) => {
@@ -537,7 +573,6 @@ export default function PlayNowPage() {
                 const playlistURL = playlistLinks[year];
                 if (!playlistURL) return null;
 
-                // Show visualizer overlay while video is playing
                 const showVisualizer = showYouTubePlayer;
                 return (
                   <div
@@ -587,7 +622,6 @@ export default function PlayNowPage() {
                             pointerEvents: "none",
                           }}
                         >
-                          {/* Black box background */}
                           <div
                             style={{
                               position: "absolute",
@@ -600,7 +634,6 @@ export default function PlayNowPage() {
                               zIndex: 1,
                             }}
                           />
-                          {/* Circular rainbow line visualizer with logo in the center */}
                           <div
                             style={{
                               position: "absolute",
@@ -620,8 +653,7 @@ export default function PlayNowPage() {
                             >
                               {Array.from({ length: 48 }).map((_, i) => {
                                 const center = 160;
-                                const r0 = 100; // logo radius
-                                // Animate line length with a sine wave for a lively effect, with a random phase offset
+                                const r0 = 100;
                                 const phase = visualizerPhases.current
                                   ? visualizerPhases.current[i]
                                   : 0;
@@ -629,7 +661,7 @@ export default function PlayNowPage() {
                                   visualizerTime / 600 +
                                   i * 0.18 +
                                   (phase ?? 0);
-                                const len = 24 + 36 * Math.abs(Math.sin(t)); // 24-60px
+                                const len = 24 + 36 * Math.abs(Math.sin(t));
                                 const angle = i * 7.5;
                                 const rad = (angle * Math.PI) / 180;
                                 const x0 = center + r0 * Math.cos(rad);
@@ -654,7 +686,6 @@ export default function PlayNowPage() {
                                 );
                               })}
                             </svg>
-                            {/* Logo - perfectly centered */}
                             <div
                               style={{
                                 position: "absolute",
@@ -689,7 +720,6 @@ export default function PlayNowPage() {
                   </div>
                 );
               })}
-            {/* Volume Up Button - only one, centered, with margin */}
             {!volumeUnmuted && (
               <div className="mt-8 mb-4 flex justify-center">
                 <button
@@ -700,7 +730,8 @@ export default function PlayNowPage() {
                           player.unMute();
                         }
                       });
-                      setVolumeUnmuted(true); // hides the button after click
+                      setVolumeUnmuted(true);
+                      setShowVolumeReminder(false);
                     } catch (err) {
                       console.error("Unmute failed:", err);
                     }
@@ -712,7 +743,6 @@ export default function PlayNowPage() {
               </div>
             )}
 
-            {/* pop up  */}
             {showPrompt && (
               <div className="prompt-z fixed inset-0 z-[10001] flex items-center justify-center bg-black/80">
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
@@ -832,7 +862,7 @@ export default function PlayNowPage() {
                           return (
                             <div
                               key={playerName}
-                              className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/40" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
+                              className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/20" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
                             >
                               <p className="font-semibold text-blue-400">
                                 {playerName}
@@ -846,7 +876,10 @@ export default function PlayNowPage() {
                                       : "text-red-500"
                                   }
                                 >
-                                  {answer.song || "(no guess)"}
+                                  {getUnmaskedAnswer(
+                                    answer.song,
+                                    answer.songRaw || answer.song,
+                                  ) || "(no guess)"}
                                 </span>
                               </p>
                               <p className="text-sm">
@@ -858,7 +891,10 @@ export default function PlayNowPage() {
                                       : "text-red-500"
                                   }
                                 >
-                                  {answer.artist || "(no guess)"}
+                                  {getUnmaskedAnswer(
+                                    answer.artist,
+                                    answer.artistRaw || answer.artist,
+                                  ) || "(no guess)"}
                                 </span>
                               </p>
                               <p className="text-sm font-bold">
@@ -898,19 +934,21 @@ export default function PlayNowPage() {
                           id="artist"
                           value={userArtistAnswer}
                           onChange={(e) => setUserArtistAnswer(e.target.value)}
-                          className="w-full rounded bg-black/50 p-2 pr-10 text-white"
+                          className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
                           placeholder="Enter artist name"
                           autoComplete="off"
+                          style={{ letterSpacing: "0.1em" }}
                         />
                         {gameMode === "multiplayer" && (
                           <button
                             type="button"
                             onClick={() => setShowArtist((v) => !v)}
-                            className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center text-xl text-gray-300 hover:text-white focus:outline-none"
+                            className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
                             tabIndex={-1}
                             aria-label={
                               showArtist ? "Hide artist" : "Show artist"
                             }
+                            style={{ padding: 0 }}
                           >
                             {showArtist ? "🙈" : "👁️"}
                           </button>
@@ -929,17 +967,19 @@ export default function PlayNowPage() {
                           id="song"
                           value={userSongAnswer}
                           onChange={(e) => setUserSongAnswer(e.target.value)}
-                          className="w-full rounded bg-black/50 p-2 pr-10 text-white"
+                          className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
                           placeholder="Enter song title"
                           autoComplete="off"
+                          style={{ letterSpacing: "0.1em" }}
                         />
                         {gameMode === "multiplayer" && (
                           <button
                             type="button"
                             onClick={() => setShowSong((v) => !v)}
-                            className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center text-xl text-gray-300 hover:text-white focus:outline-none"
+                            className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
                             tabIndex={-1}
                             aria-label={showSong ? "Hide song" : "Show song"}
+                            style={{ padding: 0 }}
                           >
                             {showSong ? "🙈" : "👁️"}
                           </button>
@@ -959,7 +999,6 @@ export default function PlayNowPage() {
                               setInputError("");
                             }
 
-                            // check answers
                             let points = 0;
                             const artistCorrect = isArtistCorrect(
                               userArtistAnswer,
@@ -977,7 +1016,6 @@ export default function PlayNowPage() {
                             }
 
                             if (gameMode === "single") {
-                              // Single player mode - show result immediately
                               setPointsEarned(points);
                               setShowResult(true);
                               if (points > 0) {
@@ -985,7 +1023,6 @@ export default function PlayNowPage() {
                                 setShowScore(true);
                               }
                             } else {
-                              // Multiplayer mode - store answer and move to next player
                               const currentPlayerName =
                                 playerNames[currentPlayerIndex];
                               if (
@@ -993,23 +1030,25 @@ export default function PlayNowPage() {
                                 currentPlayerName.trim() !== ""
                               ) {
                                 const newAnswers = { ...playerAnswers };
+                                const realSongAnswer = userSongAnswer;
+                                const realArtistAnswer = userArtistAnswer;
                                 newAnswers[currentPlayerName] = {
-                                  song: userSongAnswer,
-                                  artist: userArtistAnswer,
+                                  song: realSongAnswer,
+                                  songRaw: realSongAnswer,
+                                  artist: realArtistAnswer,
+                                  artistRaw: realArtistAnswer,
                                   points,
                                   songCorrect,
                                   artistCorrect,
                                 };
                                 setPlayerAnswers(newAnswers);
 
-                                // Update player score
                                 setPlayerScores((prev) => ({
                                   ...prev,
                                   [currentPlayerName]:
                                     (prev[currentPlayerName] ?? 0) + points,
                                 }));
 
-                                // Move to next player or show all results
                                 const validPlayers = playerNames.filter(
                                   (name) => name.trim() !== "",
                                 );
@@ -1021,7 +1060,6 @@ export default function PlayNowPage() {
                                   setUserSongAnswer("");
                                   setUserArtistAnswer("");
                                 } else {
-                                  // All players have answered, show results
                                   setShowAllResults(true);
                                 }
                               }
@@ -1046,7 +1084,6 @@ export default function PlayNowPage() {
                           setShowPrompt(false);
                           setShowResult(false);
                           setPointsEarned(null);
-                          // go to next song
                           const player =
                             playerRefs.current[currentQuestionYear!];
                           if (player) {
@@ -1071,7 +1108,6 @@ export default function PlayNowPage() {
                           setShowAllResults(false);
                           setPlayerAnswers({});
                           setCurrentPlayerIndex(0);
-                          // go to next song
                           const player =
                             playerRefs.current[currentQuestionYear!];
                           if (player) {
@@ -1079,7 +1115,7 @@ export default function PlayNowPage() {
                             player.playVideo();
                           }
                         }}
-                        className="rounded bg-blue-500 px-6 py-2 font-bold text-white hover:bg-blue-600"
+                        className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
                       >
                         Next Song
                       </button>
@@ -1089,14 +1125,12 @@ export default function PlayNowPage() {
               </div>
             )}
 
-            {/* score counter */}
             {showScore && gameMode === "single" && (
               <div className="fixed right-4 bottom-4 rounded-lg bg-black/80 p-4 text-white">
                 <p className="text-xl font-bold">Score: {score}</p>
               </div>
             )}
 
-            {/* multiplayer score counter */}
             {gameMode === "multiplayer" &&
               playerNames.filter((name) => name.trim() !== "").length > 0 && (
                 <div className="mt-8 flex w-full flex-col items-center">
@@ -1129,6 +1163,41 @@ export default function PlayNowPage() {
                   </div>
                 </div>
               )}
+
+            {showAllResults && gameMode === "multiplayer" && (
+              <div className="mb-8 w-full text-center">
+                <h3 className="mb-2 text-xl font-bold text-yellow-400">
+                  Leaderboard
+                </h3>
+                <div className="mx-auto mb-4 flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
+                  {playerNames
+                    .filter((name) => name.trim() !== "")
+                    .sort(
+                      (a, b) => (playerScores[b] ?? 0) - (playerScores[a] ?? 0),
+                    )
+                    .map((playerName, idx) => (
+                      <div
+                        key={playerName}
+                        className="flex min-w-[60px] flex-col items-center"
+                      >
+                        <span className="text-xs font-bold text-yellow-300">
+                          #{idx + 1}
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          {playerName}
+                        </span>
+                        <span className="text-lg font-bold text-yellow-400">
+                          {playerScores[playerName] ?? 0}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <div className="text-sm text-white/70">
+                  Total Players:{" "}
+                  {playerNames.filter((name) => name.trim() !== "").length}
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -1137,7 +1206,6 @@ export default function PlayNowPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
-      {/* Back Button */}
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -1148,7 +1216,6 @@ export default function PlayNowPage() {
         </Button>
       </div>
 
-      {/* vines */}
       <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
         <svg
           viewBox="0 0 100 600"
@@ -1189,7 +1256,6 @@ export default function PlayNowPage() {
           2000 and the current year.
         </p>
 
-        {/* Year form */}
         <div className="mt-6 flex w-full max-w-sm flex-col items-center">
           <div className="relative flex w-full justify-center">
             <DropdownMenu>
@@ -1229,7 +1295,6 @@ export default function PlayNowPage() {
             </DropdownMenu>
           </div>
 
-          {/* remove years */}
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {selectedYears.map((year) => (
               <div
@@ -1247,30 +1312,54 @@ export default function PlayNowPage() {
             ))}
           </div>
 
-          {/* enter player name */}
           <div className="mt-6 flex w-full max-w-sm flex-col items-center">
             {playerNames.map((name, index) => (
-              <div key={index} className="mb-4 w-full">
-                <label
-                  htmlFor={`player-${index}`}
-                  className="mb-2 block text-xl text-white"
-                >
-                  Player {index + 1} Name
-                </label>
-                <input
-                  type="text"
-                  id={`player-${index}`}
-                  value={name}
-                  onChange={(e) =>
-                    handlePlayerNameChange(index, e.target.value)
-                  }
-                  className={`w-full rounded-lg px-4 py-2 text-white ${
-                    errorIndexes.includes(index) ? "bg-red-600" : "bg-black"
-                  }`}
-                  placeholder={`Enter Player ${index + 1} Name`}
-                />
+              <div key={index} className="mb-4 flex w-full items-center gap-2">
+                <div className="flex-1">
+                  <label
+                    htmlFor={`player-${index}`}
+                    className="mb-2 block text-xl text-white"
+                  >
+                    Player {index + 1} Name
+                  </label>
+                  <input
+                    type="text"
+                    id={`player-${index}`}
+                    value={name}
+                    onChange={(e) =>
+                      handlePlayerNameChange(index, e.target.value)
+                    }
+                    className={`w-full rounded-lg px-4 py-2 text-white ${errorIndexes.includes(index) ? "bg-red-600" : "bg-black"}`}
+                    placeholder={`Enter Player ${index + 1} Name`}
+                  />
+                </div>
+                {playerNames.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePlayer(index)}
+                    className="ml-2 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-2xl text-white transition hover:bg-red-700 focus:outline-none"
+                    aria-label="Remove player"
+                    style={{ boxShadow: "0 2px 8px #0002" }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "1.5rem",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </span>
+                  </button>
+                )}
               </div>
             ))}
+
+            {duplicateNameError && (
+              <div className="mb-4 w-full text-center font-semibold text-red-400">
+                {duplicateNameError}
+              </div>
+            )}
 
             {playerNames.length < 6 && (
               <button
@@ -1293,23 +1382,6 @@ export default function PlayNowPage() {
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes wave {
-          0% {
-            d: path("M50 0 C20 100, 80 200, 50 300 C20 400, 80 500, 50 600");
-          }
-          50% {
-            d: path("M50 0 C30 100, 70 200, 50 300 C30 400, 70 500, 50 600");
-          }
-          100% {
-            d: path("M50 0 C20 100, 80 200, 50 300 C20 400, 80 500, 50 600");
-          }
-        }
-        .wave-path {
-          animation: wave 2s ease-in-out infinite;
-        }
-      `}</style>
     </main>
   );
 }

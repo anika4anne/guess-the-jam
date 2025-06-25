@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // auth code here
     return NextResponse.json({ message: "Authentication successful" });
   } catch (error: unknown) {
     if (error instanceof Error) {
