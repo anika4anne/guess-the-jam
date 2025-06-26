@@ -495,57 +495,65 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               Players in Lobby
             </h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {players.map((player, index) => (
-                <div
-                  key={index}
-                  className={`cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-center transition-all duration-200 ${
-                    hoveredPlayer === player &&
-                    isHost &&
-                    player.toLowerCase() !== name.toLowerCase()
-                      ? "border-2 border-red-400 bg-red-500/20 line-through"
-                      : ""
-                  } ${
-                    isHost && player.toLowerCase() !== name.toLowerCase()
-                      ? "hover:bg-red-500/10"
-                      : ""
-                  } ${
-                    readyPlayers.includes(player)
-                      ? "text-green-400"
-                      : hoveredForReady === player
-                        ? "text-purple-400"
-                        : "text-white/80"
-                  }`}
-                  onMouseEnter={() => handlePlayerHover(player)}
-                  onMouseLeave={handlePlayerLeave}
-                  onClick={() => handlePlayerClick(player)}
-                >
+              {players.map((player, index) => {
+                const isSelf = player.toLowerCase() === name.toLowerCase();
+                const isReady = readyPlayers.includes(player);
+                return (
                   <div
-                    className={`${players[0]?.toLowerCase() === player.toLowerCase() ? "font-bold" : ""}`}
+                    key={index}
+                    className={`cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-center transition-all duration-200 ${
+                      hoveredPlayer === player && isHost && !isSelf
+                        ? "border-2 border-red-400 bg-red-500/20 line-through"
+                        : ""
+                    } ${isHost && !isSelf ? "hover:bg-red-500/10" : ""} ${
+                      isReady
+                        ? "text-green-400"
+                        : hoveredForReady === player
+                          ? "text-purple-400"
+                          : "text-white/80"
+                    }`}
+                    onMouseEnter={() => handlePlayerHover(player)}
+                    onMouseLeave={handlePlayerLeave}
+                    onClick={() => handlePlayerClick(player)}
                   >
-                    {player}
-                    {!readyPlayers.includes(player) && (
-                      <span className="ml-2 text-xs font-bold text-yellow-400">
-                        (Not Ready)
-                      </span>
-                    )}
-                    {player.toLowerCase() === name.toLowerCase() ? "(You)" : ""}
-                  </div>
-                  {isHost && player.toLowerCase() !== name.toLowerCase() && (
-                    <div className="mt-1 text-xs text-yellow-400">
-                      Click to kick/ban
+                    <div
+                      className={`${players[0]?.toLowerCase() === player.toLowerCase() ? "font-bold" : ""}`}
+                    >
+                      {player}
+                      {isSelf ? " (You)" : ""}
                     </div>
-                  )}
-                  {players[0]?.toLowerCase() === player.toLowerCase() && (
-                    <div className="mt-1 text-xs text-yellow-400">Host</div>
-                  )}
-                  {player.toLowerCase() === name?.toLowerCase() &&
-                    !readyPlayers.includes(player) && (
-                      <div className="mt-1 text-xs text-purple-400">
-                        Hover and click to ready up
+                    <div className="mt-1 text-xs">
+                      {isSelf ? (
+                        isReady ? (
+                          <span className="font-bold text-green-400">
+                            (Ready)
+                          </span>
+                        ) : (
+                          <div className="text-purple-400">
+                            Hover and click to ready up
+                          </div>
+                        )
+                      ) : isReady ? (
+                        <span className="font-bold text-green-400">
+                          (Ready)
+                        </span>
+                      ) : (
+                        <span className="font-bold text-yellow-400">
+                          (Not Ready)
+                        </span>
+                      )}
+                    </div>
+                    {isHost && !isSelf && (
+                      <div className="mt-1 text-xs text-yellow-400">
+                        Click to kick/ban
                       </div>
                     )}
-                </div>
-              ))}
+                    {players[0]?.toLowerCase() === player.toLowerCase() && (
+                      <div className="mt-1 text-xs text-yellow-400">Host</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
