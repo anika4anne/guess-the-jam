@@ -30,7 +30,6 @@ export default function HomePage() {
             className="h-full w-full"
           >
             <path
-              className="wave-path"
               d="M50 0 C20 100, 80 200, 50 300 C20 400, 80 500, 50 600"
               stroke="white"
               strokeWidth="4"

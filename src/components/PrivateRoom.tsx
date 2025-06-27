@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket, faBan } from "@fortawesome/free-solid-svg-icons";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 interface PrivateRoomProps {
   roomId: string;
@@ -34,6 +42,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [mode, setMode] = useState<"default" | "playlist">("default");
   const [playlists, setPlaylists] = useState<string[]>([""]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   useEffect(() => {
     if (!name) {
@@ -134,7 +143,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (isGameStarting && countdown === 0) {
-      router.push(`/playnow?roomId=${roomId}&name=${name}`);
+      router.push(`/join/${roomId}?name=${name}`);
     }
   }, [isGameStarting, countdown, roomId, name, router]);
 
@@ -176,6 +185,21 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           JSON.stringify(playlists)
       )
         setPlaylists(JSON.parse(updatedPlaylists));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [roomId]);
+
+  useEffect(() => {
+    const yearsKey = `room-${roomId}-years`;
+    const stored = localStorage.getItem(yearsKey);
+    if (stored) setSelectedYears(JSON.parse(stored));
+    const interval = setInterval(() => {
+      const updated = localStorage.getItem(yearsKey);
+      if (
+        updated &&
+        JSON.stringify(JSON.parse(updated)) !== JSON.stringify(selectedYears)
+      )
+        setSelectedYears(JSON.parse(updated));
     }, 500);
     return () => clearInterval(interval);
   }, [roomId]);
@@ -328,6 +352,22 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     if (rounds < 100) handleRoundsChange(rounds + 1);
   };
 
+  const handleAddYear = (year: number) => {
+    const yearsKey = `room-${roomId}-years`;
+    if (!selectedYears.includes(year)) {
+      const updated = [...selectedYears, year];
+      setSelectedYears(updated);
+      localStorage.setItem(yearsKey, JSON.stringify(updated));
+    }
+  };
+
+  const handleDeleteYear = (year: number) => {
+    const yearsKey = `room-${roomId}-years`;
+    const updated = selectedYears.filter((y) => y !== year);
+    setSelectedYears(updated);
+    localStorage.setItem(yearsKey, JSON.stringify(updated));
+  };
+
   if (!name) {
     return null;
   }
@@ -374,121 +414,169 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             </Button>
           </div>
 
-          {/* Collapsible Game Settings box */}
-          <div className="mx-auto mb-6 w-full max-w-md">
-            <div
-              className="flex cursor-pointer items-center justify-between rounded-t-xl bg-white/10 px-6 py-3 shadow-md select-none"
-              onClick={() => setSettingsOpen((open) => !open)}
-              role="button"
-              tabIndex={0}
-              aria-expanded={settingsOpen}
-            >
-              <span className="flex items-center gap-2 text-lg font-bold text-white">
-                Game Settings{" "}
-                <span role="img" aria-label="settings">
-                  ⚙️
-                </span>
-              </span>
-              <span
-                className={`text-white transition-transform duration-200 ${settingsOpen ? "rotate-90" : ""}`}
-                style={{ fontSize: 24 }}
+          {/* Collapsible Game Settings box - only for host */}
+          {isHost && (
+            <div className="mx-auto mb-6 w-full max-w-md">
+              <div
+                className="flex cursor-pointer items-center justify-between rounded-t-xl bg-white/10 px-6 py-3 shadow-md select-none"
+                onClick={() => setSettingsOpen((open) => !open)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={settingsOpen}
               >
-                ▶
-              </span>
-            </div>
-            <div
-              className={`overflow-hidden rounded-b-xl bg-white/5 transition-all duration-300 ${settingsOpen ? "max-h-[1000px] px-6 py-4" : "max-h-0 px-6 py-0"}`}
-              style={{}}
-            >
-              {settingsOpen && (
-                <>
-                  <div className="mt-2 mb-4 flex items-center gap-4">
-                    <button
-                      onClick={() => isHost && handleModeChange("default")}
-                      className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
-                      disabled={!isHost}
-                    >
-                      Default Songs Per Year
-                    </button>
-                    <button
-                      onClick={() => isHost && handleModeChange("playlist")}
-                      className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
-                      disabled={!isHost}
-                    >
-                      Choose Playlist(s)
-                    </button>
-                  </div>
-                  <div className="mb-4 flex items-center gap-2">
-                    <label htmlFor="rounds" className="text-white">
-                      Number of Rounds:
-                    </label>
-                    <button
-                      onClick={isHost ? startDecrement : undefined}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds <= 1 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
-                      disabled={rounds <= 1 || !isHost}
-                    >
-                      -
-                    </button>
-                    <span className="min-w-[3rem] text-center text-2xl font-bold text-white">
-                      {rounds}
-                    </span>
-                    <button
-                      onClick={isHost ? startIncrement : undefined}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds >= 100 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
-                      disabled={rounds >= 100 || !isHost}
-                    >
-                      +
-                    </button>
-                  </div>
-                  {mode === "playlist" && (
-                    <div className="mt-2 flex w-full flex-col items-center gap-2">
-                      <div className="mb-1 text-white">Playlists:</div>
-                      {playlists.map((playlist, idx) => (
-                        <div
-                          key={idx}
-                          className="flex w-full max-w-xs items-center gap-2"
-                        >
-                          <input
-                            type="text"
-                            value={playlist}
-                            onChange={(e) =>
-                              isHost &&
-                              handlePlaylistChange(idx, e.target.value)
-                            }
-                            className="flex-1 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-white transition-all focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                            placeholder="Enter playlist URL or name"
-                            disabled={!isHost}
-                          />
-                          {isHost && (
-                            <>
+                <span className="flex items-center gap-2 text-lg font-bold text-white">
+                  Game Settings{" "}
+                  <span role="img" aria-label="settings">
+                    ⚙️
+                  </span>
+                </span>
+                <span
+                  className={`text-white transition-transform duration-200 ${settingsOpen ? "rotate-90" : ""}`}
+                  style={{ fontSize: 24 }}
+                >
+                  ▶
+                </span>
+              </div>
+              <div
+                className={`overflow-hidden rounded-b-xl bg-white/5 transition-all duration-300 ${settingsOpen ? "max-h-[1000px] px-6 py-4" : "max-h-0 px-6 py-0"}`}
+                style={{}}
+              >
+                {settingsOpen && (
+                  <>
+                    <div className="mt-2 mb-4 flex items-center gap-4">
+                      <button
+                        onClick={() => isHost && handleModeChange("default")}
+                        className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                        disabled={!isHost}
+                      >
+                        Default Songs Per Year
+                      </button>
+                      <button
+                        onClick={() => isHost && handleModeChange("playlist")}
+                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                        disabled={!isHost}
+                      >
+                        Choose Playlist(s)
+                      </button>
+                    </div>
+                    <div className="mb-4 flex items-center gap-2">
+                      <label htmlFor="rounds" className="text-white">
+                        Number of Rounds:
+                      </label>
+                      <button
+                        onClick={isHost ? startDecrement : undefined}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds <= 1 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
+                        disabled={rounds <= 1 || !isHost}
+                      >
+                        -
+                      </button>
+                      <span className="min-w-[3rem] text-center text-2xl font-bold text-white">
+                        {rounds}
+                      </span>
+                      <button
+                        onClick={isHost ? startIncrement : undefined}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds >= 100 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
+                        disabled={rounds >= 100 || !isHost}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {mode === "default" && (
+                      <div className="mt-2 flex w-full flex-col items-center gap-2">
+                        <div className="mb-1 text-white">Years:</div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded bg-white/10 px-4 py-2 text-white hover:bg-white/20">
+                              {selectedYears.length > 0
+                                ? selectedYears.join(", ")
+                                : "Select Years"}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <DropdownMenuLabel>Select Years</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {Array.from(
+                              { length: new Date().getFullYear() - 2000 + 1 },
+                              (_, i) => 2000 + i,
+                            ).map((year) => (
+                              <DropdownMenuCheckboxItem
+                                key={year}
+                                checked={selectedYears.includes(year)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) handleAddYear(year);
+                                  else handleDeleteYear(year);
+                                }}
+                              >
+                                {year}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedYears.map((year) => (
+                            <div
+                              key={year}
+                              className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
+                            >
+                              <span>{year}</span>
                               <button
-                                onClick={() => handleAddPlaylist()}
-                                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-500 bg-transparent text-green-500 transition-all duration-150 hover:bg-green-500 hover:text-white focus:outline-none"
-                                title="Add Playlist"
+                                onClick={() => handleDeleteYear(year)}
+                                className="text-sm text-gray-500 hover:text-gray-700"
                                 type="button"
                               >
-                                <span className="text-xl font-bold">+</span>
+                                ❌
                               </button>
-                              {playlists.length > 1 && (
-                                <button
-                                  onClick={() => handleRemovePlaylist(idx)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500 bg-transparent text-red-500 transition-all duration-150 hover:bg-red-500 hover:text-white focus:outline-none"
-                                  title="Remove Playlist"
-                                  type="button"
-                                >
-                                  <span className="text-xl font-bold">×</span>
-                                </button>
-                              )}
-                            </>
-                          )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+                      </div>
+                    )}
+                    {mode === "playlist" && (
+                      <div className="mt-2 flex w-full flex-col items-center gap-2">
+                        <div className="mb-1 text-white">Playlists:</div>
+                        {playlists.map((playlist, idx) => (
+                          <div
+                            key={idx}
+                            className="flex w-full max-w-xs items-center gap-2"
+                          >
+                            <input
+                              type="text"
+                              value={playlist}
+                              onChange={(e) =>
+                                isHost &&
+                                handlePlaylistChange(idx, e.target.value)
+                              }
+                              className="flex-1 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-white transition-all focus:ring-2 focus:ring-yellow-400 focus:outline-none"
+                              placeholder="Enter playlist URL or name"
+                              disabled={!isHost}
+                            />
+                            <button
+                              onClick={() => handleAddPlaylist()}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-500 bg-transparent text-green-500 transition-all duration-150 hover:bg-green-500 hover:text-white focus:outline-none"
+                              title="Add Playlist"
+                              type="button"
+                            >
+                              <span className="text-xl font-bold">+</span>
+                            </button>
+                            {playlists.length > 1 && (
+                              <button
+                                onClick={() => handleRemovePlaylist(idx)}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500 bg-transparent text-red-500 transition-all duration-150 hover:bg-red-500 hover:text-white focus:outline-none"
+                                title="Remove Playlist"
+                                type="button"
+                              >
+                                <span className="text-xl font-bold">×</span>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mb-8 space-y-2 rounded-xl bg-white/10 p-6 shadow-md">
             <h2 className="text-xl font-semibold text-white">
