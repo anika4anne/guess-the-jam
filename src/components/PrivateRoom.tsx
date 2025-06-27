@@ -143,7 +143,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (isGameStarting && countdown === 0) {
-      router.push(`/join/${roomId}?name=${name}`);
+      router.push(
+        `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
+      );
     }
   }, [isGameStarting, countdown, roomId, name, router]);
 
@@ -291,6 +293,28 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   const startGame = () => {
     if (isHost && allReady) {
+      if (mode === "default" && selectedYears.length === 0) {
+        alert("Please select at least one year before starting the game.");
+        return;
+      }
+      if (
+        mode === "playlist" &&
+        (!playlists.length || playlists.every((p) => !p.trim()))
+      ) {
+        alert("Please enter at least one playlist before starting the game.");
+        return;
+      }
+      const privateRoomSettings = {
+        years: selectedYears,
+        rounds,
+        playerNames: players,
+        mode,
+        playlists,
+      };
+      localStorage.setItem(
+        "privateRoomSettings",
+        JSON.stringify(privateRoomSettings),
+      );
       const gameStartKey = `room-${roomId}-gameStarting`;
       localStorage.setItem(gameStartKey, "true");
       setIsGameStarting(true);
@@ -649,35 +673,46 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           <div className="pointer-events-none fixed bottom-0 left-0 flex w-full flex-col items-center pb-6">
             <div className="pointer-events-auto flex flex-col items-center gap-2">
               {/* Host: Start Game */}
-              {isHost ? (
-                <div className="mb-8 flex flex-col items-center">
+              <div className="flex flex-col items-center">
+                {isHost && (
                   <Button
                     onClick={startGame}
-                    disabled={!allReady}
+                    disabled={
+                      !isHost ||
+                      !allReady ||
+                      (mode === "default" && selectedYears.length === 0) ||
+                      (mode === "playlist" &&
+                        (!playlists.length ||
+                          playlists.every((p) => !p.trim())))
+                    }
                     className="mb-4 h-14 w-48 bg-yellow-500 text-xl font-bold text-black hover:bg-yellow-600 disabled:bg-yellow-300"
                   >
                     Start Game
                   </Button>
-                </div>
-              ) : (
-                <>
-                  <div
-                    className={`rounded-full px-6 py-2 text-lg font-semibold ${readyPlayers.includes(name) ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}
-                  >
-                    {readyPlayers.includes(name) ? "Ready!" : "Not Ready"}
+                )}
+                {/* Non-host waiting message */}
+                {!isHost && allReady && (
+                  <div className="mb-4 text-center">
+                    <div className="text-xl font-bold text-green-400">
+                      Waiting for host to start the game...
+                    </div>
                   </div>
-                  {players.length >= 2 && !allReady && (
-                    <div className="mt-1 text-base font-medium text-yellow-300">
-                      Waiting for all players to be ready…
-                    </div>
-                  )}
-                  {allReady && (
-                    <div className="mt-1 animate-pulse text-base font-medium text-blue-300">
-                      Waiting for host to start game…
-                    </div>
-                  )}
-                </>
-              )}
+                )}
+                {((mode === "default" && selectedYears.length === 0) ||
+                  (mode === "playlist" &&
+                    (!playlists.length ||
+                      playlists.every((p) => !p.trim())))) && (
+                  <div className="mt-2 text-center text-sm text-yellow-200">
+                    {mode === "default"
+                      ? isHost
+                        ? "You must select years in Game Settings"
+                        : "Host must select years in Game Settings"
+                      : isHost
+                        ? "You must type in a playlist URL in Game Settings"
+                        : "Host must type in a playlist URL in Game Settings"}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </>
