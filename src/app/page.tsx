@@ -9,7 +9,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const handlePlayClick = () => {
-    router.push("/playnow");
+    router.push("/choose");
   };
 
   return (
