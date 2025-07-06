@@ -1,4 +1,3 @@
-import { PrivateRoom } from "~/components/PrivateRoom";
 import JoinPrivateRoomClientPage from "./clientPage";
 
 export default async function Page({

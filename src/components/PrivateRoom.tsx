@@ -163,7 +163,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       if (updated && Number(updated) !== rounds) setRounds(Number(updated));
     }, 500);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, rounds]);
 
   useEffect(() => {
     const modeKey = `room-${roomId}-mode`;
@@ -189,7 +189,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         setPlaylists(JSON.parse(updatedPlaylists));
     }, 500);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, mode, playlists]);
 
   useEffect(() => {
     const yearsKey = `room-${roomId}-years`;

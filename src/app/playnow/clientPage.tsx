@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Confetti from "react-confetti";
@@ -93,13 +99,13 @@ export default function PlayNowPage() {
   const [inputError, setInputError] = useState("");
 
   const [round, setRound] = useState(1);
-  const [hasStartedFirstQuestion, setHasStartedFirstQuestion] = useState(false);
 
   const [duplicateNameError, setDuplicateNameError] = useState<string>("");
 
   const [showVolumeReminder, setShowVolumeReminder] = useState(true);
 
   const [numberOfRounds, setNumberOfRounds] = useState(25);
+  const [totalRounds, setTotalRounds] = useState<number>(25);
 
   const [gameFinished, setGameFinished] = useState(false);
 
@@ -111,7 +117,7 @@ export default function PlayNowPage() {
   const [mode, setMode] = useState<"single" | "private">("single");
   const [currentPlayerName, setCurrentPlayerName] = useState<string>("");
 
-  const fetchTopSongs = async (years: number[]) => {
+  const fetchTopSongs = useCallback(async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
       const data = (await res.json()) as Song[];
@@ -135,7 +141,7 @@ export default function PlayNowPage() {
     } catch (error) {
       console.error("Error fetching top songs:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!showCountdown) return;
@@ -367,6 +373,7 @@ export default function PlayNowPage() {
     setErrorIndexes(emptyIndexes);
 
     if (validYears.length > 0 && validPlayers.length > 0) {
+      setTotalRounds(numberOfRounds);
       await fetchTopSongs(validYears);
     } else {
       alert("Please complete the form and select valid years.");
@@ -505,7 +512,6 @@ export default function PlayNowPage() {
     }
   }, []);
 
-  // On mount, check for private room settings
   useEffect(() => {
     if (typeof window === "undefined") return;
     const privateSettings = localStorage.getItem("privateRoomSettings");
@@ -522,19 +528,19 @@ export default function PlayNowPage() {
           setPlayerNames(settings.playerNames);
         }
         setMode("private");
-        // Get player name from query param or localStorage
+
         const nameFromQuery = searchParams.get("name");
         const nameFromStorage = localStorage.getItem("playerName");
-        setCurrentPlayerName(nameFromQuery || nameFromStorage || "");
-        // Start the game immediately
-        fetchTopSongs(settings.years);
-      } catch (e) {
+        setCurrentPlayerName(nameFromQuery ?? nameFromStorage ?? "");
+
+        void fetchTopSongs(settings.years);
+      } catch {
         setMode("single");
       }
     } else {
       setMode("single");
     }
-  }, []);
+  }, [searchParams, fetchTopSongs]);
 
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
@@ -609,8 +615,8 @@ export default function PlayNowPage() {
                 🎉 Game Complete! 🎉
               </h1>
               <p className="mb-8 text-2xl">
-                {round >= numberOfRounds
-                  ? `You've finished all ${numberOfRounds} rounds!!!!!!!`
+                {round >= totalRounds
+                  ? `You've finished all ${totalRounds} rounds!!!!!!!`
                   : `Game ended after ${round} round${round !== 1 ? "s" : ""}`}
               </p>
               {gameMode === "multiplayer" && (
@@ -657,7 +663,7 @@ export default function PlayNowPage() {
                     setSongs(null);
                     setGameFinished(false);
                     setRound(1);
-                    setHasStartedFirstQuestion(false);
+                    setTotalRounds(numberOfRounds);
                     setScore(0);
                     setPlayerScores({});
                     setPlayerAnswers({});
@@ -1291,7 +1297,7 @@ export default function PlayNowPage() {
                         <div className="mt-8 flex justify-end">
                           <button
                             onClick={() => {
-                              if (round + 1 > numberOfRounds) {
+                              if (round + 1 > totalRounds) {
                                 setGameFinished(true);
                               } else {
                                 setRound(round + 1);
@@ -1319,7 +1325,7 @@ export default function PlayNowPage() {
                         <div className="mt-8 flex justify-end">
                           <button
                             onClick={() => {
-                              if (round + 1 > numberOfRounds) {
+                              if (round + 1 > totalRounds) {
                                 setGameFinished(true);
                               } else {
                                 setRound(round + 1);
@@ -1366,7 +1372,7 @@ export default function PlayNowPage() {
               playerNames.filter((name) => name.trim() !== "").length > 0 && (
                 <div className="mt-8 flex w-full flex-col items-center">
                   <div className="mb-2 text-center text-lg font-bold text-white">
-                    Round {round} of {numberOfRounds}
+                    Round {round} of {totalRounds}
                   </div>
                   <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
                     {playerNames

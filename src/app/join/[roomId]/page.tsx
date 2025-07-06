@@ -1,34 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Confetti from "react-confetti";
 import { Button } from "~/components/ui/button";
 
-// TODO: Sync game state between players using localStorage or backend
-
-interface Song {
-  title: string;
-  artist: string;
-}
-
-export default function JoinRoomGamePage({
-  params,
-}: {
-  params: { roomId: string };
-}) {
+export default function JoinRoomGamePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomId = params.roomId;
-  const name = searchParams.get("name") || "";
+  const params = useParams();
+  const roomId = params.roomId as string;
+  const name = searchParams.get("name") ?? "";
 
-  // Get settings from localStorage
   const [numberOfRounds, setNumberOfRounds] = useState(10);
   const [mode, setMode] = useState<"default" | "playlist">("default");
   const [playlists, setPlaylists] = useState<string[]>([]);
-  const [songs, setSongs] = useState<Song[] | null>(null);
-  const [round, setRound] = useState(1);
-  const [gameFinished, setGameFinished] = useState(false);
+  const [gameFinished] = useState(false);
 
   useEffect(() => {
     const roundsKey = `room-${roomId}-rounds`;
@@ -92,7 +79,7 @@ export default function JoinRoomGamePage({
               🎉 Game Complete! 🎉
             </h1>
             <p className="mb-8 text-2xl">
-              You've finished all {numberOfRounds} rounds!
+              You&apos;ve finished all {numberOfRounds} rounds!
             </p>
             <Button
               onClick={() => router.push("/")}
