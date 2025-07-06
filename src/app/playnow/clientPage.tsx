@@ -117,6 +117,8 @@ export default function PlayNowPage() {
   const [mode, setMode] = useState<"single" | "private">("single");
   const [currentPlayerName, setCurrentPlayerName] = useState<string>("");
 
+  const [gameStarted, setGameStarted] = useState(false);
+
   const fetchTopSongs = useCallback(async (years: number[]) => {
     try {
       const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
@@ -138,6 +140,7 @@ export default function PlayNowPage() {
       setCountdownNumber(3);
       setFadeCountdown(false);
       setGameFinished(false);
+      setGameStarted(true);
     } catch (error) {
       console.error("Error fetching top songs:", error);
     }
@@ -375,6 +378,7 @@ export default function PlayNowPage() {
     if (validYears.length > 0 && validPlayers.length > 0) {
       setTotalRounds(numberOfRounds);
       await fetchTopSongs(validYears);
+      setGameStarted(true);
     } else {
       alert("Please complete the form and select valid years.");
     }
@@ -535,13 +539,248 @@ export default function PlayNowPage() {
         setCurrentPlayerName(nameFromQuery ?? nameFromStorage ?? "");
 
         void fetchTopSongs(settings.years);
+        setGameStarted(true);
       } catch {
         setMode("single");
+        setGameStarted(false);
       }
     } else {
       setMode("single");
+      setGameStarted(false);
     }
   }, [searchParams, fetchTopSongs]);
+
+  if (!gameStarted) {
+    return (
+      <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
+        <div className="absolute top-6 left-6">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/")}
+            className="border-white/20 bg-white/10 px-6 py-3 text-lg text-white hover:bg-white/20"
+          >
+            ← Back
+          </Button>
+        </div>
+
+        <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
+          <svg
+            viewBox="0 0 100 600"
+            preserveAspectRatio="none"
+            className="h-full w-full"
+          >
+            <path
+              className="wave-path"
+              d="M50 0 C20 100, 80 200, 50 300 C20 400, 80 500, 50 600"
+              stroke="white"
+              strokeWidth="4"
+              fill="none"
+            />
+          </svg>
+        </div>
+        <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1] opacity-20">
+          <svg
+            viewBox="0 0 100 600"
+            preserveAspectRatio="none"
+            className="h-full w-full"
+          >
+            <path
+              className="wave-path"
+              d="M50 0 C20 100, 80 200, 50 300 C20 400, 80 500, 50 600"
+              stroke="white"
+              strokeWidth="4"
+              fill="none"
+            />
+          </svg>
+        </div>
+
+        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+          <h1 className="text-center text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-[4rem]">
+            Play Now
+          </h1>
+          <p className="max-w-2xl text-center text-xl text-white/80">
+            What year(s) do you want the songs to be from? Choose a year between
+            2000 and the current year.
+          </p>
+
+          <div className="mt-6 flex w-full max-w-sm flex-col items-center">
+            <div className="relative flex w-full justify-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="px-6 py-3 text-lg"
+                    style={{ minWidth: "px", marginLeft: "5%" }}
+                  >
+                    Choose A Year
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuLabel>Years</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {Array.from(
+                    { length: new Date().getFullYear() - 2000 + 1 },
+                    (_, i) => 2000 + i,
+                  ).map((year) => (
+                    <DropdownMenuCheckboxItem
+                      key={year}
+                      checked={selectedYears.includes(year)}
+                      onCheckedChange={() => {
+                        if (selectedYears.includes(year)) {
+                          setSelectedYears((prev) =>
+                            prev.filter((y) => y !== year),
+                          );
+                        } else {
+                          setSelectedYears((prev) => [...prev, year]);
+                        }
+                      }}
+                    >
+                      {year}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              {selectedYears.map((year) => (
+                <div
+                  key={year}
+                  className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
+                >
+                  <span>{year}</span>
+                  <button
+                    onClick={() => handleDeleteYear(year)}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    ❌
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex w-full max-w-sm flex-col items-center">
+              <label htmlFor="rounds" className="mb-2 block text-xl text-white">
+                Number of Rounds
+              </label>
+              <div className="flex items-center gap-4">
+                <button
+                  onMouseDown={startDecrement}
+                  onMouseUp={stopDecrement}
+                  onMouseLeave={stopDecrement}
+                  onTouchStart={startDecrement}
+                  onTouchEnd={stopDecrement}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+                  disabled={numberOfRounds <= 1}
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  value={numberOfRounds}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 1 && value <= 100000) {
+                      setNumberOfRounds(value);
+                    }
+                  }}
+                  className="min-w-[4rem] border-none bg-transparent text-center text-2xl font-bold text-white outline-none"
+                  min="1"
+                  max="100000"
+                />
+                <button
+                  onMouseDown={startIncrement}
+                  onMouseUp={stopIncrement}
+                  onMouseLeave={stopIncrement}
+                  onTouchStart={startIncrement}
+                  onTouchEnd={stopIncrement}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+                  disabled={numberOfRounds >= 100000}
+                >
+                  +
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-white/60">
+                Choose between 1-100,000 rounds
+              </p>
+            </div>
+
+            <div className="mt-8 flex w-full max-w-sm flex-col items-center">
+              {playerNames.map((name, index) => (
+                <div
+                  key={index}
+                  className="mb-4 flex w-full items-center gap-2"
+                >
+                  <div className="flex-1">
+                    <label
+                      htmlFor={`player-${index}`}
+                      className="mb-2 block text-xl text-white"
+                    >
+                      Player {index + 1} Name
+                    </label>
+                    <input
+                      type="text"
+                      id={`player-${index}`}
+                      value={name}
+                      onChange={(e) =>
+                        handlePlayerNameChange(index, e.target.value)
+                      }
+                      className={`w-full rounded-lg px-4 py-2 text-white ${errorIndexes.includes(index) ? "bg-red-600" : "bg-black"}`}
+                      placeholder={`Enter Player ${index + 1} Name`}
+                    />
+                  </div>
+                  {playerNames.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePlayer(index)}
+                      className="ml-2 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-2xl text-white transition hover:bg-red-700 focus:outline-none"
+                      aria-label="Remove player"
+                      style={{ boxShadow: "0 2px 8px #0002" }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "1.5rem",
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {duplicateNameError && (
+                <div className="mb-4 w-full text-center font-semibold text-red-400">
+                  {duplicateNameError}
+                </div>
+              )}
+
+              {playerNames.length < 6 && (
+                <button
+                  onClick={handleAddPlayer}
+                  className="flex items-center rounded-full bg-white/10 px-4 py-2 text-white hover:bg-white/20"
+                >
+                  <span className="mr-2 -translate-y-[2px] transform text-3xl text-pink-500">
+                    +
+                  </span>
+                  Add Player
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              className="mt-6 rounded-full bg-yellow-400 px-6 py-2 text-lg text-white transition-all hover:bg-yellow-500"
+            >
+              Play
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (songs) {
     const normalizedUserSong = normalize(userSongAnswer);
@@ -1374,51 +1613,12 @@ export default function PlayNowPage() {
               </div>
             )}
 
-            {showScore && gameMode === "single" && (
-              <div className="fixed right-4 bottom-4 rounded-lg bg-black/80 p-4 text-white">
-                <p className="text-xl font-bold">Score: {score}</p>
-              </div>
-            )}
-
-            {gameMode === "multiplayer" &&
-              playerNames.filter((name) => name.trim() !== "").length > 0 && (
-                <div className="mt-8 flex w-full flex-col items-center">
-                  <div className="mb-2 text-center text-lg font-bold text-white">
-                    Round {round} of {totalRounds}
-                  </div>
-                  <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
-                    {playerNames
-                      .filter((name) => name.trim() !== "")
-                      .sort(
-                        (a, b) =>
-                          (playerScores[b] ?? 0) - (playerScores[a] ?? 0),
-                      )
-                      .map((playerName, idx) => (
-                        <div
-                          key={playerName}
-                          className="flex min-w-[60px] flex-col items-center"
-                        >
-                          <span className="text-xs font-bold text-yellow-300">
-                            #{idx + 1}
-                          </span>
-                          <span className="text-sm font-semibold text-white">
-                            {playerName}
-                          </span>
-                          <span className="text-lg font-bold text-yellow-400">
-                            {playerScores[playerName] ?? 0}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
+            {playerNames.filter((name) => name.trim() !== "").length > 1 && (
+              <div className="mt-6 flex w-full flex-col items-center">
+                <div className="mb-1 text-center text-lg font-extrabold text-white">
+                  Round {round} of {totalRounds}
                 </div>
-              )}
-
-            {showAllResults && gameMode === "multiplayer" && (
-              <div className="mb-8 w-full text-center">
-                <h3 className="mb-2 text-xl font-bold text-yellow-400">
-                  Leaderboard
-                </h3>
-                <div className="mx-auto mb-4 flex w-fit max-w-full flex-row items-center justify-center gap-6 rounded-full bg-black/80 px-8 py-3 text-white shadow-lg">
+                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-[#180a0a] px-8 py-2 shadow-lg">
                   {playerNames
                     .filter((name) => name.trim() !== "")
                     .sort(
@@ -1427,24 +1627,27 @@ export default function PlayNowPage() {
                     .map((playerName, idx) => (
                       <div
                         key={playerName}
-                        className="flex min-w-[60px] flex-col items-center"
+                        className="flex min-w-[80px] flex-col items-center justify-center text-center"
                       >
-                        <span className="text-xs font-bold text-yellow-300">
+                        <span className="mb-0.5 text-xs font-extrabold text-yellow-300">
                           #{idx + 1}
                         </span>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="mb-1 text-base font-bold text-white">
                           {playerName}
                         </span>
-                        <span className="text-lg font-bold text-yellow-400">
+                        <span className="mt-0.5 text-lg font-extrabold text-yellow-400">
                           {playerScores[playerName] ?? 0}
                         </span>
                       </div>
                     ))}
                 </div>
-                <div className="text-sm text-white/70">
-                  Total Players:{" "}
-                  {playerNames.filter((name) => name.trim() !== "").length}
-                </div>
+              </div>
+            )}
+            {playerNames.filter((name) => name.trim() !== "").length === 1 && (
+              <div className="fixed bottom-8 left-1/2 z-50 flex min-w-[48px] -translate-x-1/2 items-center justify-center rounded-[100px] bg-[#180a0a] px-4 py-1">
+                <span className="text-center text-xl font-extrabold text-yellow-400">
+                  {score}
+                </span>
               </div>
             )}
           </>
