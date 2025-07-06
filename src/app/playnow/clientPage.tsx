@@ -523,6 +523,7 @@ export default function PlayNowPage() {
         }
         if (settings.rounds) {
           setNumberOfRounds(settings.rounds);
+          setTotalRounds(settings.rounds);
         }
         if (settings.playerNames && Array.isArray(settings.playerNames)) {
           setPlayerNames(settings.playerNames);
@@ -687,6 +688,11 @@ export default function PlayNowPage() {
                     setCurrentQuestionYear(null);
                     setVisualizerTime(0);
                     setVolumeUnmuted(false);
+                    localStorage.removeItem("privateRoomSettings");
+                    setMode("single");
+                    setSelectedYears([]);
+                    setPlayerNames([""]);
+                    setNumberOfRounds(25);
                   }}
                   className="bg-yellow-400 px-8 py-4 text-lg font-bold text-black hover:bg-yellow-500"
                 >
@@ -694,7 +700,10 @@ export default function PlayNowPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push("/")}
+                  onClick={() => {
+                    localStorage.removeItem("privateRoomSettings");
+                    router.push("/");
+                  }}
                   className="border-white/20 bg-white/10 px-8 py-4 text-lg text-white hover:bg-white/20"
                 >
                   Back to Menu
@@ -720,7 +729,10 @@ export default function PlayNowPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push("/")}
+                  onClick={() => {
+                    localStorage.removeItem("privateRoomSettings");
+                    router.push("/");
+                  }}
                   className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                 >
                   Exit
