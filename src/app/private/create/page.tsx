@@ -15,12 +15,19 @@ export default function CreatePrivateRoom() {
       return;
     }
 
-    const newRoomId = uuidv4().split("-")[0];
+    try {
+      const newRoomId = uuidv4().split("-")[0];
+      const storageKey = `room-${newRoomId}-players`;
 
-    const storageKey = `room-${newRoomId}-players`;
-    localStorage.setItem(storageKey, JSON.stringify([name]));
+      localStorage.setItem(storageKey, JSON.stringify([name.trim()]));
 
-    router.push(`/private/${newRoomId}?name=${encodeURIComponent(name)}`);
+      router.push(
+        `/private/${newRoomId}?name=${encodeURIComponent(name.trim())}`,
+      );
+    } catch (error) {
+      console.error("Error creating room:", error);
+      alert("Failed to create room. Please try again.");
+    }
   };
 
   return (

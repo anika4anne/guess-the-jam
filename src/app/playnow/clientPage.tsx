@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import playlistLinks from "~/lib/playlistLinks";
 
 interface Song {
   title: string;
@@ -61,7 +62,6 @@ export default function PlayNowPage() {
   const [currentSong, setCurrentSong] = useState("");
   const [currentArtist, setCurrentArtist] = useState("");
   const [score, setScore] = useState(0);
-  const [showScore, setShowScore] = useState(false);
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
 
@@ -119,52 +119,28 @@ export default function PlayNowPage() {
 
   const [gameStarted, setGameStarted] = useState(false);
 
-  const fetchTopSongs = useCallback(async (years: number[]) => {
-    try {
-      const res = await fetch(`/api/getTopSongs?years=${years.join(",")}`);
-      const data = (await res.json()) as Song[];
-      setSongs(data);
-      const validPlayers = playerNames.filter((name) => name.trim() !== "");
-      const isMultiplayer = validPlayers.length > 1;
-      setGameMode(isMultiplayer ? "multiplayer" : "single");
-      if (isMultiplayer) {
-        const initialScores: Record<string, number> = {};
-        validPlayers.forEach((player) => {
-          initialScores[player] = 0;
-        });
-        setPlayerScores(initialScores);
-        setCurrentPlayerIndex(0);
-      }
-      setShowCountdown(true);
-      setShowYouTubePlayer(false);
-      setCountdownNumber(3);
-      setFadeCountdown(false);
-      setGameFinished(false);
-      setGameStarted(true);
-    } catch (error) {
-      console.error("Error fetching top songs:", error);
-    }
-  }, []);
+  const [waitingForOthers, setWaitingForOthers] = useState(false);
+  const [allAnswers, setAllAnswers] = useState<Record<string, unknown>>({});
+  const roomId = searchParams.get("roomId");
 
   useEffect(() => {
     if (!showCountdown) return;
-    if (countdownNumber === 0 && !fadeCountdown) {
-      setFadeCountdown(true);
-      return;
-    }
-    if (fadeCountdown) {
+    if (countdownNumber > 0) {
       const timeout = setTimeout(() => {
+        setCountdownNumber((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    } else {
+      // Fade out the countdown, then show the YouTube player
+      setFadeCountdown(true);
+      const fadeTimeout = setTimeout(() => {
         setShowCountdown(false);
         setShowYouTubePlayer(true);
-        setFadeCountdown(false);
-      }, 500);
-      return () => clearTimeout(timeout);
+        setGameStarted(true);
+      }, 500); // fade out duration
+      return () => clearTimeout(fadeTimeout);
     }
-    const timer = setTimeout(() => {
-      setCountdownNumber((prev) => prev - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [countdownNumber, showCountdown, fadeCountdown]);
+  }, [showCountdown, countdownNumber]);
 
   useEffect(() => {
     if (window.YT) return;
@@ -244,11 +220,18 @@ export default function PlayNowPage() {
       });
     });
     intervalRefs.current = currentIntervalRefs;
+    // Copy playerRefs.current to a variable for cleanup
+    const cleanupPlayerRefs = { ...playerRefs.current };
     return () => {
       Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
         if (intervalId) {
           clearInterval(intervalId);
           console.log(`Cleanup: Cleared interval for year ${year}`);
+        }
+      });
+      Object.values(cleanupPlayerRefs).forEach((player) => {
+        if (player && typeof player.destroy === "function") {
+          player.destroy();
         }
       });
     };
@@ -344,6 +327,7 @@ export default function PlayNowPage() {
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called");
     const currentYear = new Date().getFullYear();
     const validYears = selectedYears.filter(
       (year) => year >= 2000 && year < currentYear,
@@ -351,11 +335,13 @@ export default function PlayNowPage() {
 
     const validPlayers = playerNames.filter((name) => name.trim() !== "");
     if (validPlayers.length === 0) {
+      console.log("No valid players");
       alert("Please enter at least one player name.");
       return;
     }
 
     if (playerNames.some((name) => name.trim() === "")) {
+      console.log("Empty player name");
       alert("Please fill in all player names or remove empty players.");
       return;
     }
@@ -365,6 +351,7 @@ export default function PlayNowPage() {
     );
     const uniqueNames = new Set(normalizedNames);
     if (uniqueNames.size !== normalizedNames.length) {
+      console.log("Duplicate player names");
       alert("Please fix duplicate player names before starting the game.");
       return;
     }
@@ -376,10 +363,36 @@ export default function PlayNowPage() {
     setErrorIndexes(emptyIndexes);
 
     if (validYears.length > 0 && validPlayers.length > 0) {
+      console.log("Valid years and players, starting game");
       setTotalRounds(numberOfRounds);
-      await fetchTopSongs(validYears);
+
+      // Check if all selected years have playlist links
+      const missingYears = validYears.filter((year) => !playlistLinks[year]);
+      if (missingYears.length > 0) {
+        alert(`No playlist available for year(s): ${missingYears.join(", ")}`);
+        return;
+      }
+
+      // Set up game state directly (no API call needed)
+      const isMultiplayer = validPlayers.length > 1;
+      setGameMode(isMultiplayer ? "multiplayer" : "single");
+      if (isMultiplayer) {
+        const initialScores: Record<string, number> = {};
+        validPlayers.forEach((player) => {
+          initialScores[player] = 0;
+        });
+        setPlayerScores(initialScores);
+        setCurrentPlayerIndex(0);
+      }
+
+      // Start the game immediately
       setGameStarted(true);
+      setShowCountdown(true);
+      setCountdownNumber(3);
+      setFadeCountdown(false);
+      setGameFinished(false);
     } else {
+      console.log("Form incomplete or invalid years");
       alert("Please complete the form and select valid years.");
     }
   };
@@ -503,6 +516,7 @@ export default function PlayNowPage() {
     if (showPrompt) {
       setShowArtist(false);
       setShowSong(false);
+      ``;
     }
   }, [showPrompt]);
 
@@ -518,37 +532,160 @@ export default function PlayNowPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const roomId = searchParams.get("roomId");
     const privateSettings = localStorage.getItem("privateRoomSettings");
-    if (privateSettings) {
+    // Only run this useEffect for private room mode
+    if (roomId && privateSettings && !gameStarted) {
       try {
         const settings = JSON.parse(privateSettings);
-        if (settings.years && Array.isArray(settings.years)) {
-          setSelectedYears(settings.years);
+
+        if (
+          !settings.years ||
+          !Array.isArray(settings.years) ||
+          settings.years.length === 0
+        ) {
+          throw new Error("Invalid years configuration");
         }
-        if (settings.rounds) {
-          setNumberOfRounds(settings.rounds);
-          setTotalRounds(settings.rounds);
+
+        if (
+          !settings.rounds ||
+          typeof settings.rounds !== "number" ||
+          settings.rounds < 1
+        ) {
+          throw new Error("Invalid rounds configuration");
         }
-        if (settings.playerNames && Array.isArray(settings.playerNames)) {
-          setPlayerNames(settings.playerNames);
+
+        if (
+          !settings.playerNames ||
+          !Array.isArray(settings.playerNames) ||
+          settings.playerNames.length === 0
+        ) {
+          throw new Error("Invalid player names configuration");
         }
+
+        setSelectedYears(settings.years);
+        setNumberOfRounds(settings.rounds);
+        setTotalRounds(settings.rounds);
+        setPlayerNames(settings.playerNames);
         setMode("private");
 
         const nameFromQuery = searchParams.get("name");
         const nameFromStorage = localStorage.getItem("playerName");
         setCurrentPlayerName(nameFromQuery ?? nameFromStorage ?? "");
 
-        void fetchTopSongs(settings.years);
-        setGameStarted(true);
-      } catch {
+        const loadPrivateRoom = async () => {
+          try {
+            const res = await fetch(
+              `/api/getTopSongs?years=${settings.years.join(",")}`,
+            );
+            if (!res.ok) {
+              throw new Error(`Failed to fetch songs: ${res.status}`);
+            }
+            const data = (await res.json()) as Song[];
+            if (!Array.isArray(data) || data.length === 0) {
+              throw new Error("No songs available for selected years");
+            }
+
+            setSongs(data);
+            const validPlayers = settings.playerNames.filter(
+              (name: string) => name.trim() !== "",
+            );
+            const isMultiplayer = validPlayers.length > 1;
+            setGameMode(isMultiplayer ? "multiplayer" : "single");
+            if (isMultiplayer) {
+              const initialScores: Record<string, number> = {};
+              validPlayers.forEach((player: string) => {
+                initialScores[player] = 0;
+              });
+              setPlayerScores(initialScores);
+              setCurrentPlayerIndex(0);
+            }
+            setShowYouTubePlayer(false);
+            if (!showCountdown) {
+              setShowCountdown(true);
+              setCountdownNumber(3);
+              setFadeCountdown(false);
+            }
+            setGameFinished(false);
+            setGameStarted(true);
+          } catch (error) {
+            console.error("Error loading private room:", error);
+            alert("Failed to load private room settings. Please try again.");
+            localStorage.removeItem("privateRoomSettings");
+            setMode("single");
+            setGameStarted(false);
+          }
+        };
+        void loadPrivateRoom();
+      } catch (error) {
+        console.error("Error parsing private room settings:", error);
+        alert("Invalid private room settings. Please try again.");
+        localStorage.removeItem("privateRoomSettings");
         setMode("single");
         setGameStarted(false);
       }
-    } else {
-      setMode("single");
-      setGameStarted(false);
     }
-  }, [searchParams, fetchTopSongs]);
+  }, [searchParams, gameStarted, showCountdown]);
+
+  // Polling for all answers in multiplayer/private mode
+  useEffect(() => {
+    if (mode !== "private" || !roomId || !showPrompt) return;
+    const key = `room-${roomId}-answers-round-${round}`;
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setAllAnswers(parsed);
+        const validPlayers = playerNames.filter((n) => n.trim() !== "");
+        if (Object.keys(parsed).length === validPlayers.length) {
+          setWaitingForOthers(false);
+          setShowAllResults(true);
+        }
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [mode, roomId, round, playerNames, showPrompt]);
+
+  // On submit in multiplayer/private mode
+  const handleMultiplayerSubmit = (
+    points: number,
+    artistCorrect: boolean,
+    songCorrect: boolean,
+  ) => {
+    if (!roomId) return;
+    const key = `room-${roomId}-answers-round-${round}`;
+    const currentPlayer = currentPlayerName;
+    const answer = {
+      song: userSongAnswer,
+      songRaw: userSongAnswer,
+      artist: userArtistAnswer,
+      artistRaw: userArtistAnswer,
+      points,
+      songCorrect,
+      artistCorrect,
+    };
+    // Save to localStorage
+    let answers: Record<string, unknown> = {};
+    try {
+      answers = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<
+        string,
+        unknown
+      >;
+    } catch {}
+    answers[currentPlayer] = answer;
+    localStorage.setItem(key, JSON.stringify(answers));
+    setWaitingForOthers(true);
+  };
+
+  // At the start of each round, clear answers from localStorage
+  useEffect(() => {
+    if (mode === "private" && roomId) {
+      const key = `room-${roomId}-answers-round-${round}`;
+      localStorage.removeItem(key);
+      setAllAnswers({});
+      setWaitingForOthers(false);
+    }
+  }, [mode, roomId, round]);
 
   if (!gameStarted) {
     return (
@@ -782,7 +919,7 @@ export default function PlayNowPage() {
     );
   }
 
-  if (songs) {
+  if (gameStarted) {
     const normalizedUserSong = normalize(userSongAnswer);
     const normalizedCorrectSong = normalize(currentSong);
     const normalizedUserArtist = normalize(userArtistAnswer);
@@ -916,7 +1053,6 @@ export default function PlayNowPage() {
                     setUserArtistAnswer("");
                     setCurrentSong("");
                     setCurrentArtist("");
-                    setShowScore(false);
                     setShowResult(false);
                     setPointsEarned(null);
                     setShowArtist(false);
@@ -986,45 +1122,10 @@ export default function PlayNowPage() {
                 Don&apos;t forget to press Volume Up
               </div>
             )}
-            <ul className="max-w-xl list-inside list-disc">
-              {songs.length > 0 &&
-                songs.map((song, idx) => (
-                  <li key={idx}>
-                    {song.title} by {song.artist}
-                  </li>
-                ))}
-            </ul>
+
             {showYouTubePlayer &&
               selectedYears.length > 0 &&
               selectedYears.map((year) => {
-                const playlistLinks: Record<number, string> = {
-                  2024: "https://www.youtube.com/embed/videoseries?list=PLxA687tYuMWjS8IGRWkCzwTn10XcEccaZ&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2023: "https://www.youtube.com/embed/videoseries?list=PLdv33Q3_-41Hvf43VtcqsfQQOpWFd1_BF&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2022: "https://www.youtube.com/embed/videoseries?list=PLFI4VRJeIyw3fDbrTa_M864mYNXqZ6t7A&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2021: "https://www.youtube.com/embed/videoseries?list=PLuIAx5_9AFUiVwCbv4UN1V0vOJm4e-gwv&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2020: "https://www.youtube.com/embed/videoseries?list=PLaWhSPDmjQ4oBw1U0ak-TK_Pw4I9OGLsU&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2019: "https://www.youtube.com/embed/videoseries?list=PLZjyOXTKuD2Q_VN-XXHK-HVhQl58-ZI_H&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2018: "https://www.youtube.com/embed/videoseries?list=PLnBHN8ndXwY3ngcQxvrQ4CwH6VQcM0enM&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2017: "https://www.youtube.com/embed/videoseries?list=PLFU8AFaV2B6RfG_ZA6GadvT63ABBZtIKi&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2016: "https://www.youtube.com/embed/videoseries?list=PLAvHlMUITRMlUViWK1BWoawOUTZZIl4tG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2015: "https://www.youtube.com/embed/videoseries?list=PLora6h23WG8UPaQDfC2_cpi4iVPI4Hp0y&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2014: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtp2pM_BbnRtlc2Y7cyMNVkL&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2013: "https://www.youtube.com/embed/videoseries?list=PLw_s-_bg5n2VuukP3aSQik31jBJ5ICXFq&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2012: "https://www.youtube.com/embed/videoseries?list=PLem9vLZEVqmZ5H67lelbDER05kG8FcF-u&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2011: "https://www.youtube.com/embed/videoseries?list=PL-CYomtw4SPG6XkvXw6AahcSOWTg0PfyA&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2010: "https://www.youtube.com/embed/videoseries?list=PL5579B759A885680C&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2009: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLlMWIyLdp3d2FrN7t1hiXUE&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2008: "https://www.youtube.com/embed/videoseries?list=PLam08HY53ekvPojGF4hzhAdNE609JCUHo&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2007: "https://www.youtube.com/embed/videoseries?list=PL8629BA4D2BFD141B&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2006: "https://www.youtube.com/embed/videoseries?list=PLCbZNiNDUZtqxO0cnTTqrjUHGdI0AbzyD&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2005: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOnF7gc5jg6R-aoBerQ8Y5ea&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2004: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4ib0lNXBwNVGZ1xjakmuLdnk&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2003: "https://www.youtube.com/embed/videoseries?list=PLqKA0FE2hsOmI1alHexOnn5H6VS948QDd&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2002: "https://www.youtube.com/embed/videoseries?list=PLsdPA0A_fKLmeOQ8SA8toBhiVA_3YY54R&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2001: "https://www.youtube.com/embed/videoseries?list=PLYosk6VjN4iaqktGTn_7iJvJIku6Z5XgG&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                  2000: "https://www.youtube.com/embed/videoseries?list=PLFczJQWL3c0hvajZ3MyNFzUO3QURpY7N0&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0",
-                };
-
                 const playlistURL = playlistLinks[year];
                 if (!playlistURL) return null;
 
@@ -1212,10 +1313,20 @@ export default function PlayNowPage() {
                     (mode === "private" &&
                       playerNames.includes(currentPlayerName))) && (
                     <>
-                      {gameMode === "multiplayer" && (
+                      {mode === "private" && (
                         <div className="mb-4 text-center">
                           <p className="text-lg font-semibold text-yellow-400">
-                            {playerNames[currentPlayerIndex]}&apos;s Turn
+                            Your Turn
+                          </p>
+                          <p className="text-sm text-gray-300">
+                            Player: {currentPlayerName}
+                          </p>
+                        </div>
+                      )}
+                      {mode === "single" && gameMode === "multiplayer" && (
+                        <div className="mb-4 text-center">
+                          <p className="text-lg font-semibold text-yellow-400">
+                            {playerNames[currentPlayerIndex]}'s Turn
                           </p>
                           <p className="text-sm text-gray-300">
                             Player {currentPlayerIndex + 1} of{" "}
@@ -1380,167 +1491,242 @@ export default function PlayNowPage() {
 
                       {!showResult && !showAllResults && (
                         <>
-                          <div className="relative mb-4">
-                            <label htmlFor="artist" className="mb-2 block">
-                              Artist Name:
-                            </label>
-                            <input
-                              type={
-                                gameMode === "multiplayer" && !showArtist
-                                  ? "password"
-                                  : "text"
-                              }
-                              id="artist"
-                              value={userArtistAnswer}
-                              onChange={(e) =>
-                                setUserArtistAnswer(e.target.value)
-                              }
-                              className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
-                              placeholder="Enter artist name"
-                              autoComplete="off"
-                              style={{ letterSpacing: "0.1em" }}
-                            />
-                            {gameMode === "multiplayer" && (
-                              <button
-                                type="button"
-                                onClick={() => setShowArtist((v) => !v)}
-                                className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
-                                tabIndex={-1}
-                                aria-label={
-                                  showArtist ? "Hide artist" : "Show artist"
-                                }
-                                style={{ padding: 0 }}
-                              >
-                                {showArtist ? "🙈" : "👁️"}
-                              </button>
-                            )}
-                          </div>
-                          <div className="relative mb-6">
-                            <label htmlFor="song" className="mb-2 block">
-                              Song Title:
-                            </label>
-                            <input
-                              type={
-                                gameMode === "multiplayer" && !showSong
-                                  ? "password"
-                                  : "text"
-                              }
-                              id="song"
-                              value={userSongAnswer}
-                              onChange={(e) =>
-                                setUserSongAnswer(e.target.value)
-                              }
-                              className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
-                              placeholder="Enter song title"
-                              autoComplete="off"
-                              style={{ letterSpacing: "0.1em" }}
-                            />
-                            {gameMode === "multiplayer" && (
-                              <button
-                                type="button"
-                                onClick={() => setShowSong((v) => !v)}
-                                className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
-                                tabIndex={-1}
-                                aria-label={
-                                  showSong ? "Hide song" : "Show song"
-                                }
-                                style={{ padding: 0 }}
-                              >
-                                {showSong ? "🙈" : "👁️"}
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="flex justify-end gap-4">
-                            <button
-                              onClick={() => {
-                                if (
-                                  !userArtistAnswer.trim() &&
-                                  !userSongAnswer.trim()
-                                ) {
-                                  setInputError(
-                                    "You have to guess at least one!",
-                                  );
-                                  return;
-                                } else {
-                                  setInputError("");
-                                }
-
-                                let points = 0;
-                                const artistCorrect = isArtistCorrect(
-                                  userArtistAnswer,
-                                  currentArtist,
-                                );
-                                const songCorrect = isSongCorrect(
-                                  userSongAnswer,
-                                  currentSong,
-                                );
-                                if (artistCorrect) {
-                                  points += 5;
-                                }
-                                if (songCorrect) {
-                                  points += 5;
-                                }
-
-                                if (gameMode === "single") {
-                                  setPointsEarned(points);
-                                  setShowResult(true);
-                                  if (points > 0) {
-                                    setScore((prev) => prev + points);
-                                    setShowScore(true);
+                          {mode === "private" && waitingForOthers ? (
+                            <div className="flex min-h-[120px] flex-col items-center justify-center">
+                              <div className="mb-4 text-lg font-semibold text-yellow-300">
+                                Waiting for all players to submit...
+                              </div>
+                              <div className="mb-2 text-white">
+                                Still waiting for:
+                                <ul className="mt-2 text-base">
+                                  {playerNames
+                                    .filter(
+                                      (n) =>
+                                        n.trim() !== "" &&
+                                        !(allAnswers && allAnswers[n]),
+                                    )
+                                    .map((n) => (
+                                      <li key={n} className="text-red-400">
+                                        {n}
+                                      </li>
+                                    ))}
+                                </ul>
+                              </div>
+                              <div className="loader mb-2" />
+                            </div>
+                          ) : (
+                            <>
+                              <div className="relative mb-4">
+                                <label htmlFor="artist" className="mb-2 block">
+                                  Artist Name:
+                                </label>
+                                <input
+                                  type={
+                                    mode === "single" &&
+                                    gameMode === "multiplayer" &&
+                                    !showArtist
+                                      ? "password"
+                                      : "text"
                                   }
-                                } else {
-                                  const currentPlayerName =
-                                    playerNames[currentPlayerIndex];
-                                  if (
-                                    currentPlayerName &&
-                                    currentPlayerName.trim() !== ""
-                                  ) {
-                                    const newAnswers = { ...playerAnswers };
-                                    const realSongAnswer = userSongAnswer;
-                                    const realArtistAnswer = userArtistAnswer;
-                                    newAnswers[currentPlayerName] = {
-                                      song: realSongAnswer,
-                                      songRaw: realSongAnswer,
-                                      artist: realArtistAnswer,
-                                      artistRaw: realArtistAnswer,
-                                      points,
-                                      songCorrect,
-                                      artistCorrect,
-                                    };
-                                    setPlayerAnswers(newAnswers);
-
-                                    setPlayerScores((prev) => ({
-                                      ...prev,
-                                      [currentPlayerName]:
-                                        (prev[currentPlayerName] ?? 0) + points,
-                                    }));
-
-                                    const validPlayers = playerNames.filter(
-                                      (name) => name.trim() !== "",
-                                    );
+                                  id="artist"
+                                  value={userArtistAnswer}
+                                  onChange={(e) =>
+                                    setUserArtistAnswer(e.target.value)
+                                  }
+                                  className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
+                                  placeholder="Enter artist name"
+                                  autoComplete="off"
+                                  style={{ letterSpacing: "0.1em" }}
+                                  disabled={
+                                    mode === "private" && waitingForOthers
+                                  }
+                                />
+                                {mode === "single" &&
+                                  gameMode === "multiplayer" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowArtist((v) => !v)}
+                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                      tabIndex={-1}
+                                      aria-label={
+                                        showArtist
+                                          ? "Hide artist"
+                                          : "Show artist"
+                                      }
+                                      style={{ padding: 0 }}
+                                    >
+                                      {showArtist ? "🙈" : "👁️"}
+                                    </button>
+                                  )}
+                              </div>
+                              <div className="relative mb-6">
+                                <label htmlFor="song" className="mb-2 block">
+                                  Song Title:
+                                </label>
+                                <input
+                                  type={
+                                    mode === "single" &&
+                                    gameMode === "multiplayer" &&
+                                    !showSong
+                                      ? "password"
+                                      : "text"
+                                  }
+                                  id="song"
+                                  value={userSongAnswer}
+                                  onChange={(e) =>
+                                    setUserSongAnswer(e.target.value)
+                                  }
+                                  className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
+                                  placeholder="Enter song title"
+                                  autoComplete="off"
+                                  style={{ letterSpacing: "0.1em" }}
+                                  disabled={
+                                    mode === "private" && waitingForOthers
+                                  }
+                                />
+                                {mode === "single" &&
+                                  gameMode === "multiplayer" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowSong((v) => !v)}
+                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                      tabIndex={-1}
+                                      aria-label={
+                                        showSong ? "Hide song" : "Show song"
+                                      }
+                                      style={{ padding: 0 }}
+                                    >
+                                      {showSong ? "🙈" : "👁️"}
+                                    </button>
+                                  )}
+                              </div>
+                              <div className="flex justify-end gap-4">
+                                <button
+                                  onClick={() => {
                                     if (
-                                      currentPlayerIndex <
-                                      validPlayers.length - 1
+                                      !userArtistAnswer.trim() &&
+                                      !userSongAnswer.trim()
                                     ) {
-                                      setCurrentPlayerIndex(
-                                        currentPlayerIndex + 1,
+                                      setInputError(
+                                        "You have to guess at least one!",
                                       );
-                                      setUserSongAnswer("");
-                                      setUserArtistAnswer("");
+                                      return;
                                     } else {
-                                      setShowAllResults(true);
+                                      setInputError("");
                                     }
+                                    if (
+                                      mode === "private" &&
+                                      gameMode === "multiplayer"
+                                    ) {
+                                      const artistCorrect = isArtistCorrect(
+                                        userArtistAnswer,
+                                        currentArtist,
+                                      );
+                                      const songCorrect = isSongCorrect(
+                                        userSongAnswer,
+                                        currentSong,
+                                      );
+                                      let points = 0;
+                                      if (artistCorrect) points += 5;
+                                      if (songCorrect) points += 5;
+                                      handleMultiplayerSubmit(
+                                        points,
+                                        artistCorrect,
+                                        songCorrect,
+                                      );
+                                      // Do NOT close the prompt, just set waitingForOthers
+                                      // setShowPrompt(false); // REMOVE THIS LINE
+                                      setWaitingForOthers(true);
+                                    } else if (
+                                      mode === "single" &&
+                                      gameMode === "multiplayer"
+                                    ) {
+                                      const artistCorrect = isArtistCorrect(
+                                        userArtistAnswer,
+                                        currentArtist,
+                                      );
+                                      const songCorrect = isSongCorrect(
+                                        userSongAnswer,
+                                        currentSong,
+                                      );
+                                      let points = 0;
+                                      if (artistCorrect) points += 5;
+                                      if (songCorrect) points += 5;
+                                      const currentPlayerName =
+                                        playerNames[currentPlayerIndex];
+                                      if (
+                                        currentPlayerName &&
+                                        currentPlayerName.trim() !== ""
+                                      ) {
+                                        const newAnswers = { ...playerAnswers };
+                                        newAnswers[currentPlayerName] = {
+                                          song: userSongAnswer,
+                                          songRaw: userSongAnswer,
+                                          artist: userArtistAnswer,
+                                          artistRaw: userArtistAnswer,
+                                          points,
+                                          songCorrect,
+                                          artistCorrect,
+                                        };
+                                        setPlayerAnswers(newAnswers);
+                                        setPlayerScores((prev) => ({
+                                          ...prev,
+                                          [currentPlayerName]:
+                                            (prev[currentPlayerName] ?? 0) +
+                                            points,
+                                        }));
+                                        const validPlayers = playerNames.filter(
+                                          (name) => name.trim() !== "",
+                                        );
+                                        if (
+                                          currentPlayerIndex <
+                                          validPlayers.length - 1
+                                        ) {
+                                          setCurrentPlayerIndex(
+                                            currentPlayerIndex + 1,
+                                          );
+                                          setUserSongAnswer("");
+                                          setUserArtistAnswer("");
+                                        } else {
+                                          setShowAllResults(true);
+                                        }
+                                      }
+                                    } else {
+                                      // Single player
+                                      const artistCorrect = isArtistCorrect(
+                                        userArtistAnswer,
+                                        currentArtist,
+                                      );
+                                      const songCorrect = isSongCorrect(
+                                        userSongAnswer,
+                                        currentSong,
+                                      );
+                                      let points = 0;
+                                      if (artistCorrect) points += 5;
+                                      if (songCorrect) points += 5;
+                                      setPointsEarned(points);
+                                      setScore((prev) => prev + points);
+                                      setShowResult(true);
+                                    }
+                                  }}
+                                  className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
+                                  disabled={
+                                    mode === "private" && waitingForOthers
                                   }
-                                }
-                              }}
-                              className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
-                            >
-                              {gameMode === "multiplayer"
-                                ? "Submit & Next"
-                                : "Submit"}
-                            </button>
-                          </div>
+                                >
+                                  {mode === "single" &&
+                                  gameMode === "multiplayer"
+                                    ? currentPlayerIndex ===
+                                      playerNames.filter((n) => n.trim() !== "")
+                                        .length -
+                                        1
+                                      ? "Submit"
+                                      : "Next"
+                                    : "Submit"}
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </>
                       )}
 
@@ -1644,10 +1830,30 @@ export default function PlayNowPage() {
               </div>
             )}
             {playerNames.filter((name) => name.trim() !== "").length === 1 && (
-              <div className="fixed bottom-8 left-1/2 z-50 flex min-w-[48px] -translate-x-1/2 items-center justify-center rounded-[100px] bg-[#180a0a] px-4 py-1">
-                <span className="text-center text-xl font-extrabold text-yellow-400">
-                  {score}
-                </span>
+              <div className="mt-6 flex w-full flex-col items-center">
+                <div className="mb-1 text-center text-lg font-extrabold text-white">
+                  Round {round} of {totalRounds}
+                </div>
+                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-[#180a0a] px-8 py-2 shadow-lg">
+                  {playerNames
+                    .filter((name) => name.trim() !== "")
+                    .map((playerName, idx) => (
+                      <div
+                        key={playerName}
+                        className="flex min-w-[80px] flex-col items-center justify-center text-center"
+                      >
+                        <span className="mb-0.5 text-xs font-extrabold text-yellow-300">
+                          #{idx + 1}
+                        </span>
+                        <span className="mb-1 text-base font-bold text-white">
+                          {playerName}
+                        </span>
+                        <span className="mt-0.5 text-lg font-extrabold text-yellow-400">
+                          {score}
+                        </span>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
           </>

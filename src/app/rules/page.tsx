@@ -9,32 +9,31 @@ const rules = [
   {
     title: "🎧 Listen to the Jam",
     description:
-      "Each round starts with a snippet of a song. Focus, feel the beat, and get ready to guess.",
+      "After selecting your game settings, you will be taken to the game page where the game begins. The game starts off with a 15 second snippet of a song.",
   },
   {
     title: "🎤 Guess the Song & Artist",
     description:
-      "Earn points by entering the correct song title and artist. Trust your music memory!",
+      "Earn points by entering the correct song title and artist. Each questions is 5 points.",
   },
   {
     title: "⏳ Beat the Clock",
     description:
-      "You've got limited time each round. Answer quickly before the beat fades away.",
+      "You've got limited time each round to answer. Answer quickly before the questions disappear.",
   },
   {
     title: "👯 One Player at a Time",
     description:
-      "Each player gets their own turn to guess. No peeking — fairness keeps the jam real.",
+      "Each player gets their own turn to guess. No peeking, when playing on multiplayer mode all answers are masked.",
   },
   {
     title: "🏆 Become the Jam Master",
     description:
-      "Rack up the highest score across rounds to become the ultimate Jam Master.",
+      "Rack up the highest score across rounds to become the ultimate Jam Master. The game will end when the rounds are over, and will show you your final score.",
   },
   {
     title: "🔗 Share the Vibes",
-    description:
-      "Copy your game link and invite friends to join your jam. Music is better together.",
+    description: "Copy your game link and invite friends to join your jam.",
   },
 ];
 
@@ -56,7 +55,6 @@ export default function RulesPage() {
 
   return (
     <main className="bg-stars relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-gradient-to-br from-[#0b0f29] via-[#0d1a40] to-[#010314] px-6 py-20 font-sans text-white">
-      {/* 🔊 Hidden Background Audio */}
       <audio
         ref={audioRef}
         src="/src/music.mp3"
@@ -64,7 +62,6 @@ export default function RulesPage() {
         style={{ display: "none" }}
       />
 
-      {/* Vine Waves Left */}
       <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24">
         <svg
           viewBox="0 0 100 600"

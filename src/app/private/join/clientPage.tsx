@@ -17,25 +17,39 @@ export default function JoinPrivateRoomClientPage({
   const [isLoading, setIsLoading] = useState(false);
 
   const validateRoomCode = (code: string): boolean => {
-    const storageKey = `room-${code}-players`;
-    const roomData = localStorage.getItem(storageKey);
-    return roomData !== null;
+    try {
+      const storageKey = `room-${code}-players`;
+      const roomData = localStorage.getItem(storageKey);
+      if (!roomData) return false;
+
+      const players = JSON.parse(roomData);
+      return Array.isArray(players) && players.length > 0;
+    } catch (error) {
+      console.error("Error validating room code:", error);
+      return false;
+    }
   };
 
   const validatePlayerName = (
     roomCode: string,
     playerName: string,
   ): boolean => {
-    const storageKey = `room-${roomCode}-players`;
-    const roomData = localStorage.getItem(storageKey);
-    if (roomData) {
+    try {
+      const storageKey = `room-${roomCode}-players`;
+      const roomData = localStorage.getItem(storageKey);
+      if (!roomData) return true;
+
       const players = JSON.parse(roomData);
+      if (!Array.isArray(players)) return true;
+
       const normalizedPlayerName = playerName.trim().toLowerCase();
       return !players.some(
         (player: string) => player.toLowerCase() === normalizedPlayerName,
       );
+    } catch (error) {
+      console.error("Error validating player name:", error);
+      return true;
     }
-    return true;
   };
 
   const handleJoin = () => {

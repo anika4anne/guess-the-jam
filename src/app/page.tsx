@@ -59,13 +59,12 @@ export default function HomePage() {
           </h1>
           <p className="max-w-2xl text-center text-xl text-white/80">
             Can you guess the song just by hearing a short snippet? Test your
-            music knowledge and race against the clock!
+            skills and race against the time!
           </p>
-
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
             <button
               onClick={handlePlayClick}
-              className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
+              className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-left text-white shadow-md transition-all hover:bg-white/20"
             >
               <h3 className="text-2xl font-bold text-yellow-300">Play Now →</h3>
               <p className="text-lg">Start guessing songs in our game mode!</p>
@@ -73,47 +72,41 @@ export default function HomePage() {
 
             <Link
               href="/rules"
-              className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
+              className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-left text-white shadow-md transition-all hover:bg-white/20"
             >
               <h3 className="text-2xl font-bold text-blue-300">
                 How to Play →
               </h3>
-              <p className="text-lg">Learn the rules and get pro tips!</p>
+              <p className="text-lg">Learn the rules here!</p>
             </Link>
           </div>
-
           {/* Private Room section */}
-          <div className="mt-12 text-center">
-            <h2 className="mb-6 text-3xl font-semibold text-white">
+          <div className="mt-12">
+            <h2 className="mb-6 text-center text-3xl font-semibold text-white">
               Private Rooms
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
               <Link
                 href="/private/create"
-                className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-8 text-white shadow-md transition-all hover:bg-white/20 sm:max-w-md"
+                className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
               >
-                <h3 className="text-center text-2xl font-bold text-green-300">
+                <h3 className="text-xl font-bold text-green-300">
                   Create Private Room →
                 </h3>
-                <p className="text-center text-lg">
-                  Start a private game with friends!
-                </p>
+                <p className="text-lg">Start a private game with friends!</p>
               </Link>
 
               <Link
                 href="/private/join"
-                className="flex max-w-xs flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
+                className="flex max-w-xs flex-col gap-3 rounded-2xl bg-white/10 p-6 text-white shadow-md transition-all hover:bg-white/20"
               >
-                <h3 className="text-center text-2xl font-bold text-pink-300">
+                <h3 className="text-2xl font-bold text-pink-300">
                   Join Private Room →
                 </h3>
-                <p className="text-center text-lg">
-                  Enter a private room with a code!
-                </p>
+                <p className="text-lg">Enter a private room with a code!</p>
               </Link>
             </div>
           </div>
-
           {/* Discord Invite section */}
           <div className="mt-10 flex flex-col items-center">
             <a

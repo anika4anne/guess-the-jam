@@ -18,6 +18,29 @@ interface PrivateRoomProps {
   roomId: string;
 }
 
+const cleanupStaleRooms = () => {
+  try {
+    const keys = Object.keys(localStorage);
+    const roomKeys = keys.filter((key) => key.startsWith("room-"));
+
+    roomKeys.forEach((key) => {
+      const data = localStorage.getItem(key);
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          if (!Array.isArray(parsed) || parsed.length === 0) {
+            localStorage.removeItem(key);
+          }
+        } catch {
+          localStorage.removeItem(key);
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error cleaning up stale rooms:", error);
+  }
+};
+
 export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,85 +74,137 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   }, [name, roomId, router]);
 
   useEffect(() => {
+    cleanupStaleRooms();
+  }, []);
+
+  useEffect(() => {
     if (!name) return;
 
     const storageKey = `room-${roomId}-players`;
     const bannedKey = `room-${roomId}-banned`;
     const readyKey = `room-${roomId}-ready`;
 
-    const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
-    const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
-    setBannedPlayers(banned);
-    setReadyPlayers(ready);
+    try {
+      const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
+      const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
 
-    const isBanned = banned.some(
-      (bannedPlayer: string) =>
-        bannedPlayer.toLowerCase() === name.toLowerCase(),
-    );
+      if (
+        !Array.isArray(existing) ||
+        !Array.isArray(banned) ||
+        !Array.isArray(ready)
+      ) {
+        throw new Error("Invalid room data format");
+      }
 
-    if (isBanned) {
-      setShowKickedPopup(true);
-      return;
-    }
+      setBannedPlayers(banned);
+      setReadyPlayers(ready);
 
-    if (
-      !existing.some(
-        (player: string) => player.toLowerCase() === name.toLowerCase(),
-      )
-    ) {
-      const updated = [...existing, name];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-      setPlayers(updated);
-    } else {
-      setPlayers(existing);
-    }
-
-    const isCurrentPlayerHost = existing.length === 0 || existing[0] === name;
-    setIsHost(isCurrentPlayerHost);
-
-    const interval = setInterval(() => {
-      const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-      const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
-      const currentReady = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
-      setPlayers(current);
-      setBannedPlayers(currentBanned);
-      setReadyPlayers(currentReady);
-
-      const isCurrentlyBanned = currentBanned.some(
+      const isBanned = banned.some(
         (bannedPlayer: string) =>
           bannedPlayer.toLowerCase() === name.toLowerCase(),
       );
 
-      if (
-        !current.some(
-          (player: string) => player.toLowerCase() === name.toLowerCase(),
-        ) ||
-        isCurrentlyBanned
-      ) {
+      if (isBanned) {
         setShowKickedPopup(true);
+        return;
       }
-    }, 1000);
 
-    return () => {
-      clearInterval(interval);
-
-      if (!showKickedPopup) {
-        const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-        const updated = current.filter(
-          (p: string) => p.toLowerCase() !== name.toLowerCase(),
-        );
+      if (
+        !existing.some(
+          (player: string) => player.toLowerCase() === name.toLowerCase(),
+        )
+      ) {
+        const updated = [...existing, name];
         localStorage.setItem(storageKey, JSON.stringify(updated));
+        setPlayers(updated);
+      } else {
+        setPlayers(existing);
       }
-    };
-  }, [name, roomId, showKickedPopup]);
+
+      const isCurrentPlayerHost = existing.length === 0 || existing[0] === name;
+      setIsHost(isCurrentPlayerHost);
+
+      const interval = setInterval(() => {
+        try {
+          const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+          const currentBanned = JSON.parse(
+            localStorage.getItem(bannedKey) ?? "[]",
+          );
+          const currentReady = JSON.parse(
+            localStorage.getItem(readyKey) ?? "[]",
+          );
+
+          if (
+            Array.isArray(current) &&
+            Array.isArray(currentBanned) &&
+            Array.isArray(currentReady)
+          ) {
+            setPlayers(current);
+            setBannedPlayers(currentBanned);
+            setReadyPlayers(currentReady);
+
+            const isCurrentlyBanned = currentBanned.some(
+              (bannedPlayer: string) =>
+                bannedPlayer.toLowerCase() === name.toLowerCase(),
+            );
+
+            if (
+              !current.some(
+                (player: string) => player.toLowerCase() === name.toLowerCase(),
+              ) ||
+              isCurrentlyBanned
+            ) {
+              setShowKickedPopup(true);
+            }
+          }
+        } catch (error) {
+          console.error("Error syncing room data:", error);
+        }
+      }, 1000);
+
+      return () => {
+        clearInterval(interval);
+
+        if (!showKickedPopup && name) {
+          try {
+            const current = JSON.parse(
+              localStorage.getItem(storageKey) ?? "[]",
+            );
+            const updated = current.filter(
+              (p: string) => p.toLowerCase() !== name.toLowerCase(),
+            );
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+
+            const currentReady = JSON.parse(
+              localStorage.getItem(readyKey) ?? "[]",
+            );
+            const updatedReady = currentReady.filter(
+              (p: string) => p.toLowerCase() !== name.toLowerCase(),
+            );
+            localStorage.setItem(readyKey, JSON.stringify(updatedReady));
+          } catch (error) {
+            console.error("Error cleaning up player data:", error);
+          }
+        }
+      };
+    } catch (error) {
+      console.error("Error initializing room:", error);
+      alert("Failed to join room. Please try again.");
+      router.push("/private");
+    }
+  }, [name, roomId, showKickedPopup, router]);
 
   useEffect(() => {
     const gameStartKey = `room-${roomId}-gameStarting`;
 
     const checkGameStarting = () => {
-      const gameStarting = localStorage.getItem(gameStartKey) === "true";
-      setIsGameStarting(gameStarting);
+      try {
+        const gameStarting = localStorage.getItem(gameStartKey) === "true";
+        setIsGameStarting(gameStarting);
+      } catch (error) {
+        console.error("Error checking game status:", error);
+      }
     };
 
     const interval = setInterval(checkGameStarting, 100);
@@ -143,6 +218,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (isGameStarting && countdown === 0) {
+      const gameStartKey = `room-${roomId}-gameStarting`;
+      localStorage.removeItem(gameStartKey);
       router.push(
         `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
       );
@@ -197,14 +274,15 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     if (stored) setSelectedYears(JSON.parse(stored));
     const interval = setInterval(() => {
       const updated = localStorage.getItem(yearsKey);
-      if (
-        updated &&
-        JSON.stringify(JSON.parse(updated)) !== JSON.stringify(selectedYears)
-      )
-        setSelectedYears(JSON.parse(updated));
+      if (updated) {
+        const parsed = JSON.parse(updated);
+        if (JSON.stringify(parsed) !== JSON.stringify(selectedYears)) {
+          setSelectedYears(parsed);
+        }
+      }
     }, 500);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, selectedYears]);
 
   const allReady =
     players.length >= 2 && readyPlayers.length === players.length;
@@ -304,20 +382,26 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         alert("Please enter at least one playlist before starting the game.");
         return;
       }
-      const privateRoomSettings = {
-        years: selectedYears,
-        rounds,
-        playerNames: players,
-        mode,
-        playlists,
-      };
-      localStorage.setItem(
-        "privateRoomSettings",
-        JSON.stringify(privateRoomSettings),
-      );
-      const gameStartKey = `room-${roomId}-gameStarting`;
-      localStorage.setItem(gameStartKey, "true");
-      setIsGameStarting(true);
+
+      try {
+        const privateRoomSettings = {
+          years: selectedYears,
+          rounds,
+          playerNames: players,
+          mode,
+          playlists: playlists.filter((p) => p.trim()),
+        };
+        localStorage.setItem(
+          "privateRoomSettings",
+          JSON.stringify(privateRoomSettings),
+        );
+        const gameStartKey = `room-${roomId}-gameStarting`;
+        localStorage.setItem(gameStartKey, "true");
+        setIsGameStarting(true);
+      } catch (error) {
+        console.error("Error starting game:", error);
+        alert("Failed to start game. Please try again.");
+      }
     }
   };
 
@@ -332,6 +416,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const handleRoundsChange = (value: number) => {
+    if (value < 1 || value > 100) return;
     const roundsKey = `room-${roomId}-rounds`;
     setRounds(value);
     localStorage.setItem(roundsKey, String(value));
@@ -344,6 +429,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const handlePlaylistChange = (idx: number, value: string) => {
+    if (idx < 0 || idx >= playlists.length) return;
     const playlistsKey = `room-${roomId}-playlists`;
     const updated = [...playlists];
     updated[idx] = value;
@@ -377,6 +463,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const handleAddYear = (year: number) => {
+    if (year < 2000 || year > new Date().getFullYear()) return;
     const yearsKey = `room-${roomId}-years`;
     if (!selectedYears.includes(year)) {
       const updated = [...selectedYears, year];
