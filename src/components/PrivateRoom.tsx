@@ -356,6 +356,33 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     return () => clearInterval(interval);
   }, [roomId]);
 
+  useEffect(() => {
+    if (!isMounted.current) return;
+
+    const syncPrivateRoomSettings = () => {
+      if (!isMounted.current) return;
+      try {
+        const privateRoomSettings = {
+          years: selectedYears,
+          rounds,
+          playerNames: players,
+          mode,
+          playlists: playlists.filter((p) => p.trim()),
+        };
+
+        localStorage.setItem(
+          "privateRoomSettings",
+          JSON.stringify(privateRoomSettings),
+        );
+      } catch (error) {
+        console.error("Error syncing private room settings:", error);
+      }
+    };
+
+    const interval = setInterval(syncPrivateRoomSettings, 1000);
+    return () => clearInterval(interval);
+  }, [roomId, selectedYears, rounds, players, mode, playlists]);
+
   const allReady =
     players.length >= 2 && readyPlayers.length === players.length;
 
@@ -444,11 +471,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           JSON.stringify(privateRoomSettings),
         );
 
-        const saved = localStorage.getItem("privateRoomSettings");
-
         const gameStartKey = `room-${roomId}-gameStarting`;
         localStorage.setItem(gameStartKey, "true");
-        setIsGameStarting(true);
+
+        router.push(
+          `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
+        );
       } catch (error) {
         console.error("Error starting game:", error);
         alert("Failed to start game. Please try again.");
@@ -463,6 +491,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     rounds,
     players,
     playlists,
+    name,
+    router,
   ]);
 
   const copyRoomId = useCallback(async () => {
