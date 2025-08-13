@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Confetti from "react-confetti";
@@ -42,6 +36,7 @@ export default function PlayNowPage() {
   const searchParams = useSearchParams();
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
+
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
@@ -103,6 +98,7 @@ export default function PlayNowPage() {
   const [duplicateNameError, setDuplicateNameError] = useState<string>("");
 
   const [showVolumeReminder, setShowVolumeReminder] = useState(true);
+  const privateSettingsLoaded = useRef(false);
 
   const [numberOfRounds, setNumberOfRounds] = useState(25);
   const [totalRounds, setTotalRounds] = useState<number>(25);
@@ -131,13 +127,12 @@ export default function PlayNowPage() {
       }, 1000);
       return () => clearTimeout(timeout);
     } else {
-      // Fade out the countdown, then show the YouTube player
       setFadeCountdown(true);
       const fadeTimeout = setTimeout(() => {
         setShowCountdown(false);
         setShowYouTubePlayer(true);
         setGameStarted(true);
-      }, 500); // fade out duration
+      }, 500);
       return () => clearTimeout(fadeTimeout);
     }
   }, [showCountdown, countdownNumber]);
@@ -220,7 +215,7 @@ export default function PlayNowPage() {
       });
     });
     intervalRefs.current = currentIntervalRefs;
-    // Copy playerRefs.current to a variable for cleanup
+
     const cleanupPlayerRefs = { ...playerRefs.current };
     return () => {
       Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
@@ -366,14 +361,12 @@ export default function PlayNowPage() {
       console.log("Valid years and players, starting game");
       setTotalRounds(numberOfRounds);
 
-      // Check if all selected years have playlist links
       const missingYears = validYears.filter((year) => !playlistLinks[year]);
       if (missingYears.length > 0) {
         alert(`No playlist available for year(s): ${missingYears.join(", ")}`);
         return;
       }
 
-      // Set up game state directly (no API call needed)
       const isMultiplayer = validPlayers.length > 1;
       setGameMode(isMultiplayer ? "multiplayer" : "single");
       if (isMultiplayer) {
@@ -385,7 +378,6 @@ export default function PlayNowPage() {
         setCurrentPlayerIndex(0);
       }
 
-      // Start the game immediately
       setGameStarted(true);
       setShowCountdown(true);
       setCountdownNumber(3);
@@ -516,7 +508,6 @@ export default function PlayNowPage() {
     if (showPrompt) {
       setShowArtist(false);
       setShowSong(false);
-      ``;
     }
   }, [showPrompt]);
 
@@ -534,8 +525,13 @@ export default function PlayNowPage() {
     if (typeof window === "undefined") return;
     const roomId = searchParams.get("roomId");
     const privateSettings = localStorage.getItem("privateRoomSettings");
-    // Only run this useEffect for private room mode
-    if (roomId && privateSettings && !gameStarted) {
+
+    if (
+      roomId &&
+      privateSettings &&
+      !gameStarted &&
+      !privateSettingsLoaded.current
+    ) {
       try {
         const settings = JSON.parse(privateSettings);
 
@@ -578,10 +574,12 @@ export default function PlayNowPage() {
             const res = await fetch(
               `/api/getTopSongs?years=${settings.years.join(",")}`,
             );
+
             if (!res.ok) {
               throw new Error(`Failed to fetch songs: ${res.status}`);
             }
             const data = (await res.json()) as Song[];
+
             if (!Array.isArray(data) || data.length === 0) {
               throw new Error("No songs available for selected years");
             }
@@ -608,12 +606,14 @@ export default function PlayNowPage() {
             }
             setGameFinished(false);
             setGameStarted(true);
+            privateSettingsLoaded.current = true;
           } catch (error) {
             console.error("Error loading private room:", error);
             alert("Failed to load private room settings. Please try again.");
             localStorage.removeItem("privateRoomSettings");
             setMode("single");
             setGameStarted(false);
+            privateSettingsLoaded.current = true;
           }
         };
         void loadPrivateRoom();
@@ -623,11 +623,16 @@ export default function PlayNowPage() {
         localStorage.removeItem("privateRoomSettings");
         setMode("single");
         setGameStarted(false);
+        privateSettingsLoaded.current = true;
       }
     }
-  }, [searchParams, gameStarted, showCountdown]);
+  }, [searchParams]);
 
-  // Polling for all answers in multiplayer/private mode
+  // Reset the ref when search params change
+  useEffect(() => {
+    privateSettingsLoaded.current = false;
+  }, [searchParams]);
+
   useEffect(() => {
     if (mode !== "private" || !roomId || !showPrompt) return;
     const key = `room-${roomId}-answers-round-${round}`;
@@ -646,7 +651,6 @@ export default function PlayNowPage() {
     return () => clearInterval(interval);
   }, [mode, roomId, round, playerNames, showPrompt]);
 
-  // On submit in multiplayer/private mode
   const handleMultiplayerSubmit = (
     points: number,
     artistCorrect: boolean,
@@ -664,7 +668,7 @@ export default function PlayNowPage() {
       songCorrect,
       artistCorrect,
     };
-    // Save to localStorage
+
     let answers: Record<string, unknown> = {};
     try {
       answers = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<
@@ -677,7 +681,6 @@ export default function PlayNowPage() {
     setWaitingForOthers(true);
   };
 
-  // At the start of each round, clear answers from localStorage
   useEffect(() => {
     if (mode === "private" && roomId) {
       const key = `room-${roomId}-answers-round-${round}`;
@@ -1326,7 +1329,7 @@ export default function PlayNowPage() {
                       {mode === "single" && gameMode === "multiplayer" && (
                         <div className="mb-4 text-center">
                           <p className="text-lg font-semibold text-yellow-400">
-                            {playerNames[currentPlayerIndex]}'s Turn
+                            {playerNames[currentPlayerIndex]}&apos;s Turn
                           </p>
                           <p className="text-sm text-gray-300">
                             Player {currentPlayerIndex + 1} of{" "}
@@ -1502,8 +1505,7 @@ export default function PlayNowPage() {
                                   {playerNames
                                     .filter(
                                       (n) =>
-                                        n.trim() !== "" &&
-                                        !(allAnswers && allAnswers[n]),
+                                        n.trim() !== "" && !allAnswers?.[n],
                                     )
                                     .map((n) => (
                                       <li key={n} className="text-red-400">
@@ -1634,8 +1636,6 @@ export default function PlayNowPage() {
                                         artistCorrect,
                                         songCorrect,
                                       );
-                                      // Do NOT close the prompt, just set waitingForOthers
-                                      // setShowPrompt(false); // REMOVE THIS LINE
                                       setWaitingForOthers(true);
                                     } else if (
                                       mode === "single" &&
@@ -1692,7 +1692,6 @@ export default function PlayNowPage() {
                                         }
                                       }
                                     } else {
-                                      // Single player
                                       const artistCorrect = isArtistCorrect(
                                         userArtistAnswer,
                                         currentArtist,

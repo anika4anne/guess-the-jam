@@ -22,7 +22,7 @@ export default function HomePage() {
       </Head>
 
       <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
-        {/* animated waves */}
+  
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
@@ -80,7 +80,7 @@ export default function HomePage() {
               <p className="text-lg">Learn the rules here!</p>
             </Link>
           </div>
-          {/* Private Room section */}
+
           <div className="mt-12">
             <h2 className="mb-6 text-center text-3xl font-semibold text-white">
               Private Rooms
@@ -107,7 +107,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          {/* Discord Invite section */}
+
           <div className="mt-10 flex flex-col items-center">
             <a
               href="https://discord.gg/Ny8Vr8zjYK"

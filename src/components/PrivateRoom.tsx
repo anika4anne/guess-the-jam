@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "~/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket, faBan } from "@fortawesome/free-solid-svg-icons";
@@ -45,6 +45,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const name = searchParams.get("name");
+
   const [players, setPlayers] = useState<string[]>([]);
   const [isHost, setIsHost] = useState(false);
   const [showKickPopup, setShowKickPopup] = useState(false);
@@ -66,6 +67,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [playlists, setPlaylists] = useState<string[]>([""]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
+  const isMounted = useRef(true);
+  const showKickedPopupRef = useRef(false);
 
   useEffect(() => {
     if (!name) {
@@ -78,7 +81,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   }, []);
 
   useEffect(() => {
-    if (!name) return;
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!name || !isMounted.current) return;
 
     const storageKey = `room-${roomId}-players`;
     const bannedKey = `room-${roomId}-banned`;
@@ -107,6 +117,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
       if (isBanned) {
         setShowKickedPopup(true);
+        showKickedPopupRef.current = true;
         return;
       }
 
@@ -126,6 +137,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setIsHost(isCurrentPlayerHost);
 
       const interval = setInterval(() => {
+        if (!isMounted.current) return;
         try {
           const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
           const currentBanned = JSON.parse(
@@ -140,9 +152,32 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             Array.isArray(currentBanned) &&
             Array.isArray(currentReady)
           ) {
-            setPlayers(current);
-            setBannedPlayers(currentBanned);
-            setReadyPlayers(currentReady);
+            if (isMounted.current) {
+              setPlayers((prevPlayers) => {
+                if (JSON.stringify(prevPlayers) !== JSON.stringify(current)) {
+                  return current;
+                }
+                return prevPlayers;
+              });
+
+              setBannedPlayers((prevBanned) => {
+                if (
+                  JSON.stringify(prevBanned) !== JSON.stringify(currentBanned)
+                ) {
+                  return currentBanned;
+                }
+                return prevBanned;
+              });
+
+              setReadyPlayers((prevReady) => {
+                if (
+                  JSON.stringify(prevReady) !== JSON.stringify(currentReady)
+                ) {
+                  return currentReady;
+                }
+                return prevReady;
+              });
+            }
 
             const isCurrentlyBanned = currentBanned.some(
               (bannedPlayer: string) =>
@@ -155,7 +190,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               ) ||
               isCurrentlyBanned
             ) {
-              setShowKickedPopup(true);
+              if (isMounted.current) {
+                setShowKickedPopup(true);
+              }
             }
           }
         } catch (error) {
@@ -166,7 +203,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       return () => {
         clearInterval(interval);
 
-        if (!showKickedPopup && name) {
+        if (!showKickedPopup && name && isMounted.current) {
           try {
             const current = JSON.parse(
               localStorage.getItem(storageKey) ?? "[]",
@@ -193,12 +230,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       alert("Failed to join room. Please try again.");
       router.push("/private");
     }
-  }, [name, roomId, showKickedPopup, router]);
+  }, [name, roomId, router]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     const gameStartKey = `room-${roomId}-gameStarting`;
 
     const checkGameStarting = () => {
+      if (!isMounted.current) return;
       try {
         const gameStarting = localStorage.getItem(gameStartKey) === "true";
         setIsGameStarting(gameStarting);
@@ -212,37 +251,56 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   }, [roomId]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     if (isGameStarting && countdown > 0) {
       const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
+        if (isMounted.current) {
+          setCountdown(countdown - 1);
+        }
       }, 1000);
       return () => clearTimeout(timer);
     } else if (isGameStarting && countdown === 0) {
       const gameStartKey = `room-${roomId}-gameStarting`;
       localStorage.removeItem(gameStartKey);
-      router.push(
-        `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
-      );
+
+      setTimeout(() => {
+        if (isMounted.current) {
+          router.push(
+            `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
+          );
+        }
+      }, 100);
     }
   }, [isGameStarting, countdown, roomId, name, router]);
 
   useEffect(() => {
-    if (!name) return;
+    if (!name || !isMounted.current) return;
     setIsHost(players[0]?.toLowerCase() === name.toLowerCase());
   }, [players, name]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     const roundsKey = `room-${roomId}-rounds`;
     const stored = localStorage.getItem(roundsKey);
     if (stored) setRounds(Number(stored));
     const interval = setInterval(() => {
+      if (!isMounted.current) return;
       const updated = localStorage.getItem(roundsKey);
-      if (updated && Number(updated) !== rounds) setRounds(Number(updated));
-    }, 500);
+      if (updated) {
+        const currentRounds = Number(updated);
+        setRounds((prevRounds) => {
+          if (prevRounds !== currentRounds) {
+            return currentRounds;
+          }
+          return prevRounds;
+        });
+      }
+    }, 1000);
     return () => clearInterval(interval);
-  }, [roomId, rounds]);
+  }, [roomId]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     const modeKey = `room-${roomId}-mode`;
     const playlistsKey = `room-${roomId}-playlists`;
     const storedMode = localStorage.getItem(modeKey);
@@ -251,110 +309,83 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const storedPlaylists = localStorage.getItem(playlistsKey);
     if (storedPlaylists) setPlaylists(JSON.parse(storedPlaylists));
     const interval = setInterval(() => {
+      if (!isMounted.current) return;
       const updatedMode = localStorage.getItem(modeKey);
-      if (
-        (updatedMode === "playlist" || updatedMode === "default") &&
-        updatedMode !== mode
-      )
-        setMode(updatedMode);
+      if (updatedMode === "playlist" || updatedMode === "default") {
+        setMode((prevMode) => {
+          if (prevMode !== updatedMode) {
+            return updatedMode;
+          }
+          return prevMode;
+        });
+      }
       const updatedPlaylists = localStorage.getItem(playlistsKey);
-      if (
-        updatedPlaylists &&
-        JSON.stringify(JSON.parse(updatedPlaylists)) !==
-          JSON.stringify(playlists)
-      )
-        setPlaylists(JSON.parse(updatedPlaylists));
-    }, 500);
+      if (updatedPlaylists) {
+        const parsedPlaylists = JSON.parse(updatedPlaylists);
+        setPlaylists((prevPlaylists) => {
+          if (
+            JSON.stringify(prevPlaylists) !== JSON.stringify(parsedPlaylists)
+          ) {
+            return parsedPlaylists;
+          }
+          return prevPlaylists;
+        });
+      }
+    }, 1000);
     return () => clearInterval(interval);
-  }, [roomId, mode, playlists]);
+  }, [roomId]);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     const yearsKey = `room-${roomId}-years`;
     const stored = localStorage.getItem(yearsKey);
     if (stored) setSelectedYears(JSON.parse(stored));
     const interval = setInterval(() => {
+      if (!isMounted.current) return;
       const updated = localStorage.getItem(yearsKey);
       if (updated) {
         const parsed = JSON.parse(updated);
-        if (JSON.stringify(parsed) !== JSON.stringify(selectedYears)) {
-          setSelectedYears(parsed);
-        }
+        setSelectedYears((prevYears) => {
+          if (JSON.stringify(prevYears) !== JSON.stringify(parsed)) {
+            return parsed;
+          }
+          return prevYears;
+        });
       }
-    }, 500);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [roomId, selectedYears]);
+  }, [roomId]);
 
   const allReady =
     players.length >= 2 && readyPlayers.length === players.length;
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
+    if (!isMounted.current) return;
     router.push("/private");
-  };
+  }, [router]);
 
-  const handlePlayerHover = (playerName: string) => {
-    if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
-      setHoveredPlayer(playerName);
-    }
+  const handlePlayerHover = useCallback(
+    (playerName: string) => {
+      if (!isMounted.current) return;
+      if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
+        setHoveredPlayer(playerName);
+      }
 
-    if (playerName.toLowerCase() === name?.toLowerCase()) {
-      setHoveredForReady(playerName);
-    }
-  };
+      if (playerName.toLowerCase() === name?.toLowerCase()) {
+        setHoveredForReady(playerName);
+      }
+    },
+    [isHost, name],
+  );
 
-  const handlePlayerLeave = () => {
+  const handlePlayerLeave = useCallback(() => {
+    if (!isMounted.current) return;
     setHoveredPlayer("");
     setHoveredForReady("");
-  };
+  }, []);
 
-  const handlePlayerClick = (playerName: string) => {
-    if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
-      setPlayerToKick(playerName);
-      setShowKickPopup(true);
-    }
-
-    if (playerName.toLowerCase() === name?.toLowerCase()) {
-      toggleReady();
-    }
-  };
-
-  const handleKickPlayer = () => {
-    const storageKey = `room-${roomId}-players`;
-    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const updated = current.filter(
-      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
-    );
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    setPlayers(updated);
-    setShowKickPopup(false);
-    setPlayerToKick("");
-  };
-
-  const handleBanPlayer = () => {
-    const storageKey = `room-${roomId}-players`;
-    const bannedKey = `room-${roomId}-banned`;
-    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
-
-    const updated = current.filter(
-      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
-    );
-    const updatedBanned = [...currentBanned, playerToKick];
-
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    localStorage.setItem(bannedKey, JSON.stringify(updatedBanned));
-
-    setPlayers(updated);
-    setBannedPlayers(updatedBanned);
-    setShowKickPopup(false);
-    setPlayerToKick("");
-  };
-
-  const handleKickedPopupClose = () => {
-    setShowKickedPopup(false);
-    router.push("/private");
-  };
-
-  const toggleReady = () => {
+  const toggleReady = useCallback(() => {
+    if (!isMounted.current) return;
     const readyKey = `room-${roomId}-ready`;
     const currentReady = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
 
@@ -367,9 +398,25 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       localStorage.setItem(readyKey, JSON.stringify(updated));
       setReadyPlayers(updated);
     }
-  };
+  }, [roomId, name]);
 
-  const startGame = () => {
+  const handlePlayerClick = useCallback(
+    (playerName: string) => {
+      if (!isMounted.current) return;
+      if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
+        setPlayerToKick(playerName);
+        setShowKickPopup(true);
+      }
+
+      if (playerName.toLowerCase() === name?.toLowerCase()) {
+        toggleReady();
+      }
+    },
+    [isHost, name, toggleReady],
+  );
+
+  const startGame = useCallback(() => {
+    if (!isMounted.current) return;
     if (isHost && allReady) {
       if (mode === "default" && selectedYears.length === 0) {
         alert("Please select at least one year before starting the game.");
@@ -391,10 +438,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           mode,
           playlists: playlists.filter((p) => p.trim()),
         };
+
         localStorage.setItem(
           "privateRoomSettings",
           JSON.stringify(privateRoomSettings),
         );
+
+        const saved = localStorage.getItem("privateRoomSettings");
+
         const gameStartKey = `room-${roomId}-gameStarting`;
         localStorage.setItem(gameStartKey, "true");
         setIsGameStarting(true);
@@ -403,32 +454,96 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         alert("Failed to start game. Please try again.");
       }
     }
-  };
+  }, [
+    roomId,
+    isHost,
+    allReady,
+    mode,
+    selectedYears,
+    rounds,
+    players,
+    playlists,
+  ]);
 
-  const copyRoomId = async () => {
+  const copyRoomId = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(roomId);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 2000);
+      if (isMounted.current) {
+        setShowCopied(true);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setShowCopied(false);
+          }
+        }, 2000);
+      }
     } catch (err) {
       console.error("Failed to copy room ID:", err);
     }
-  };
+  }, [roomId]);
 
-  const handleRoundsChange = (value: number) => {
-    if (value < 1 || value > 100) return;
-    const roundsKey = `room-${roomId}-rounds`;
-    setRounds(value);
-    localStorage.setItem(roundsKey, String(value));
-  };
+  const handleKickPlayer = useCallback(() => {
+    if (!isMounted.current) return;
+    const storageKey = `room-${roomId}-players`;
+    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+    const updated = current.filter(
+      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
+    );
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    setPlayers(updated);
+    setShowKickPopup(false);
+    setPlayerToKick("");
+  }, [roomId, playerToKick]);
 
-  const handleModeChange = (val: "default" | "playlist") => {
-    const modeKey = `room-${roomId}-mode`;
-    setMode(val);
-    localStorage.setItem(modeKey, val);
-  };
+  const handleBanPlayer = useCallback(() => {
+    if (!isMounted.current) return;
+    const storageKey = `room-${roomId}-players`;
+    const bannedKey = `room-${roomId}-banned`;
+    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+    const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
+
+    const updated = current.filter(
+      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
+    );
+    const updatedBanned = [...currentBanned, playerToKick];
+
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    localStorage.setItem(bannedKey, JSON.stringify(updatedBanned));
+
+    setPlayers(updated);
+    setBannedPlayers(updatedBanned);
+    setShowKickPopup(false);
+    setPlayerToKick("");
+  }, [roomId, playerToKick]);
+
+  const handleKickedPopupClose = useCallback(() => {
+    if (!isMounted.current) return;
+    setShowKickedPopup(false);
+    router.push("/private");
+  }, [router]);
+
+  const handleRoundsChange = useCallback(
+    (value: number) => {
+      if (!isMounted.current) return;
+      if (value < 1 || value > 100) return;
+      const roundsKey = `room-${roomId}-rounds`;
+      setRounds(value);
+      localStorage.setItem(roundsKey, String(value));
+    },
+    [roomId],
+  );
+
+  const handleModeChange = useCallback(
+    (val: "default" | "playlist") => {
+      if (!isMounted.current) return;
+      const modeKey = `room-${roomId}-mode`;
+      setMode(val);
+      localStorage.setItem(modeKey, val);
+    },
+    [roomId],
+  );
 
   const handlePlaylistChange = (idx: number, value: string) => {
+    if (!isMounted.current) return;
     if (idx < 0 || idx >= playlists.length) return;
     const playlistsKey = `room-${roomId}-playlists`;
     const updated = [...playlists];
@@ -438,6 +553,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const handleAddPlaylist = () => {
+    if (!isMounted.current) return;
     const playlistsKey = `room-${roomId}-playlists`;
     const updated = [...playlists, ""];
     setPlaylists(updated);
@@ -445,6 +561,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const handleRemovePlaylist = (idx: number) => {
+    if (!isMounted.current) return;
     const playlistsKey = `room-${roomId}-playlists`;
     const updated = playlists.filter((_, i) => i !== idx);
     setPlaylists(updated.length ? updated : [""]);
@@ -455,29 +572,39 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   };
 
   const startDecrement = () => {
+    if (!isMounted.current) return;
     if (rounds > 1) handleRoundsChange(rounds - 1);
   };
 
   const startIncrement = () => {
+    if (!isMounted.current) return;
     if (rounds < 100) handleRoundsChange(rounds + 1);
   };
 
-  const handleAddYear = (year: number) => {
-    if (year < 2000 || year > new Date().getFullYear()) return;
-    const yearsKey = `room-${roomId}-years`;
-    if (!selectedYears.includes(year)) {
-      const updated = [...selectedYears, year];
+  const handleAddYear = useCallback(
+    (year: number) => {
+      if (!isMounted.current) return;
+      if (year < 2000 || year > new Date().getFullYear()) return;
+      const yearsKey = `room-${roomId}-years`;
+      if (!selectedYears.includes(year)) {
+        const updated = [...selectedYears, year];
+        setSelectedYears(updated);
+        localStorage.setItem(yearsKey, JSON.stringify(updated));
+      }
+    },
+    [roomId],
+  );
+
+  const handleDeleteYear = useCallback(
+    (year: number) => {
+      if (!isMounted.current) return;
+      const yearsKey = `room-${roomId}-years`;
+      const updated = selectedYears.filter((y) => y !== year);
       setSelectedYears(updated);
       localStorage.setItem(yearsKey, JSON.stringify(updated));
-    }
-  };
-
-  const handleDeleteYear = (year: number) => {
-    const yearsKey = `room-${roomId}-years`;
-    const updated = selectedYears.filter((y) => y !== year);
-    setSelectedYears(updated);
-    localStorage.setItem(yearsKey, JSON.stringify(updated));
-  };
+    },
+    [roomId],
+  );
 
   if (!name) {
     return null;
@@ -485,18 +612,16 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-6 text-white">
-      {/* Back Button */}
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
-          onClick={handleBack}
+          onClick={() => isMounted.current && handleBack()}
           className="border-white/20 bg-white/10 text-white hover:bg-white/20"
         >
           ← Back
         </Button>
       </div>
 
-      {/* Main Content */}
       {isGameStarting ? (
         <div className="flex flex-col items-center justify-center">
           <div className="animate-pulse bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-8xl font-extrabold text-transparent drop-shadow-lg">
@@ -518,19 +643,20 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             <p className="text-white/80">Share the code to invite friends!</p>
             <Button
               variant="outline"
-              onClick={copyRoomId}
+              onClick={() => isMounted.current && copyRoomId()}
               className="border-white/20 bg-white/10 text-white hover:bg-white/20"
             >
               {showCopied ? "Copied!" : "Copy Room ID"}
             </Button>
           </div>
 
-          {/* Collapsible Game Settings box - only for host */}
           {isHost && (
             <div className="mx-auto mb-6 w-full max-w-md">
               <div
                 className="flex cursor-pointer items-center justify-between rounded-t-xl bg-white/10 px-6 py-3 shadow-md select-none"
-                onClick={() => setSettingsOpen((open) => !open)}
+                onClick={() =>
+                  isMounted.current && setSettingsOpen((open) => !open)
+                }
                 role="button"
                 tabIndex={0}
                 aria-expanded={settingsOpen}
@@ -556,14 +682,22 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   <>
                     <div className="mt-2 mb-4 flex items-center gap-4">
                       <button
-                        onClick={() => isHost && handleModeChange("default")}
+                        onClick={() =>
+                          isHost &&
+                          isMounted.current &&
+                          handleModeChange("default")
+                        }
                         className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
                         disabled={!isHost}
                       >
                         Default Songs Per Year
                       </button>
                       <button
-                        onClick={() => isHost && handleModeChange("playlist")}
+                        onClick={() =>
+                          isHost &&
+                          isMounted.current &&
+                          handleModeChange("playlist")
+                        }
                         className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
                         disabled={!isHost}
                       >
@@ -575,7 +709,11 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                         Number of Rounds:
                       </label>
                       <button
-                        onClick={isHost ? startDecrement : undefined}
+                        onClick={
+                          isHost && isMounted.current
+                            ? startDecrement
+                            : undefined
+                        }
                         className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds <= 1 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
                         disabled={rounds <= 1 || !isHost}
                       >
@@ -585,7 +723,11 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                         {rounds}
                       </span>
                       <button
-                        onClick={isHost ? startIncrement : undefined}
+                        onClick={
+                          isHost && isMounted.current
+                            ? startIncrement
+                            : undefined
+                        }
                         className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds >= 100 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
                         disabled={rounds >= 100 || !isHost}
                       >
@@ -614,8 +756,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                                 key={year}
                                 checked={selectedYears.includes(year)}
                                 onCheckedChange={(checked) => {
-                                  if (checked) handleAddYear(year);
-                                  else handleDeleteYear(year);
+                                  if (isMounted.current) {
+                                    if (checked) handleAddYear(year);
+                                    else handleDeleteYear(year);
+                                  }
                                 }}
                               >
                                 {year}
@@ -631,7 +775,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                             >
                               <span>{year}</span>
                               <button
-                                onClick={() => handleDeleteYear(year)}
+                                onClick={() =>
+                                  isMounted.current && handleDeleteYear(year)
+                                }
                                 className="text-sm text-gray-500 hover:text-gray-700"
                                 type="button"
                               >
@@ -655,6 +801,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                               value={playlist}
                               onChange={(e) =>
                                 isHost &&
+                                isMounted.current &&
                                 handlePlaylistChange(idx, e.target.value)
                               }
                               className="flex-1 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-white transition-all focus:ring-2 focus:ring-yellow-400 focus:outline-none"
@@ -662,7 +809,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                               disabled={!isHost}
                             />
                             <button
-                              onClick={() => handleAddPlaylist()}
+                              onClick={() =>
+                                isMounted.current && handleAddPlaylist()
+                              }
                               className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-500 bg-transparent text-green-500 transition-all duration-150 hover:bg-green-500 hover:text-white focus:outline-none"
                               title="Add Playlist"
                               type="button"
@@ -671,7 +820,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                             </button>
                             {playlists.length > 1 && (
                               <button
-                                onClick={() => handleRemovePlaylist(idx)}
+                                onClick={() =>
+                                  isMounted.current && handleRemovePlaylist(idx)
+                                }
                                 className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500 bg-transparent text-red-500 transition-all duration-150 hover:bg-red-500 hover:text-white focus:outline-none"
                                 title="Remove Playlist"
                                 type="button"
@@ -711,9 +862,15 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                           ? "text-purple-400"
                           : "text-white/80"
                     }`}
-                    onMouseEnter={() => handlePlayerHover(player)}
-                    onMouseLeave={handlePlayerLeave}
-                    onClick={() => handlePlayerClick(player)}
+                    onMouseEnter={() =>
+                      isMounted.current && handlePlayerHover(player)
+                    }
+                    onMouseLeave={() =>
+                      isMounted.current && handlePlayerLeave()
+                    }
+                    onClick={() =>
+                      isMounted.current && handlePlayerClick(player)
+                    }
                   >
                     <div
                       className={`${players[0]?.toLowerCase() === player.toLowerCase() ? "font-bold" : ""}`}
@@ -756,14 +913,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             </div>
           </div>
 
-          {/* Bottom bar for ready/start/waiting */}
           <div className="pointer-events-none fixed bottom-0 left-0 flex w-full flex-col items-center pb-6">
             <div className="pointer-events-auto flex flex-col items-center gap-2">
-              {/* Host: Start Game */}
               <div className="flex flex-col items-center">
                 {isHost && (
                   <Button
-                    onClick={startGame}
+                    onClick={() => isMounted.current && startGame()}
                     disabled={
                       !isHost ||
                       !allReady ||
@@ -777,7 +932,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                     Start Game
                   </Button>
                 )}
-                {/* Non-host waiting message */}
+
                 {!isHost && allReady && (
                   <div className="mb-4 text-center">
                     <div className="text-xl font-bold text-green-400">
@@ -805,24 +960,20 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         </>
       )}
 
-      {/* Kick/Ban Confirmation Popup */}
       {showKickPopup && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
           <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
             <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
-              {/* Icon Container */}
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
                 <div className="flex items-center justify-center text-5xl text-white">
                   😠
                 </div>
               </div>
 
-              {/* Title */}
               <h3 className="mb-3 text-xl font-bold text-gray-900">
                 Remove Player
               </h3>
 
-              {/* Message */}
               <p className="mb-6 leading-relaxed text-gray-600">
                 What would you like to do with{" "}
                 <span className="font-semibold text-red-600">
@@ -831,23 +982,22 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 ?
               </p>
 
-              {/* Action Buttons */}
               <div className="flex flex-col gap-3">
                 <Button
-                  onClick={handleKickPlayer}
+                  onClick={() => isMounted.current && handleKickPlayer()}
                   className="transform rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-orange-600 hover:to-orange-700"
                 >
                   <FontAwesomeIcon icon={faRightFromBracket} /> Kick (Can
                   Rejoin)
                 </Button>
                 <Button
-                  onClick={handleBanPlayer}
+                  onClick={() => isMounted.current && handleBanPlayer()}
                   className="transform rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-red-600 hover:to-red-700"
                 >
                   <FontAwesomeIcon icon={faBan} /> Ban (Cannot Rejoin)
                 </Button>
                 <Button
-                  onClick={() => setShowKickPopup(false)}
+                  onClick={() => isMounted.current && setShowKickPopup(false)}
                   className="rounded-lg bg-gray-500 px-6 py-2 font-semibold text-white transition-all duration-200 hover:bg-gray-600"
                 >
                   Cancel
@@ -858,17 +1008,14 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         </div>
       )}
 
-      {/* Kicked Out Popup */}
       {showKickedPopup && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
           <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
             <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
-              {/* Icon Container */}
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
                 <div className="text-2xl text-white">🚪</div>
               </div>
 
-              {/* Title */}
               <h3 className="mb-3 text-xl font-bold text-gray-900">
                 {bannedPlayers.some(
                   (bannedPlayer: string) =>
@@ -878,7 +1025,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   : "You've Been Kicked"}
               </h3>
 
-              {/* Message */}
               <p className="mb-6 leading-relaxed text-gray-600">
                 {bannedPlayers.some(
                   (bannedPlayer: string) =>
@@ -888,9 +1034,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   : "The host has kicked you from the room."}
               </p>
 
-              {/* Action Button */}
               <Button
-                onClick={handleKickedPopupClose}
+                onClick={() => isMounted.current && handleKickedPopupClose()}
                 className="transform rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-600 hover:to-blue-700"
               >
                 Return to Lobby

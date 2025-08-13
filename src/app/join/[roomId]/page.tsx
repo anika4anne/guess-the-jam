@@ -28,10 +28,7 @@ export default function JoinRoomGamePage() {
       setMode(storedMode);
     const storedPlaylists = localStorage.getItem(playlistsKey);
     if (storedPlaylists) setPlaylists(JSON.parse(storedPlaylists));
-    // TODO: Fetch songs based on settings
   }, [roomId]);
-
-  // TODO: Add the rest of the Play Now game logic (song selection, scoring, prompts, etc.)
 
   if (!name) {
     return (
@@ -60,7 +57,7 @@ export default function JoinRoomGamePage() {
               Playlists: {playlists.join(", ")}
             </div>
           )}
-          {/* TODO: Add the rest of the game UI and logic here (song, prompt, scoring, etc.) */}
+
           <div className="mt-8 text-white/60">
             Game in progress... (TODO: implement full game UI)
           </div>
