@@ -628,7 +628,6 @@ export default function PlayNowPage() {
     }
   }, [searchParams]);
 
-  // Reset the ref when search params change
   useEffect(() => {
     privateSettingsLoaded.current = false;
   }, [searchParams]);
@@ -1421,76 +1420,77 @@ export default function PlayNowPage() {
                           </div>
                         )}
 
-                      {showAllResults && gameMode === "multiplayer" && (
-                        <div className="mb-6 w-full text-center text-lg font-bold">
-                          <h3 className="mb-4 text-xl font-bold text-yellow-400">
-                            Round Results
-                          </h3>
-                          {Object.entries(playerAnswers).map(
-                            ([playerName, answer]) => {
-                              const bothWrong =
-                                !answer.songCorrect && !answer.artistCorrect;
-                              const bothRight =
-                                answer.songCorrect && answer.artistCorrect;
-                              return (
-                                <div
-                                  key={playerName}
-                                  className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/20" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
-                                >
-                                  <p className="font-semibold text-blue-400">
-                                    {playerName}
-                                  </p>
-                                  <p className="text-sm">
-                                    Song:{" "}
-                                    <span
-                                      className={
-                                        answer.songCorrect
-                                          ? "text-green-500"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      {getUnmaskedAnswer(
-                                        answer.song,
-                                        answer.songRaw ?? answer.song,
-                                      ) ?? "(no guess)"}
-                                    </span>
-                                  </p>
-                                  <p className="text-sm">
-                                    Artist:{" "}
-                                    <span
-                                      className={
-                                        answer.artistCorrect
-                                          ? "text-green-500"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      {getUnmaskedAnswer(
-                                        answer.artist,
-                                        answer.artistRaw ?? answer.artist,
-                                      ) ?? "(no guess)"}
-                                    </span>
-                                  </p>
-                                  <p className="text-sm font-bold">
-                                    Points:{" "}
-                                    <span className="text-yellow-400">
-                                      {answer.points}
-                                    </span>
-                                  </p>
-                                </div>
-                              );
-                            },
-                          )}
-                          <div className="mt-4 rounded-lg bg-yellow-500/20 p-3">
-                            <p className="font-bold text-yellow-400">
-                              Correct Answer:
-                            </p>
-                            <p className="text-white">
-                              {extractSongName(currentSong) ?? "-"} -{" "}
-                              {currentArtist ?? "-"}
-                            </p>
+                      {showAllResults &&
+                        (gameMode === "multiplayer" || mode === "private") && (
+                          <div className="mb-6 w-full text-center text-lg font-bold">
+                            <h3 className="mb-4 text-xl font-bold text-yellow-400">
+                              Round Results
+                            </h3>
+                            {Object.entries(playerAnswers).map(
+                              ([playerName, answer]) => {
+                                const bothWrong =
+                                  !answer.songCorrect && !answer.artistCorrect;
+                                const bothRight =
+                                  answer.songCorrect && answer.artistCorrect;
+                                return (
+                                  <div
+                                    key={playerName}
+                                    className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/20" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
+                                  >
+                                    <p className="font-semibold text-blue-400">
+                                      {playerName}
+                                    </p>
+                                    <p className="text-sm">
+                                      Song:{" "}
+                                      <span
+                                        className={
+                                          answer.songCorrect
+                                            ? "text-green-500"
+                                            : "text-red-500"
+                                        }
+                                      >
+                                        {getUnmaskedAnswer(
+                                          answer.song,
+                                          answer.songRaw ?? answer.song,
+                                        ) ?? "(no guess)"}
+                                      </span>
+                                    </p>
+                                    <p className="text-sm">
+                                      Artist:{" "}
+                                      <span
+                                        className={
+                                          answer.artistCorrect
+                                            ? "text-green-500"
+                                            : "text-red-500"
+                                        }
+                                      >
+                                        {getUnmaskedAnswer(
+                                          answer.artist,
+                                          answer.artistRaw ?? answer.artist,
+                                        ) ?? "(no guess)"}
+                                      </span>
+                                    </p>
+                                    <p className="text-sm font-bold">
+                                      Points:{" "}
+                                      <span className="text-yellow-400">
+                                        {answer.points}
+                                      </span>
+                                    </p>
+                                  </div>
+                                );
+                              },
+                            )}
+                            <div className="mt-4 rounded-lg bg-yellow-500/20 p-3">
+                              <p className="font-bold text-yellow-400">
+                                Correct Answer:
+                              </p>
+                              <p className="text-white">
+                                {extractSongName(currentSong) ?? "-"} -{" "}
+                                {currentArtist ?? "-"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {!showResult && !showAllResults && (
                         <>
@@ -1757,34 +1757,35 @@ export default function PlayNowPage() {
                         </div>
                       )}
 
-                      {showAllResults && gameMode === "multiplayer" && (
-                        <div className="mt-8 flex justify-end">
-                          <button
-                            onClick={() => {
-                              if (round + 1 > totalRounds) {
-                                setGameFinished(true);
-                              } else {
-                                setRound(round + 1);
-                                setUserArtistAnswer("");
-                                setUserSongAnswer("");
-                                setShowPrompt(false);
-                                setShowAllResults(false);
-                                setPlayerAnswers({});
-                                setCurrentPlayerIndex(0);
-                                const player =
-                                  playerRefs.current[currentQuestionYear!];
-                                if (player) {
-                                  player.nextVideo();
-                                  player.playVideo();
+                      {showAllResults &&
+                        (gameMode === "multiplayer" || mode === "private") && (
+                          <div className="mt-8 flex justify-end">
+                            <button
+                              onClick={() => {
+                                if (round + 1 > totalRounds) {
+                                  setGameFinished(true);
+                                } else {
+                                  setRound(round + 1);
+                                  setUserArtistAnswer("");
+                                  setUserSongAnswer("");
+                                  setShowPrompt(false);
+                                  setShowAllResults(false);
+                                  setPlayerAnswers({});
+                                  setCurrentPlayerIndex(0);
+                                  const player =
+                                    playerRefs.current[currentQuestionYear!];
+                                  if (player) {
+                                    player.nextVideo();
+                                    player.playVideo();
+                                  }
                                 }
-                              }
-                            }}
-                            className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
-                          >
-                            Next Song
-                          </button>
-                        </div>
-                      )}
+                              }}
+                              className="rounded bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
+                            >
+                              Next Song
+                            </button>
+                          </div>
+                        )}
                     </>
                   )}
 
