@@ -16,7 +16,7 @@ declare module "next-auth" {
   }
 
   // interface User {
-  //   // ...other properties
+  //   // other properties
   //   // role: UserRole;
   // }
 }
@@ -25,9 +25,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [DiscordProvider, GoogleProvider],
   // callbacks: {
   //   session: ({ session, token }) => ({
-  //     ...session,
+  //     session,
   //     user: {
-  //       ...session.user,
+  //       session.user,
   //       id: token.sub,
   //     },
   //   }),

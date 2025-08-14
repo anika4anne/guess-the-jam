@@ -124,3 +124,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+.playnow-background {
+  background-image: url('/playnow1.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
