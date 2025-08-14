@@ -21,8 +21,15 @@ export default function HomePage() {
         />
       </Head>
 
-      <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
-  
+      <main
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white"
+        style={{
+          backgroundImage: "url(/4.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"

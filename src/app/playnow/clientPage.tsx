@@ -1426,60 +1426,60 @@ export default function PlayNowPage() {
                             <h3 className="mb-4 text-xl font-bold text-yellow-400">
                               Round Results
                             </h3>
-                            {Object.entries(playerAnswers).map(
-                              ([playerName, answer]) => {
-                                const bothWrong =
-                                  !answer.songCorrect && !answer.artistCorrect;
-                                const bothRight =
-                                  answer.songCorrect && answer.artistCorrect;
-                                return (
-                                  <div
-                                    key={playerName}
-                                    className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/20" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
-                                  >
-                                    <p className="font-semibold text-blue-400">
-                                      {playerName}
-                                    </p>
-                                    <p className="text-sm">
-                                      Song:{" "}
-                                      <span
-                                        className={
-                                          answer.songCorrect
-                                            ? "text-green-500"
-                                            : "text-red-500"
-                                        }
-                                      >
-                                        {getUnmaskedAnswer(
-                                          answer.song,
-                                          answer.songRaw ?? answer.song,
-                                        ) ?? "(no guess)"}
-                                      </span>
-                                    </p>
-                                    <p className="text-sm">
-                                      Artist:{" "}
-                                      <span
-                                        className={
-                                          answer.artistCorrect
-                                            ? "text-green-500"
-                                            : "text-red-500"
-                                        }
-                                      >
-                                        {getUnmaskedAnswer(
-                                          answer.artist,
-                                          answer.artistRaw ?? answer.artist,
-                                        ) ?? "(no guess)"}
-                                      </span>
-                                    </p>
-                                    <p className="text-sm font-bold">
-                                      Points:{" "}
-                                      <span className="text-yellow-400">
-                                        {answer.points}
-                                      </span>
-                                    </p>
-                                  </div>
-                                );
-                              },
-                            )}
+                            {Object.entries(
+                              mode === "private" ? allAnswers : playerAnswers,
+                            ).map(([playerName, answer]: [string, any]) => {
+                              const bothWrong =
+                                !answer.songCorrect && !answer.artistCorrect;
+                              const bothRight =
+                                answer.songCorrect && answer.artistCorrect;
+                              return (
+                                <div
+                                  key={playerName}
+                                  className={`mb-3 rounded-lg p-3 ${bothWrong ? "bg-red-400/20" : bothRight ? "bg-green-700/80" : "bg-white/10"}`}
+                                >
+                                  <p className="font-semibold text-blue-400">
+                                    {playerName}
+                                  </p>
+                                  <p className="text-sm">
+                                    Song:{" "}
+                                    <span
+                                      className={
+                                        answer.songCorrect
+                                          ? "text-green-500"
+                                          : "text-red-500"
+                                      }
+                                    >
+                                      {getUnmaskedAnswer(
+                                        answer.song,
+                                        answer.songRaw ?? answer.song,
+                                      ) ?? "(no guess)"}
+                                    </span>
+                                  </p>
+                                  <p className="text-sm">
+                                    Artist:{" "}
+                                    <span
+                                      className={
+                                        answer.artistCorrect
+                                          ? "text-green-500"
+                                          : "text-red-500"
+                                      }
+                                    >
+                                      {getUnmaskedAnswer(
+                                        answer.artist,
+                                        answer.artistRaw ?? answer.artist,
+                                      ) ?? "(no guess)"}
+                                    </span>
+                                  </p>
+                                  <p className="text-sm font-bold">
+                                    Points:{" "}
+                                    <span className="text-yellow-400">
+                                      {answer.points}
+                                    </span>
+                                  </p>
+                                </div>
+                              );
+                            })}
                             <div className="mt-4 rounded-lg bg-yellow-500/20 p-3">
                               <p className="font-bold text-yellow-400">
                                 Correct Answer:
