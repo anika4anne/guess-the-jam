@@ -672,7 +672,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
             🎧 Room <span className="text-green-500">{roomId}</span>
             {isHost && (
-              <span className="ml-2 rounded-full bg-yellow-500 px-2 py-1 text-sm text-black">
+              <span className="ml-2 rounded-full bg-pink-500 px-2 py-1 text-sm text-white">
                 Host
               </span>
             )}
@@ -726,7 +726,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                           isMounted.current &&
                           handleModeChange("default")
                         }
-                        className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                        className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-pink-400 text-white" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
                         disabled={!isHost}
                       >
                         Default Songs Per Year
@@ -737,7 +737,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                           isMounted.current &&
                           handleModeChange("playlist")
                         }
-                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-yellow-400 text-black" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-pink-400 text-white" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
                         disabled={!isHost}
                       >
                         Choose Playlist(s)
@@ -896,7 +896,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                         : ""
                     } ${isHost && !isSelf ? "hover:bg-red-500/10" : ""} ${
                       isReady
-                        ? "text-green-400"
+                        ? "text-pink-400"
                         : hoveredForReady === player
                           ? "text-purple-400"
                           : "text-white/80"
@@ -920,7 +920,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                     <div className="mt-1 text-xs">
                       {isSelf ? (
                         isReady ? (
-                          <span className="font-bold text-green-400">
+                          <span className="font-bold text-pink-400">
                             (Ready)
                           </span>
                         ) : (
@@ -929,9 +929,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                           </div>
                         )
                       ) : isReady ? (
-                        <span className="font-bold text-green-400">
-                          (Ready)
-                        </span>
+                        <span className="font-bold text-pink-400">(Ready)</span>
                       ) : (
                         <span className="font-bold text-yellow-400">
                           (Not Ready)
@@ -966,7 +964,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                         (!playlists.length ||
                           playlists.every((p) => !p.trim())))
                     }
-                    className="mb-4 h-14 w-48 bg-yellow-500 text-xl font-bold text-black hover:bg-yellow-600 disabled:bg-yellow-300"
+                    className="mb-4 h-14 w-48 bg-pink-500 text-xl font-bold text-white hover:bg-pink-600 disabled:bg-pink-300"
                   >
                     Start Game
                   </Button>

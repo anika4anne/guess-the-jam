@@ -33,7 +33,7 @@ export default function HomePage() {
         <div className="absolute top-40 right-12 h-1.5 w-1.5 animate-pulse rounded-full bg-blue-300/40 delay-1000"></div>
         <div className="absolute top-60 left-1/4 h-1 w-1 animate-pulse rounded-full bg-purple-300/50 delay-2000"></div>
 
-        <div className="container -mt-32 flex flex-col items-center justify-center gap-12 px-4 py-8">
+        <div className="container -mt-40 flex flex-col items-center justify-center gap-12 px-4 py-8">
           <h1 className="text-center text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-[4rem]">
             🎵 Guess the <span className="text-pink-300">Jam</span> 🎶
           </h1>
@@ -43,10 +43,10 @@ export default function HomePage() {
             <button
               onClick={handlePlayClick}
               className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-              style={{ backgroundColor: "#1E40AF" }}
+              style={{ backgroundColor: "#F06292" }}
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-              <h3 className="relative text-2xl font-bold text-yellow-300">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+              <h3 className="relative text-2xl font-bold text-white">
                 Play Now →
               </h3>
               <p className="relative text-lg">
@@ -57,10 +57,10 @@ export default function HomePage() {
             <Link
               href="/rules"
               className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-              style={{ backgroundColor: "#3B82F6" }}
+              style={{ backgroundColor: "#F06292" }}
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-              <h3 className="relative text-2xl font-bold text-blue-300">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-500/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+              <h3 className="relative text-2xl font-bold text-white">
                 How to Play →
               </h3>
               <p className="relative text-lg">Learn the rules here!</p>
@@ -75,10 +75,10 @@ export default function HomePage() {
               <Link
                 href="/private/create"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#059669" }}
+                style={{ backgroundColor: "#EC4899" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-                <h3 className="relative text-xl font-bold text-green-300">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <h3 className="relative text-xl font-bold text-white">
                   Create Private Room →
                 </h3>
                 <p className="relative text-lg">
@@ -89,10 +89,10 @@ export default function HomePage() {
               <Link
                 href="/private/join"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#DC2626" }}
+                style={{ backgroundColor: "#EC4899" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-red-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-                <h3 className="relative text-2xl font-bold text-pink-300">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <h3 className="relative text-2xl font-bold text-white">
                   Join Private Room →
                 </h3>
                 <p className="relative text-lg">
