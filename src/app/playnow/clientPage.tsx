@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,6 +22,16 @@ interface Song {
   artist: string;
 }
 
+interface PlayerAnswer {
+  song: string;
+  artist: string;
+  points: number;
+  songCorrect: boolean;
+  artistCorrect: boolean;
+  songRaw?: string;
+  artistRaw?: string;
+}
+
 interface YouTubePlayer extends YT.Player {
   __intervalAttached?: boolean;
 }
@@ -37,7 +48,7 @@ export default function PlayNowPage() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
 
-  const [songs, setSongs] = useState<Song[] | null>(null);
+  const [, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
   const [volumeUnmuted, setVolumeUnmuted] = useState(false);
@@ -150,7 +161,7 @@ export default function PlayNowPage() {
 
   useEffect(() => {
     if (!window.YT || !showYouTubePlayer) return;
-    const currentIntervalRefs = { ...intervalRefs.current };
+    const currentIntervalRefs = Object.assign({}, intervalRefs.current);
     selectedYears.forEach((year) => {
       const iframe = iframeRefs.current[year];
       if (!iframe) return;
@@ -216,7 +227,7 @@ export default function PlayNowPage() {
     });
     intervalRefs.current = currentIntervalRefs;
 
-    const cleanupPlayerRefs = { ...playerRefs.current };
+    const cleanupPlayerRefs = Object.assign({}, playerRefs.current);
     return () => {
       Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
         if (intervalId) {
@@ -238,12 +249,12 @@ export default function PlayNowPage() {
 
   const handleAddPlayer = () => {
     if (playerNames.length < 6) {
-      setPlayerNames((prevNames) => [...prevNames, ""]);
+      setPlayerNames((prevNames) => prevNames.concat([""]));
     }
   };
 
   const handlePlayerNameChange = (index: number, name: string) => {
-    const updatedNames = [...playerNames];
+    const updatedNames = playerNames.slice();
     updatedNames[index] = name;
     setPlayerNames(updatedNames);
 
@@ -494,15 +505,15 @@ export default function PlayNowPage() {
   }
 
   useEffect(() => {
+    const currentPlayerRefs = Object.assign({}, playerRefs.current);
     return () => {
-      const currentPlayerRefs = { ...playerRefs.current };
       Object.values(currentPlayerRefs).forEach((player) => {
         if (player && typeof player.destroy === "function") {
           player.destroy();
         }
       });
     };
-  }, []);
+  }, [playerRefs]);
 
   useEffect(() => {
     if (showPrompt) {
@@ -691,7 +702,7 @@ export default function PlayNowPage() {
 
   if (!gameStarted) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
+      <main className="playnow-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white">
         <div className="absolute top-6 left-6">
           <Button
             variant="outline"
@@ -770,7 +781,7 @@ export default function PlayNowPage() {
                             prev.filter((y) => y !== year),
                           );
                         } else {
-                          setSelectedYears((prev) => [...prev, year]);
+                          setSelectedYears((prev) => prev.concat([year]));
                         }
                       }}
                     >
@@ -1426,9 +1437,11 @@ export default function PlayNowPage() {
                             <h3 className="mb-4 text-xl font-bold text-yellow-400">
                               Round Results
                             </h3>
-                            {Object.entries(
-                              mode === "private" ? allAnswers : playerAnswers,
-                            ).map(([playerName, answer]: [string, any]) => {
+                            {(
+                              Object.entries(
+                                mode === "private" ? allAnswers : playerAnswers,
+                              ) as [string, PlayerAnswer][]
+                            ).map(([playerName, answer]) => {
                               const bothWrong =
                                 !answer.songCorrect && !answer.artistCorrect;
                               const bothRight =
@@ -1454,6 +1467,7 @@ export default function PlayNowPage() {
                                         answer.song,
                                         answer.songRaw ?? answer.song,
                                       ) ?? "(no guess)"}
+                                      pnpm buil
                                     </span>
                                   </p>
                                   <p className="text-sm">
@@ -1497,7 +1511,7 @@ export default function PlayNowPage() {
                           {mode === "private" && waitingForOthers ? (
                             <div className="flex min-h-[120px] flex-col items-center justify-center">
                               <div className="mb-4 text-lg font-semibold text-yellow-300">
-                                Waiting for all players to submit...
+                                Waiting for all players to submit
                               </div>
                               <div className="mb-2 text-white">
                                 Still waiting for:
@@ -1658,7 +1672,10 @@ export default function PlayNowPage() {
                                         currentPlayerName &&
                                         currentPlayerName.trim() !== ""
                                       ) {
-                                        const newAnswers = { ...playerAnswers };
+                                        const newAnswers = Object.assign(
+                                          {},
+                                          playerAnswers,
+                                        );
                                         newAnswers[currentPlayerName] = {
                                           song: userSongAnswer,
                                           songRaw: userSongAnswer,
@@ -1792,7 +1809,7 @@ export default function PlayNowPage() {
                   {mode === "private" &&
                     !playerNames.includes(currentPlayerName) && (
                       <div className="text-center text-lg text-yellow-300">
-                        Waiting for your turn...
+                        Waiting for your turn
                       </div>
                     )}
                 </div>
@@ -1863,7 +1880,7 @@ export default function PlayNowPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] font-sans text-white">
+    <main className="playnow-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white">
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -1942,7 +1959,7 @@ export default function PlayNowPage() {
                           prev.filter((y) => y !== year),
                         );
                       } else {
-                        setSelectedYears((prev) => [...prev, year]);
+                        setSelectedYears((prev) => prev.concat([year]));
                       }
                     }}
                   >

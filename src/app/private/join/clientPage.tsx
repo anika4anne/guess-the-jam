@@ -101,7 +101,6 @@ export default function JoinPrivateRoomClientPage({
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] px-6 text-white">
-
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -143,32 +142,27 @@ export default function JoinPrivateRoomClientPage({
           disabled={isLoading}
           className="w-full bg-pink-500 py-3 font-semibold text-white hover:bg-pink-600"
         >
-          {isLoading ? "Joining..." : "Join Room"}
+          {isLoading ? "Joining" : "Join Room"}
         </Button>
 
-    
         {showError && (
           <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
             <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
               <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
-                
                 <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
                   <div className="text-2xl text-white">⚠️</div>
                 </div>
 
-           
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
                   {errorMessage.includes("name already exists")
                     ? "Name Already Taken"
                     : "Invalid Room Code"}
                 </h3>
 
-               
                 <p className="mb-6 leading-relaxed text-gray-600">
                   {errorMessage}
                 </p>
 
-      
                 <Button
                   onClick={clearError}
                   className="transform rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-pink-600 hover:to-pink-700"

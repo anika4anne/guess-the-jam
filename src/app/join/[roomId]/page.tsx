@@ -39,7 +39,7 @@ export default function JoinRoomGamePage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-6 text-white">
+    <main className="playnow-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
       {!gameFinished && (
         <>
           <h1 className="mb-6 text-3xl font-bold text-yellow-400">
@@ -59,7 +59,7 @@ export default function JoinRoomGamePage() {
           )}
 
           <div className="mt-8 text-white/60">
-            Game in progress... (TODO: implement full game UI)
+            Game in progress (TODO: implement full game UI)
           </div>
         </>
       )}

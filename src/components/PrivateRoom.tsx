@@ -58,10 +58,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [countdown, setCountdown] = useState(5);
   const [hoveredForReady, setHoveredForReady] = useState("");
   const [showCopied, setShowCopied] = useState(false);
-  const [showScore, setShowScore] = useState(false);
-  const [gameMode, setGameMode] = useState("single");
-  const [score, setScore] = useState(0);
-  const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
+  const [showScore] = useState(false);
+  const [gameMode] = useState("single");
+  const [score] = useState(0);
+  const [playerScores] = useState<Record<string, number>>({});
   const [rounds, setRounds] = useState<number>(10);
   const [mode, setMode] = useState<"default" | "playlist">("default");
   const [playlists, setPlaylists] = useState<string[]>([""]);
@@ -69,6 +69,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const isMounted = useRef(true);
   const showKickedPopupRef = useRef(false);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     if (!name) {
@@ -84,6 +86,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
     };
   }, []);
 
@@ -93,11 +99,13 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const storageKey = `room-${roomId}-players`;
     const bannedKey = `room-${roomId}-banned`;
     const readyKey = `room-${roomId}-ready`;
+    const gameStartKey = `room-${roomId}-gameStarting`;
 
     try {
       const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
       const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
       const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
+      const gameStartTime = localStorage.getItem(gameStartKey);
 
       if (
         !Array.isArray(existing) ||
@@ -126,7 +134,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           (player: string) => player.toLowerCase() === name.toLowerCase(),
         )
       ) {
-        const updated = [...existing, name];
+        const updated = existing.concat([name]);
         localStorage.setItem(storageKey, JSON.stringify(updated));
         setPlayers(updated);
       } else {
@@ -155,7 +163,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             if (isMounted.current) {
               setPlayers((prevPlayers) => {
                 if (JSON.stringify(prevPlayers) !== JSON.stringify(current)) {
-                  return current;
+                  return current as string[];
                 }
                 return prevPlayers;
               });
@@ -164,7 +172,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 if (
                   JSON.stringify(prevBanned) !== JSON.stringify(currentBanned)
                 ) {
-                  return currentBanned;
+                  return currentBanned as string[];
                 }
                 return prevBanned;
               });
@@ -173,7 +181,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 if (
                   JSON.stringify(prevReady) !== JSON.stringify(currentReady)
                 ) {
-                  return currentReady;
+                  return currentReady as string[];
                 }
                 return prevReady;
               });
@@ -230,17 +238,23 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       alert("Failed to join room. Please try again.");
       router.push("/private");
     }
-  }, [name, roomId, router]);
+  }, [name, roomId, router, showKickedPopup]);
 
   useEffect(() => {
     if (!isMounted.current) return;
     const gameStartKey = `room-${roomId}-gameStarting`;
 
     const checkGameStarting = () => {
-      if (!isMounted.current) return;
+      if (!isMounted.current || hasRedirected.current) return;
       try {
-        const gameStarting = localStorage.getItem(gameStartKey) === "true";
-        setIsGameStarting(gameStarting);
+        const gameStartTime = localStorage.getItem(gameStartKey);
+        console.log(`Player ${name} checking game start: ${gameStartTime}`);
+        if (gameStartTime) {
+          console.log(`FORCE REDIRECT: Player ${name} going to countdown page`);
+          hasRedirected.current = true;
+
+          window.location.href = `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`;
+        }
       } catch (error) {
         console.error("Error checking game status:", error);
       }
@@ -248,35 +262,32 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
     const interval = setInterval(checkGameStarting, 100);
     return () => clearInterval(interval);
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    if (isGameStarting && countdown > 0) {
-      const timer = setTimeout(() => {
-        if (isMounted.current) {
-          setCountdown(countdown - 1);
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (isGameStarting && countdown === 0) {
-      const gameStartKey = `room-${roomId}-gameStarting`;
-      localStorage.removeItem(gameStartKey);
-
-      setTimeout(() => {
-        if (isMounted.current) {
-          router.push(
-            `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
-          );
-        }
-      }, 100);
-    }
-  }, [isGameStarting, countdown, roomId, name, router]);
+  }, [roomId, name, router]);
 
   useEffect(() => {
     if (!name || !isMounted.current) return;
     setIsHost(players[0]?.toLowerCase() === name.toLowerCase());
   }, [players, name]);
+
+  useEffect(() => {
+    if (!isMounted.current) return;
+    const gameStartKey = `room-${roomId}-gameStarting`;
+
+    const cleanupFlag = () => {
+      const gameStartTime = localStorage.getItem(gameStartKey);
+      if (gameStartTime) {
+        setTimeout(() => {
+          if (isMounted.current) {
+            localStorage.removeItem(gameStartKey);
+            console.log(`Cleaned up game start flag for room ${roomId}`);
+          }
+        }, 2000);
+      }
+    };
+
+    const interval = setInterval(cleanupFlag, 1000);
+    return () => clearInterval(interval);
+  }, [roomId]);
 
   useEffect(() => {
     if (!isMounted.current) return;
@@ -326,7 +337,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           if (
             JSON.stringify(prevPlaylists) !== JSON.stringify(parsedPlaylists)
           ) {
-            return parsedPlaylists;
+            return parsedPlaylists as string[];
           }
           return prevPlaylists;
         });
@@ -347,7 +358,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         const parsed = JSON.parse(updated);
         setSelectedYears((prevYears) => {
           if (JSON.stringify(prevYears) !== JSON.stringify(parsed)) {
-            return parsed;
+            return parsed as number[];
           }
           return prevYears;
         });
@@ -421,7 +432,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       localStorage.setItem(readyKey, JSON.stringify(updated));
       setReadyPlayers(updated);
     } else {
-      const updated = [...currentReady, name];
+      const updated = currentReady.concat([name]);
       localStorage.setItem(readyKey, JSON.stringify(updated));
       setReadyPlayers(updated);
     }
@@ -472,11 +483,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         );
 
         const gameStartKey = `room-${roomId}-gameStarting`;
-        localStorage.setItem(gameStartKey, "true");
+        localStorage.setItem(gameStartKey, "START");
 
-        router.push(
-          `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`,
-        );
+        window.location.href = `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`;
       } catch (error) {
         console.error("Error starting game:", error);
         alert("Failed to start game. Please try again.");
@@ -534,7 +543,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     const updated = current.filter(
       (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
     );
-    const updatedBanned = [...currentBanned, playerToKick];
+    const updatedBanned = currentBanned.concat([playerToKick]);
 
     localStorage.setItem(storageKey, JSON.stringify(updated));
     localStorage.setItem(bannedKey, JSON.stringify(updatedBanned));
@@ -576,7 +585,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     if (!isMounted.current) return;
     if (idx < 0 || idx >= playlists.length) return;
     const playlistsKey = `room-${roomId}-playlists`;
-    const updated = [...playlists];
+    const updated = playlists.slice();
     updated[idx] = value;
     setPlaylists(updated);
     localStorage.setItem(playlistsKey, JSON.stringify(updated));
@@ -585,7 +594,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const handleAddPlaylist = () => {
     if (!isMounted.current) return;
     const playlistsKey = `room-${roomId}-playlists`;
-    const updated = [...playlists, ""];
+    const updated = playlists.concat([""]);
     setPlaylists(updated);
     localStorage.setItem(playlistsKey, JSON.stringify(updated));
   };
@@ -617,12 +626,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       if (year < 2000 || year > new Date().getFullYear()) return;
       const yearsKey = `room-${roomId}-years`;
       if (!selectedYears.includes(year)) {
-        const updated = [...selectedYears, year];
+        const updated = selectedYears.concat([year]);
         setSelectedYears(updated);
         localStorage.setItem(yearsKey, JSON.stringify(updated));
       }
     },
-    [roomId],
+    [roomId, selectedYears],
   );
 
   const handleDeleteYear = useCallback(
@@ -633,7 +642,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       setSelectedYears(updated);
       localStorage.setItem(yearsKey, JSON.stringify(updated));
     },
-    [roomId],
+    [roomId, selectedYears],
   );
 
   if (!name) {
@@ -655,7 +664,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       {isGameStarting ? (
         <div className="flex flex-col items-center justify-center">
           <div className="animate-pulse bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-8xl font-extrabold text-transparent drop-shadow-lg">
-            Starting in {countdown}...
+            Starting in {countdown} seconds
           </div>
         </div>
       ) : (
@@ -966,7 +975,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 {!isHost && allReady && (
                   <div className="mb-4 text-center">
                     <div className="text-xl font-bold text-green-400">
-                      Waiting for host to start the game...
+                      Waiting for host to start the game
                     </div>
                   </div>
                 )}
