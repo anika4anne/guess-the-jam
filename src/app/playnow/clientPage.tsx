@@ -1003,7 +1003,7 @@ export default function PlayNowPage() {
         )}
 
         {gameFinished && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 text-white">
+          <div className="game-complete-background fixed inset-0 z-50 flex flex-col items-center justify-center text-white">
             <Confetti
               width={window.innerWidth}
               height={window.innerHeight}

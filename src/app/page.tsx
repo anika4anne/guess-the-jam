@@ -35,7 +35,7 @@ export default function HomePage() {
 
         <div className="container -mt-40 flex flex-col items-center justify-center gap-12 px-4 py-8">
           <h1 className="text-center text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-[4rem]">
-            🎵 Guess the <span className="text-pink-300">Jam</span> 🎶
+            Guess the <span className="text-pink-300">Jam</span>
           </h1>
           <p className="max-w-2xl text-center text-xl text-white/80"></p>
 
