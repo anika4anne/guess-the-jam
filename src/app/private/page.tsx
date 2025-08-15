@@ -19,8 +19,7 @@ export default function PrivatePage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] px-6 text-white">
-
+    <main className="private-room-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -31,9 +30,7 @@ export default function PrivatePage() {
         </Button>
       </div>
 
-      <h1 className="mb-8 text-4xl font-bold text-pink-300">
-        🎧 Private Rooms
-      </h1>
+      <h1 className="mb-8 text-4xl font-bold text-pink-300">Private Rooms</h1>
 
       <div className="space-y-6 rounded-2xl bg-white/10 p-8 text-center shadow-lg backdrop-blur-md">
         <p className="mb-6 text-lg text-white/80">
@@ -45,14 +42,14 @@ export default function PrivatePage() {
             onClick={handleCreate}
             className="w-full bg-green-600 py-4 text-lg font-semibold text-white hover:bg-green-700"
           >
-            🎶 Create New Room
+            Create New Room
           </Button>
 
           <Button
             onClick={handleJoin}
             className="w-full bg-pink-500 py-4 text-lg font-semibold text-white hover:bg-pink-600"
           >
-            🎉 Join Existing Room
+            Join Existing Room
           </Button>
         </div>
       </div>
