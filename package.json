@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "next build",
+    "build:websocket": "tsc server/websocket.ts --outDir dist --target es2020 --module esnext --moduleResolution node",
     "check": "next lint && tsc --noEmit",
     "dev": "next dev --turbo",
     "dev:full": "concurrently \"npm run dev\" \"npm run websocket\"",
     "websocket": "tsx server/websocket.ts",
+    "start:websocket": "node dist/websocket.js",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "next lint",
