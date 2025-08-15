@@ -35,9 +35,15 @@ class GameServer {
     this.wss = new WebSocketServer({ server });
 
     this.setupWebSocket();
-    server.listen(this.port, () => {
-      console.log(`🎮 Game server running on port ${this.port}`);
-    });
+    server.listen(
+      this.port,
+      config.websocket.host === "0.0.0.0" ? "0.0.0.0" : undefined,
+      () => {
+        console.log(
+          `🎮 Game server running on ${config.websocket.host}:${this.port}`,
+        );
+      },
+    );
   }
 
   private setupWebSocket() {

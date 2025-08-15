@@ -4,6 +4,9 @@ export const config = {
       ? parseInt(process.env.WEBSOCKET_PORT)
       : 3001,
     host: process.env.WEBSOCKET_HOST || "localhost",
+    url:
+      process.env.WEBSOCKET_URL ||
+      `ws://${process.env.WEBSOCKET_HOST || "localhost"}:${process.env.WEBSOCKET_PORT || 3001}`,
   },
 
   webhook: {
