@@ -55,7 +55,7 @@ export const useWebSocket = (): WebSocketHook => {
       wsRef.current.close();
     }
 
-    const wsUrl = `${process.env.NEXT_PUBLIC_WEBSOCKET_URL || "ws://localhost:3001"}?roomId=${encodeURIComponent(roomId)}&name=${encodeURIComponent(playerName)}`;
+    const wsUrl = `${process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? "ws://localhost:3001"}?roomId=${encodeURIComponent(roomId)}&name=${encodeURIComponent(playerName)}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
