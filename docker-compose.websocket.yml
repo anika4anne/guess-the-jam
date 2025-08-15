@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - WEBSOCKET_HOST=0.0.0.0
+      - WEBSOCKET_PORT=3001
+    restart: unless-stopped
