@@ -100,7 +100,7 @@ export default function JoinPrivateRoomClientPage({
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#1e1b4d] via-[#3d0063] to-[#4a001c] px-6 text-white">
+    <main className="private-room-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -111,7 +111,7 @@ export default function JoinPrivateRoomClientPage({
         </Button>
       </div>
 
-      <h1 className="mb-6 text-4xl font-bold text-pink-300">🎉 Join a Room</h1>
+      <h1 className="mb-6 text-6xl font-bold text-pink-300">Join a Room</h1>
 
       <div className="space-y-4 rounded-2xl bg-white/10 p-8 text-center shadow-lg backdrop-blur-md">
         <div className="space-y-4">

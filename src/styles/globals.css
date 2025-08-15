@@ -131,3 +131,17 @@
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+.private-room-background {
+  background-image: url("/private1.svg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.game-complete-background {
+  background-image: url("/score1.svg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
