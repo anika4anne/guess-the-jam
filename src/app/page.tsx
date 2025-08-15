@@ -43,9 +43,9 @@ export default function HomePage() {
             <button
               onClick={handlePlayClick}
               className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-              style={{ backgroundColor: "#F06292" }}
+              style={{ backgroundColor: "#EC4899" }}
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
               <h3 className="relative text-2xl font-bold text-white">
                 Play Now →
               </h3>
@@ -57,9 +57,9 @@ export default function HomePage() {
             <Link
               href="/rules"
               className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-              style={{ backgroundColor: "#F06292" }}
+              style={{ backgroundColor: "#EC4899" }}
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-500/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
               <h3 className="relative text-2xl font-bold text-white">
                 How to Play →
               </h3>
@@ -75,9 +75,9 @@ export default function HomePage() {
               <Link
                 href="/private/create"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#EC4899" }}
+                style={{ backgroundColor: "#A855F7" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <h3 className="relative text-xl font-bold text-white">
                   Create Private Room →
                 </h3>
@@ -89,9 +89,9 @@ export default function HomePage() {
               <Link
                 href="/private/join"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#EC4899" }}
+                style={{ backgroundColor: "#A855F7" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <h3 className="relative text-2xl font-bold text-white">
                   Join Private Room →
                 </h3>

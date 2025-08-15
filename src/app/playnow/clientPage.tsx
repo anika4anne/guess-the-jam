@@ -193,10 +193,16 @@ export default function PlayNowPage() {
                 currentIntervalRefs[year] = null;
                 console.log(`Cleared previous interval for year ${year}`);
               }
+              console.log(`Setting up new interval for year ${year}`);
               currentIntervalRefs[year] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
-                console.log(`Year ${year} currentTime:`, currentTime);
+                console.log(
+                  `Year ${year} currentTime:`,
+                  currentTime,
+                  `Target: 15 seconds`,
+                );
                 if (currentTime >= 15) {
+                  console.log(`Year ${year} reached 15 seconds, pausing video`);
                   player.pauseVideo();
                   const interval = currentIntervalRefs[year];
                   if (interval) {
@@ -217,6 +223,10 @@ export default function PlayNowPage() {
                 const interval = currentIntervalRefs[year];
                 if (interval) {
                   clearInterval(interval);
+                  console.log(
+                    `Cleared interval for year ${year} due to video state change:`,
+                    event.data,
+                  );
                 }
                 currentIntervalRefs[year] = null;
               }
@@ -948,7 +958,7 @@ export default function PlayNowPage() {
     );
 
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[linear-gradient(to_bottom,_black_0%,_#0a0000_15%,_#220000_35%,_#440000_60%,_#660000_100%)] px-6 pt-8 text-white">
+      <main className="playnow-background relative flex min-h-screen flex-col items-center justify-start overflow-hidden px-6 pt-8 text-white">
         <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
@@ -1817,11 +1827,11 @@ export default function PlayNowPage() {
             )}
 
             {playerNames.filter((name) => name.trim() !== "").length > 1 && (
-              <div className="mt-6 flex w-full flex-col items-center">
+              <div className="mt-6 mb-8 flex w-full flex-col items-center">
                 <div className="mb-1 text-center text-lg font-extrabold text-white">
                   Round {round} of {totalRounds}
                 </div>
-                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-[#180a0a] px-8 py-2 shadow-lg">
+                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-yellow-400 px-8 py-2 shadow-lg">
                   {playerNames
                     .filter((name) => name.trim() !== "")
                     .sort(
@@ -1830,15 +1840,15 @@ export default function PlayNowPage() {
                     .map((playerName, idx) => (
                       <div
                         key={playerName}
-                        className="flex min-w-[80px] flex-col items-center justify-center text-center"
+                        className="flex min-w-[120px] flex-col items-center justify-center text-center"
                       >
-                        <span className="mb-0.5 text-xs font-extrabold text-yellow-300">
+                        <span className="mb-0.5 text-xs font-extrabold text-black">
                           #{idx + 1}
                         </span>
-                        <span className="mb-1 text-base font-bold text-white">
+                        <span className="mb-1 text-base font-bold text-black">
                           {playerName}
                         </span>
-                        <span className="mt-0.5 text-lg font-extrabold text-yellow-400">
+                        <span className="mt-0.5 text-lg font-extrabold text-black">
                           {playerScores[playerName] ?? 0}
                         </span>
                       </div>
@@ -1847,26 +1857,23 @@ export default function PlayNowPage() {
               </div>
             )}
             {playerNames.filter((name) => name.trim() !== "").length === 1 && (
-              <div className="mt-6 flex w-full flex-col items-center">
+              <div className="mt-6 mb-8 flex w-full flex-col items-center">
                 <div className="mb-1 text-center text-lg font-extrabold text-white">
                   Round {round} of {totalRounds}
                 </div>
-                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-[#180a0a] px-8 py-2 shadow-lg">
+                <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-yellow-400 px-8 py-2 shadow-lg">
                   {playerNames
                     .filter((name) => name.trim() !== "")
                     .map((playerName, idx) => (
                       <div
                         key={playerName}
-                        className="flex min-w-[80px] flex-col items-center justify-center text-center"
+                        className="flex min-w-[120px] flex-col items-center justify-center text-center"
                       >
-                        <span className="mb-0.5 text-xs font-extrabold text-yellow-300">
-                          #{idx + 1}
-                        </span>
-                        <span className="mb-1 text-base font-bold text-white">
+                        <span className="mb-1 text-base font-bold text-black">
                           {playerName}
                         </span>
-                        <span className="mt-0.5 text-lg font-extrabold text-yellow-400">
-                          {score}
+                        <span className="mt-0.5 text-lg font-extrabold text-black">
+                          Score: {score}
                         </span>
                       </div>
                     ))}
