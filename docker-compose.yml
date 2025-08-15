@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  websocket-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - WEBSOCKET_PORT=3001
+    restart: unless-stopped
+    networks:
+      - guess-the-jam-network
+
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    depends_on:
+      - websocket-server
+    networks:
+      - guess-the-jam-network
+
+networks:
+  guess-the-jam-network:
+    driver: bridge

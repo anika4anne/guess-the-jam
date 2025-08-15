@@ -1864,7 +1864,7 @@ export default function PlayNowPage() {
                 <div className="mx-auto flex w-fit max-w-full flex-row items-center justify-center gap-4 rounded-[100px] bg-yellow-400 px-8 py-2 shadow-lg">
                   {playerNames
                     .filter((name) => name.trim() !== "")
-                    .map((playerName, idx) => (
+                    .map((playerName, _idx) => (
                       <div
                         key={playerName}
                         className="flex min-w-[120px] flex-col items-center justify-center text-center"

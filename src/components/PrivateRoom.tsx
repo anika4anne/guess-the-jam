@@ -3,84 +3,149 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "~/components/ui/button";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRightFromBracket, faBan } from "@fortawesome/free-solid-svg-icons";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+
+import { useWebSocket } from "~/hooks/useWebSocket";
 
 interface PrivateRoomProps {
   roomId: string;
 }
 
-const cleanupStaleRooms = () => {
-  try {
-    const keys = Object.keys(localStorage);
-    const roomKeys = keys.filter((key) => key.startsWith("room-"));
-
-    roomKeys.forEach((key) => {
-      const data = localStorage.getItem(key);
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          if (!Array.isArray(parsed) || parsed.length === 0) {
-            localStorage.removeItem(key);
-          }
-        } catch {
-          localStorage.removeItem(key);
-        }
-      }
-    });
-  } catch (error) {
-    console.error("Error cleaning up stale rooms:", error);
-  }
-};
+interface Player {
+  id: string;
+  name: string;
+  ready: boolean;
+  score: number;
+}
 
 export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const name = searchParams.get("name");
 
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [isHost, setIsHost] = useState(false);
   const [showKickPopup, setShowKickPopup] = useState(false);
   const [playerToKick, setPlayerToKick] = useState("");
-  const [showKickedPopup, setShowKickedPopup] = useState(false);
-  const [hoveredPlayer, setHoveredPlayer] = useState("");
-  const [bannedPlayers, setBannedPlayers] = useState<string[]>([]);
   const [readyPlayers, setReadyPlayers] = useState<string[]>([]);
   const [isGameStarting, setIsGameStarting] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [hoveredForReady, setHoveredForReady] = useState("");
   const [showCopied, setShowCopied] = useState(false);
-  const [showScore] = useState(false);
-  const [gameMode] = useState("single");
-  const [score] = useState(0);
-  const [playerScores] = useState<Record<string, number>>({});
   const [rounds, setRounds] = useState<number>(10);
   const [mode, setMode] = useState<"default" | "playlist">("default");
   const [playlists, setPlaylists] = useState<string[]>([""]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
+  const [playerId, setPlayerId] = useState<string>("");
+
   const isMounted = useRef(true);
-  const showKickedPopupRef = useRef(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasRedirected = useRef(false);
+
+  const { sendMessage, lastMessage, connect, disconnect } = useWebSocket();
 
   useEffect(() => {
     if (!name) {
       router.push(`/private/join?roomId=${roomId}`);
+      return;
     }
-  }, [name, roomId, router]);
+
+    connect(roomId, name);
+
+    return () => {
+      disconnect();
+    };
+  }, [name, roomId, connect, disconnect, router]);
 
   useEffect(() => {
-    cleanupStaleRooms();
-  }, []);
+    if (!lastMessage) return;
+
+    switch (lastMessage.type) {
+      case "room_joined":
+        if (lastMessage.playerId) {
+          setPlayerId(lastMessage.playerId);
+        }
+        if (lastMessage.room) {
+          setPlayers(lastMessage.room.players);
+          if (lastMessage.playerId) {
+            setIsHost(lastMessage.room.hostId === lastMessage.playerId);
+          }
+        }
+        break;
+
+      case "player_joined":
+        if (lastMessage.player) {
+          setPlayers((prev) => [...prev, lastMessage.player as Player]);
+        }
+        break;
+
+      case "player_left":
+        if (lastMessage.playerId) {
+          setPlayers((prev) =>
+            prev.filter((p) => p.id !== lastMessage.playerId),
+          );
+        }
+        break;
+
+      case "player_ready_update":
+        if (lastMessage.playerId && typeof lastMessage.ready === "boolean") {
+          setPlayers((prev) =>
+            prev.map((p) =>
+              p.id === lastMessage.playerId
+                ? { ...p, ready: lastMessage.ready! }
+                : p,
+            ),
+          );
+          setReadyPlayers((prev) => {
+            if (lastMessage.ready && lastMessage.playerId) {
+              return prev.includes(lastMessage.playerId)
+                ? prev
+                : [...prev, lastMessage.playerId];
+            } else if (lastMessage.playerId) {
+              return prev.filter((id) => id !== lastMessage.playerId);
+            }
+            return prev;
+          });
+        }
+        break;
+
+      case "all_players_ready":
+        break;
+
+      case "game_starting":
+        setIsGameStarting(true);
+        if (typeof lastMessage.countdown === "number") {
+          setCountdown(lastMessage.countdown);
+        }
+        break;
+
+      case "countdown_update":
+        if (typeof lastMessage.countdown === "number") {
+          setCountdown(lastMessage.countdown);
+        }
+        break;
+
+      case "gameplay_started":
+        if (!hasRedirected.current) {
+          hasRedirected.current = true;
+          router.push(`/playnow?name=${name}&roomId=${roomId}`);
+        }
+        break;
+
+      case "new_host":
+        if (lastMessage.hostId === playerId) {
+          setIsHost(true);
+        }
+        break;
+
+      case "player_kicked":
+        setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
+        break;
+
+      case "player_banned":
+        setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
+        break;
+    }
+  }, [lastMessage, playerId, name, roomId, router]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -93,916 +158,424 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!name || !isMounted.current) return;
+  const handleReadyToggle = useCallback(() => {
+    const isReady = readyPlayers.includes(playerId);
+    sendMessage({
+      type: "player_ready",
+      ready: !isReady,
+    });
+  }, [playerId, readyPlayers, sendMessage]);
 
-    const storageKey = `room-${roomId}-players`;
-    const bannedKey = `room-${roomId}-banned`;
-    const readyKey = `room-${roomId}-ready`;
-    const gameStartKey = `room-${roomId}-gameStarting`;
+  const handleStartGame = useCallback(() => {
+    if (!isHost) return;
 
-    try {
-      const existing = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-      const banned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
-      const ready = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
-      const gameStartTime = localStorage.getItem(gameStartKey);
+    sendMessage({
+      type: "start_game",
+    });
+  }, [isHost, sendMessage]);
 
-      if (
-        !Array.isArray(existing) ||
-        !Array.isArray(banned) ||
-        !Array.isArray(ready)
-      ) {
-        throw new Error("Invalid room data format");
-      }
-
-      setBannedPlayers(banned);
-      setReadyPlayers(ready);
-
-      const isBanned = banned.some(
-        (bannedPlayer: string) =>
-          bannedPlayer.toLowerCase() === name.toLowerCase(),
-      );
-
-      if (isBanned) {
-        setShowKickedPopup(true);
-        showKickedPopupRef.current = true;
-        return;
-      }
-
-      if (
-        !existing.some(
-          (player: string) => player.toLowerCase() === name.toLowerCase(),
-        )
-      ) {
-        const updated = existing.concat([name]);
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-        setPlayers(updated);
-      } else {
-        setPlayers(existing);
-      }
-
-      const isCurrentPlayerHost = existing.length === 0 || existing[0] === name;
-      setIsHost(isCurrentPlayerHost);
-
-      const interval = setInterval(() => {
-        if (!isMounted.current) return;
-        try {
-          const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-          const currentBanned = JSON.parse(
-            localStorage.getItem(bannedKey) ?? "[]",
-          );
-          const currentReady = JSON.parse(
-            localStorage.getItem(readyKey) ?? "[]",
-          );
-
-          if (
-            Array.isArray(current) &&
-            Array.isArray(currentBanned) &&
-            Array.isArray(currentReady)
-          ) {
-            if (isMounted.current) {
-              setPlayers((prevPlayers) => {
-                if (JSON.stringify(prevPlayers) !== JSON.stringify(current)) {
-                  return current as string[];
-                }
-                return prevPlayers;
-              });
-
-              setBannedPlayers((prevBanned) => {
-                if (
-                  JSON.stringify(prevBanned) !== JSON.stringify(currentBanned)
-                ) {
-                  return currentBanned as string[];
-                }
-                return prevBanned;
-              });
-
-              setReadyPlayers((prevReady) => {
-                if (
-                  JSON.stringify(prevReady) !== JSON.stringify(currentReady)
-                ) {
-                  return currentReady as string[];
-                }
-                return prevReady;
-              });
-            }
-
-            const isCurrentlyBanned = currentBanned.some(
-              (bannedPlayer: string) =>
-                bannedPlayer.toLowerCase() === name.toLowerCase(),
-            );
-
-            if (
-              !current.some(
-                (player: string) => player.toLowerCase() === name.toLowerCase(),
-              ) ||
-              isCurrentlyBanned
-            ) {
-              if (isMounted.current) {
-                setShowKickedPopup(true);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error syncing room data:", error);
-        }
-      }, 1000);
-
-      return () => {
-        clearInterval(interval);
-
-        if (!showKickedPopup && name && isMounted.current) {
-          try {
-            const current = JSON.parse(
-              localStorage.getItem(storageKey) ?? "[]",
-            );
-            const updated = current.filter(
-              (p: string) => p.toLowerCase() !== name.toLowerCase(),
-            );
-            localStorage.setItem(storageKey, JSON.stringify(updated));
-
-            const currentReady = JSON.parse(
-              localStorage.getItem(readyKey) ?? "[]",
-            );
-            const updatedReady = currentReady.filter(
-              (p: string) => p.toLowerCase() !== name.toLowerCase(),
-            );
-            localStorage.setItem(readyKey, JSON.stringify(updatedReady));
-          } catch (error) {
-            console.error("Error cleaning up player data:", error);
-          }
-        }
-      };
-    } catch (error) {
-      console.error("Error initializing room:", error);
-      alert("Failed to join room. Please try again.");
-      router.push("/private");
-    }
-  }, [name, roomId, router, showKickedPopup]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    const gameStartKey = `room-${roomId}-gameStarting`;
-
-    const checkGameStarting = () => {
-      if (!isMounted.current || hasRedirected.current) return;
-      try {
-        const gameStartTime = localStorage.getItem(gameStartKey);
-        console.log(`Player ${name} checking game start: ${gameStartTime}`);
-        if (gameStartTime) {
-          console.log(`FORCE REDIRECT: Player ${name} going to countdown page`);
-          hasRedirected.current = true;
-
-          window.location.href = `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`;
-        }
-      } catch (error) {
-        console.error("Error checking game status:", error);
-      }
-    };
-
-    const interval = setInterval(checkGameStarting, 100);
-    return () => clearInterval(interval);
-  }, [roomId, name, router]);
-
-  useEffect(() => {
-    if (!name || !isMounted.current) return;
-    setIsHost(players[0]?.toLowerCase() === name.toLowerCase());
-  }, [players, name]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    const gameStartKey = `room-${roomId}-gameStarting`;
-
-    const cleanupFlag = () => {
-      const gameStartTime = localStorage.getItem(gameStartKey);
-      if (gameStartTime) {
-        setTimeout(() => {
-          if (isMounted.current) {
-            localStorage.removeItem(gameStartKey);
-            console.log(`Cleaned up game start flag for room ${roomId}`);
-          }
-        }, 2000);
-      }
-    };
-
-    const interval = setInterval(cleanupFlag, 1000);
-    return () => clearInterval(interval);
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    const roundsKey = `room-${roomId}-rounds`;
-    const stored = localStorage.getItem(roundsKey);
-    if (stored) setRounds(Number(stored));
-    const interval = setInterval(() => {
-      if (!isMounted.current) return;
-      const updated = localStorage.getItem(roundsKey);
-      if (updated) {
-        const currentRounds = Number(updated);
-        setRounds((prevRounds) => {
-          if (prevRounds !== currentRounds) {
-            return currentRounds;
-          }
-          return prevRounds;
-        });
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    const modeKey = `room-${roomId}-mode`;
-    const playlistsKey = `room-${roomId}-playlists`;
-    const storedMode = localStorage.getItem(modeKey);
-    if (storedMode === "playlist" || storedMode === "default")
-      setMode(storedMode);
-    const storedPlaylists = localStorage.getItem(playlistsKey);
-    if (storedPlaylists) setPlaylists(JSON.parse(storedPlaylists));
-    const interval = setInterval(() => {
-      if (!isMounted.current) return;
-      const updatedMode = localStorage.getItem(modeKey);
-      if (updatedMode === "playlist" || updatedMode === "default") {
-        setMode((prevMode) => {
-          if (prevMode !== updatedMode) {
-            return updatedMode;
-          }
-          return prevMode;
-        });
-      }
-      const updatedPlaylists = localStorage.getItem(playlistsKey);
-      if (updatedPlaylists) {
-        const parsedPlaylists = JSON.parse(updatedPlaylists);
-        setPlaylists((prevPlaylists) => {
-          if (
-            JSON.stringify(prevPlaylists) !== JSON.stringify(parsedPlaylists)
-          ) {
-            return parsedPlaylists as string[];
-          }
-          return prevPlaylists;
-        });
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-    const yearsKey = `room-${roomId}-years`;
-    const stored = localStorage.getItem(yearsKey);
-    if (stored) setSelectedYears(JSON.parse(stored));
-    const interval = setInterval(() => {
-      if (!isMounted.current) return;
-      const updated = localStorage.getItem(yearsKey);
-      if (updated) {
-        const parsed = JSON.parse(updated);
-        setSelectedYears((prevYears) => {
-          if (JSON.stringify(prevYears) !== JSON.stringify(parsed)) {
-            return parsed as number[];
-          }
-          return prevYears;
-        });
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [roomId]);
-
-  useEffect(() => {
-    if (!isMounted.current) return;
-
-    const syncPrivateRoomSettings = () => {
-      if (!isMounted.current) return;
-      try {
-        const privateRoomSettings = {
-          years: selectedYears,
-          rounds,
-          playerNames: players,
-          mode,
-          playlists: playlists.filter((p) => p.trim()),
-        };
-
-        localStorage.setItem(
-          "privateRoomSettings",
-          JSON.stringify(privateRoomSettings),
-        );
-      } catch (error) {
-        console.error("Error syncing private room settings:", error);
-      }
-    };
-
-    const interval = setInterval(syncPrivateRoomSettings, 1000);
-    return () => clearInterval(interval);
-  }, [roomId, selectedYears, rounds, players, mode, playlists]);
-
-  const allReady =
-    players.length >= 2 && readyPlayers.length === players.length;
-
-  const handleBack = useCallback(() => {
-    if (!isMounted.current) return;
-    router.push("/private");
-  }, [router]);
-
-  const handlePlayerHover = useCallback(
-    (playerName: string) => {
-      if (!isMounted.current) return;
-      if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
-        setHoveredPlayer(playerName);
-      }
-
-      if (playerName.toLowerCase() === name?.toLowerCase()) {
-        setHoveredForReady(playerName);
-      }
+  const handleKickPlayer = useCallback(
+    (targetPlayerId: string) => {
+      sendMessage({
+        type: "kick_player",
+        targetPlayerId,
+      });
+      setShowKickPopup(false);
+      setPlayerToKick("");
     },
-    [isHost, name],
+    [sendMessage],
   );
 
-  const handlePlayerLeave = useCallback(() => {
-    if (!isMounted.current) return;
-    setHoveredPlayer("");
-    setHoveredForReady("");
-  }, []);
-
-  const toggleReady = useCallback(() => {
-    if (!isMounted.current) return;
-    const readyKey = `room-${roomId}-ready`;
-    const currentReady = JSON.parse(localStorage.getItem(readyKey) ?? "[]");
-
-    if (currentReady.includes(name)) {
-      const updated = currentReady.filter((p: string) => p !== name);
-      localStorage.setItem(readyKey, JSON.stringify(updated));
-      setReadyPlayers(updated);
-    } else {
-      const updated = currentReady.concat([name]);
-      localStorage.setItem(readyKey, JSON.stringify(updated));
-      setReadyPlayers(updated);
-    }
-  }, [roomId, name]);
-
-  const handlePlayerClick = useCallback(
-    (playerName: string) => {
-      if (!isMounted.current) return;
-      if (isHost && name && playerName.toLowerCase() !== name.toLowerCase()) {
-        setPlayerToKick(playerName);
-        setShowKickPopup(true);
-      }
-
-      if (playerName.toLowerCase() === name?.toLowerCase()) {
-        toggleReady();
-      }
+  const handleBanPlayer = useCallback(
+    (targetPlayerId: string) => {
+      sendMessage({
+        type: "ban_player",
+        targetPlayerId,
+      });
+      setShowKickPopup(false);
+      setPlayerToKick("");
     },
-    [isHost, name, toggleReady],
+    [sendMessage],
   );
 
-  const startGame = useCallback(() => {
-    if (!isMounted.current) return;
-    if (isHost && allReady) {
-      if (mode === "default" && selectedYears.length === 0) {
-        alert("Please select at least one year before starting the game.");
-        return;
-      }
-      if (
-        mode === "playlist" &&
-        (!playlists.length || playlists.every((p) => !p.trim()))
-      ) {
-        alert("Please enter at least one playlist before starting the game.");
-        return;
-      }
+  const handleSettingsUpdate = useCallback(
+    (settings: Record<string, unknown>) => {
+      if (!isHost) return;
 
-      try {
-        const privateRoomSettings = {
-          years: selectedYears,
-          rounds,
-          playerNames: players,
-          mode,
-          playlists: playlists.filter((p) => p.trim()),
-        };
+      sendMessage({
+        type: "game_settings_update",
+        settings,
+      });
+    },
+    [isHost, sendMessage],
+  );
 
-        localStorage.setItem(
-          "privateRoomSettings",
-          JSON.stringify(privateRoomSettings),
-        );
-
-        const gameStartKey = `room-${roomId}-gameStarting`;
-        localStorage.setItem(gameStartKey, "START");
-
-        window.location.href = `/playnow?name=${encodeURIComponent(name ?? "")}&roomId=${roomId}`;
-      } catch (error) {
-        console.error("Error starting game:", error);
-        alert("Failed to start game. Please try again.");
-      }
-    }
-  }, [
-    roomId,
-    isHost,
-    allReady,
-    mode,
-    selectedYears,
-    rounds,
-    players,
-    playlists,
-    name,
-    router,
-  ]);
-
-  const copyRoomId = useCallback(async () => {
+  const copyRoomCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(roomId);
-      if (isMounted.current) {
-        setShowCopied(true);
-        setTimeout(() => {
-          if (isMounted.current) {
-            setShowCopied(false);
-          }
-        }, 2000);
-      }
-    } catch (err) {
-      console.error("Failed to copy room ID:", err);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy room code:", error);
     }
   }, [roomId]);
-
-  const handleKickPlayer = useCallback(() => {
-    if (!isMounted.current) return;
-    const storageKey = `room-${roomId}-players`;
-    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const updated = current.filter(
-      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
-    );
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    setPlayers(updated);
-    setShowKickPopup(false);
-    setPlayerToKick("");
-  }, [roomId, playerToKick]);
-
-  const handleBanPlayer = useCallback(() => {
-    if (!isMounted.current) return;
-    const storageKey = `room-${roomId}-players`;
-    const bannedKey = `room-${roomId}-banned`;
-    const current = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const currentBanned = JSON.parse(localStorage.getItem(bannedKey) ?? "[]");
-
-    const updated = current.filter(
-      (p: string) => p.toLowerCase() !== playerToKick.toLowerCase(),
-    );
-    const updatedBanned = currentBanned.concat([playerToKick]);
-
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    localStorage.setItem(bannedKey, JSON.stringify(updatedBanned));
-
-    setPlayers(updated);
-    setBannedPlayers(updatedBanned);
-    setShowKickPopup(false);
-    setPlayerToKick("");
-  }, [roomId, playerToKick]);
-
-  const handleKickedPopupClose = useCallback(() => {
-    if (!isMounted.current) return;
-    setShowKickedPopup(false);
-    router.push("/private");
-  }, [router]);
-
-  const handleRoundsChange = useCallback(
-    (value: number) => {
-      if (!isMounted.current) return;
-      if (value < 1 || value > 100) return;
-      const roundsKey = `room-${roomId}-rounds`;
-      setRounds(value);
-      localStorage.setItem(roundsKey, String(value));
-    },
-    [roomId],
-  );
-
-  const handleModeChange = useCallback(
-    (val: "default" | "playlist") => {
-      if (!isMounted.current) return;
-      const modeKey = `room-${roomId}-mode`;
-      setMode(val);
-      localStorage.setItem(modeKey, val);
-    },
-    [roomId],
-  );
-
-  const handlePlaylistChange = (idx: number, value: string) => {
-    if (!isMounted.current) return;
-    if (idx < 0 || idx >= playlists.length) return;
-    const playlistsKey = `room-${roomId}-playlists`;
-    const updated = playlists.slice();
-    updated[idx] = value;
-    setPlaylists(updated);
-    localStorage.setItem(playlistsKey, JSON.stringify(updated));
-  };
-
-  const handleAddPlaylist = () => {
-    if (!isMounted.current) return;
-    const playlistsKey = `room-${roomId}-playlists`;
-    const updated = playlists.concat([""]);
-    setPlaylists(updated);
-    localStorage.setItem(playlistsKey, JSON.stringify(updated));
-  };
-
-  const handleRemovePlaylist = (idx: number) => {
-    if (!isMounted.current) return;
-    const playlistsKey = `room-${roomId}-playlists`;
-    const updated = playlists.filter((_, i) => i !== idx);
-    setPlaylists(updated.length ? updated : [""]);
-    localStorage.setItem(
-      playlistsKey,
-      JSON.stringify(updated.length ? updated : [""]),
-    );
-  };
-
-  const startDecrement = () => {
-    if (!isMounted.current) return;
-    if (rounds > 1) handleRoundsChange(rounds - 1);
-  };
-
-  const startIncrement = () => {
-    if (!isMounted.current) return;
-    if (rounds < 100) handleRoundsChange(rounds + 1);
-  };
 
   const handleAddYear = useCallback(
     (year: number) => {
-      if (!isMounted.current) return;
-      if (year < 2000 || year > new Date().getFullYear()) return;
-      const yearsKey = `room-${roomId}-years`;
-      if (!selectedYears.includes(year)) {
-        const updated = selectedYears.concat([year]);
-        setSelectedYears(updated);
-        localStorage.setItem(yearsKey, JSON.stringify(updated));
-      }
+      const newYears = selectedYears.concat([year]);
+      setSelectedYears(newYears);
+      handleSettingsUpdate({ selectedYears: newYears });
     },
-    [roomId, selectedYears],
+    [selectedYears, handleSettingsUpdate],
   );
 
   const handleDeleteYear = useCallback(
     (year: number) => {
-      if (!isMounted.current) return;
-      const yearsKey = `room-${roomId}-years`;
-      const updated = selectedYears.filter((y) => y !== year);
-      setSelectedYears(updated);
-      localStorage.setItem(yearsKey, JSON.stringify(updated));
+      const newYears = selectedYears.filter((y) => y !== year);
+      setSelectedYears(newYears);
+      handleSettingsUpdate({ selectedYears: newYears });
     },
-    [roomId, selectedYears],
+    [selectedYears, handleSettingsUpdate],
   );
 
   if (!name) {
     return null;
   }
 
+  if (false) {
+    return (
+      <div className="lobby-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
+        <div className="text-center">
+          <h1 className="mb-6 text-4xl font-bold text-red-400">
+            You have been kicked from this room
+          </h1>
+          <Button
+            onClick={() => router.push("/private")}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Back to Private Rooms
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const canStartGame =
+    isHost && readyPlayers.length === players.length && players.length > 1;
+
   return (
     <main className="lobby-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
-      <div className="absolute top-6 left-6">
-        <Button
-          variant="outline"
-          onClick={() => isMounted.current && handleBack()}
-          className="border-white/20 bg-white/10 text-white hover:bg-white/20"
-        >
-          ← Back
-        </Button>
-      </div>
+      <div className="w-full max-w-4xl">
+        <h1 className="mb-6 rotate-1 transform text-5xl font-extrabold drop-shadow-lg">
+          Room <span className="text-green-400">{roomId}</span>
+        </h1>
 
-      {isGameStarting ? (
-        <div className="flex flex-col items-center justify-center">
-          <div className="animate-pulse bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-8xl font-extrabold text-transparent drop-shadow-lg">
-            Starting in {countdown} seconds
+        <div className="mb-6 text-center">
+          <div className="mb-4">
+            <span className="text-lg font-medium text-white/90">
+              Share the code with your friends:
+            </span>
           </div>
-        </div>
-      ) : (
-        <>
-          <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
-            Room <span className="text-green-400">{roomId}</span>
-            {isHost && (
-              <span className="ml-2 rounded-full bg-pink-500 px-2 py-1 text-sm text-white">
-                Host
-              </span>
-            )}
-          </h1>
-
-          <div className="mb-4 flex items-center gap-2">
-            <p className="text-white/80">Share the code to invite friends!</p>
+          <div className="flex items-center justify-center gap-4">
+            <div className="rounded-lg bg-black/30 px-4 py-2 font-mono text-lg">
+              {roomId}
+            </div>
             <Button
-              variant="outline"
-              onClick={() => isMounted.current && copyRoomId()}
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+              onClick={copyRoomCode}
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {showCopied ? "Copied!" : "Copy Room ID"}
             </Button>
           </div>
+        </div>
 
-          {isHost && (
-            <div className="mx-auto mb-6 w-full max-w-md">
-              <div
-                className="group cursor-pointer rounded-xl bg-white/10 px-6 py-4 shadow-md transition-all duration-200 select-none hover:bg-white/15"
-                onClick={() =>
-                  isMounted.current && setSettingsOpen((open) => !open)
-                }
-                role="button"
-                tabIndex={0}
-                aria-expanded={settingsOpen}
+        <div className="mb-8">
+          <div
+            className="group cursor-pointer rounded-xl bg-white/10 px-6 py-4 shadow-md transition-all duration-200 select-none hover:bg-white/15"
+            onClick={() => setSettingsOpen(!settingsOpen)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <i className="fas fa-cog text-white"></i>
+                <span className="text-lg font-semibold">Game Settings</span>
+              </div>
+              <span
+                className={`transform transition-transform duration-200 ${
+                  settingsOpen ? "rotate-180" : ""
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-3 text-lg font-semibold text-white">
-                    <i className="fas fa-cog text-white"></i>
-                    Game Settings
-                  </span>
-                  <span
-                    className={`text-white transition-transform duration-300 ${settingsOpen ? "rotate-180" : ""}`}
-                    style={{ fontSize: 20 }}
+                ▼
+              </span>
+            </div>
+          </div>
+
+          {settingsOpen && (
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-5">
+              <div className="mb-4">
+                <label className="mb-2 block text-sm font-medium">
+                  Number of Rounds:
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={rounds}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setRounds(value);
+                    handleSettingsUpdate({ rounds: value });
+                  }}
+                  className="w-full rounded border border-white/20 bg-white/10 px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="mb-2 block text-sm font-medium">
+                  Game Mode:
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      setMode("default");
+                      handleSettingsUpdate({ mode: "default" });
+                    }}
+                    className={`${
+                      mode === "default"
+                        ? "bg-pink-400 text-black"
+                        : "bg-white/20 hover:bg-white/30"
+                    }`}
                   >
-                    ▼
-                  </span>
+                    Default
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setMode("playlist");
+                      handleSettingsUpdate({ mode: "playlist" });
+                    }}
+                    className={`${
+                      mode === "playlist"
+                        ? "bg-pink-400 text-black"
+                        : "bg-white/20 hover:bg-white/30"
+                    }`}
+                  >
+                    Playlist
+                  </Button>
                 </div>
               </div>
-              <div
-                className={`overflow-hidden transition-all duration-300 ${settingsOpen ? "mt-3 max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
-                style={{}}
-              >
-                {settingsOpen && (
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-5">
-                    <div className="mt-2 mb-4 flex items-center gap-4">
-                      <button
-                        onClick={() =>
-                          isHost &&
-                          isMounted.current &&
-                          handleModeChange("default")
-                        }
-                        className={`rounded-l-lg px-4 py-2 font-bold ${mode === "default" ? "bg-pink-400 text-white" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
-                        disabled={!isHost}
+
+              {mode === "playlist" && (
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium">
+                    Playlists:
+                  </label>
+                  {playlists.map((playlist, index) => (
+                    <div key={index} className="mb-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={playlist}
+                        onChange={(e) => {
+                          const newPlaylists = playlists.concat([]);
+                          newPlaylists[index] = e.target.value;
+                          setPlaylists(newPlaylists);
+                          handleSettingsUpdate({ playlists: newPlaylists });
+                        }}
+                        placeholder="Enter playlist URL"
+                        className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-2 text-white"
+                      />
+                      <Button
+                        onClick={() => {
+                          const newPlaylists = playlists.filter(
+                            (_, i) => i !== index,
+                          );
+                          setPlaylists(newPlaylists);
+                          handleSettingsUpdate({ playlists: newPlaylists });
+                        }}
+                        className="bg-red-600 px-3 hover:bg-red-700"
                       >
-                        Default Songs Per Year
-                      </button>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    onClick={() => {
+                      const newPlaylists = playlists.concat([""]);
+                      setPlaylists(newPlaylists);
+                      handleSettingsUpdate({ playlists: newPlaylists });
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Add Playlist
+                  </Button>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="mb-2 block text-sm font-medium">
+                  Selected Years:
+                </label>
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {selectedYears.map((year) => (
+                    <div
+                      key={year}
+                      className="flex items-center gap-2 rounded-full bg-pink-400/20 px-3 py-1"
+                    >
+                      <span>{year}</span>
                       <button
-                        onClick={() =>
-                          isHost &&
-                          isMounted.current &&
-                          handleModeChange("playlist")
-                        }
-                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-pink-400 text-white" : "bg-blue-600 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
-                        disabled={!isHost}
+                        onClick={() => handleDeleteYear(year)}
+                        className="text-pink-400 hover:text-pink-300"
                       >
-                        Choose Playlist(s)
+                        ×
                       </button>
                     </div>
-                    <div className="mb-4 flex items-center gap-2">
-                      <label htmlFor="rounds" className="text-white">
-                        Number of Rounds:
-                      </label>
-                      <button
-                        onClick={
-                          isHost && isMounted.current
-                            ? startDecrement
-                            : undefined
-                        }
-                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds <= 1 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
-                        disabled={rounds <= 1 || !isHost}
-                      >
-                        -
-                      </button>
-                      <span className="min-w-[3rem] text-center text-2xl font-bold text-white">
-                        {rounds}
-                      </span>
-                      <button
-                        onClick={
-                          isHost && isMounted.current
-                            ? startIncrement
-                            : undefined
-                        }
-                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 ${rounds >= 100 || !isHost ? "cursor-not-allowed opacity-50" : ""}`}
-                        disabled={rounds >= 100 || !isHost}
-                      >
-                        +
-                      </button>
-                    </div>
-                    {mode === "default" && (
-                      <div className="mt-2 flex w-full flex-col items-center gap-2">
-                        <div className="mb-1 text-white">Years:</div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="rounded bg-white/10 px-4 py-2 text-white hover:bg-white/20">
-                              {selectedYears.length > 0
-                                ? selectedYears.join(", ")
-                                : "Select Years"}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-56">
-                            <DropdownMenuLabel>Select Years</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {Array.from(
-                              { length: new Date().getFullYear() - 2000 + 1 },
-                              (_, i) => 2000 + i,
-                            ).map((year) => (
-                              <DropdownMenuCheckboxItem
-                                key={year}
-                                checked={selectedYears.includes(year)}
-                                onCheckedChange={(checked) => {
-                                  if (isMounted.current) {
-                                    if (checked) handleAddYear(year);
-                                    else handleDeleteYear(year);
-                                  }
-                                }}
-                              >
-                                {year}
-                              </DropdownMenuCheckboxItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {selectedYears.map((year) => (
-                            <div
-                              key={year}
-                              className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
-                            >
-                              <span>{year}</span>
-                              <button
-                                onClick={() =>
-                                  isMounted.current && handleDeleteYear(year)
-                                }
-                                className="text-sm text-gray-500 hover:text-gray-700"
-                                type="button"
-                              >
-                                ❌
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {mode === "playlist" && (
-                      <div className="mt-2 flex w-full flex-col items-center gap-2">
-                        <div className="mb-1 text-white">Playlists:</div>
-                        {playlists.map((playlist, idx) => (
-                          <div
-                            key={idx}
-                            className="flex w-full max-w-xs items-center gap-2"
-                          >
-                            <input
-                              type="text"
-                              value={playlist}
-                              onChange={(e) =>
-                                isHost &&
-                                isMounted.current &&
-                                handlePlaylistChange(idx, e.target.value)
-                              }
-                              className="flex-1 rounded-full border border-white/20 bg-black/40 px-4 py-2 text-white transition-all focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                              placeholder="Enter playlist URL or name"
-                              disabled={!isHost}
-                            />
-                            <button
-                              onClick={() =>
-                                isMounted.current && handleAddPlaylist()
-                              }
-                              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-500 bg-transparent text-green-500 transition-all duration-150 hover:bg-green-500 hover:text-white focus:outline-none"
-                              title="Add Playlist"
-                              type="button"
-                            >
-                              <span className="text-xl font-bold">+</span>
-                            </button>
-                            {playlists.length > 1 && (
-                              <button
-                                onClick={() =>
-                                  isMounted.current && handleRemovePlaylist(idx)
-                                }
-                                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-500 bg-transparent text-red-500 transition-all duration-150 hover:bg-red-500 hover:text-white focus:outline-none"
-                                title="Remove Playlist"
-                                type="button"
-                              >
-                                <span className="text-xl font-bold">×</span>
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  {[2020, 2021, 2022, 2023, 2024].map((year) => (
+                    <Button
+                      key={year}
+                      onClick={() => handleAddYear(year)}
+                      disabled={selectedYears.includes(year)}
+                      className={`${
+                        selectedYears.includes(year)
+                          ? "cursor-not-allowed bg-gray-600"
+                          : "bg-pink-400 text-black hover:bg-pink-500"
+                      }`}
+                    >
+                      {year}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
+        </div>
 
-          <div className="mb-8 space-y-2 rounded-xl bg-white/10 p-6 shadow-md">
-            <h2 className="text-xl font-semibold text-white">
-              Players in Lobby
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {players.map((player, index) => {
-                const isSelf = player.toLowerCase() === name.toLowerCase();
-                const isReady = readyPlayers.includes(player);
-                return (
-                  <div
-                    key={index}
-                    className={`cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-center transition-all duration-200 ${
-                      hoveredPlayer === player && isHost && !isSelf
-                        ? "border-2 border-red-400 bg-red-500/20 line-through"
-                        : ""
-                    } ${isHost && !isSelf ? "hover:bg-red-500/10" : ""} ${
-                      isReady
-                        ? "text-pink-400"
-                        : hoveredForReady === player
-                          ? "text-purple-400"
-                          : "text-white/80"
-                    }`}
-                    onMouseEnter={() =>
-                      isMounted.current && handlePlayerHover(player)
-                    }
-                    onMouseLeave={() =>
-                      isMounted.current && handlePlayerLeave()
-                    }
-                    onClick={() =>
-                      isMounted.current && handlePlayerClick(player)
-                    }
-                  >
-                    <div
-                      className={`${players[0]?.toLowerCase() === player.toLowerCase() ? "font-bold" : ""}`}
+        <div className="mb-8">
+          <h2 className="mb-4 text-center text-2xl font-bold">
+            Players in Lobby ({players.length})
+          </h2>
+          <div className="grid gap-3">
+            {players.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between rounded-lg bg-white/10 p-4"
+                onMouseEnter={() => undefined}
+                onMouseLeave={() => undefined}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{player.name}</span>
+                  {player.id === playerId && (
+                    <span className="rounded bg-pink-500 px-2 py-1 text-xs text-white">
+                      You
+                    </span>
+                  )}
+                  {isHost && player.id === playerId && (
+                    <span className="rounded bg-yellow-500 px-2 py-1 text-xs text-black">
+                      Host
+                    </span>
+                  )}
+                  {player.ready && (
+                    <span className="rounded bg-green-500 px-2 py-1 text-xs text-white">
+                      Ready
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {player.id !== playerId && (
+                    <Button
+                      onClick={() => handleReadyToggle()}
+                      className={`${
+                        readyPlayers.includes(player.id)
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-gray-600 hover:bg-gray-700"
+                      }`}
                     >
-                      {player}
-                      {isSelf ? " (You)" : ""}
+                      {readyPlayers.includes(player.id) ? "Ready" : "Not Ready"}
+                    </Button>
+                  )}
+
+                  {isHost && player.id !== playerId && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setPlayerToKick(player.id);
+                          setShowKickPopup(true);
+                        }}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        size="sm"
+                      >
+                        Kick
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setPlayerToKick(player.id);
+                          setShowKickPopup(true);
+                        }}
+                        className="bg-red-600 hover:bg-red-700"
+                        size="sm"
+                      >
+                        Ban
+                      </Button>
                     </div>
-                    <div className="mt-1 text-xs">
-                      {isSelf ? (
-                        isReady ? (
-                          <span className="font-bold text-pink-400">
-                            (Ready)
-                          </span>
-                        ) : (
-                          <div className="text-purple-400">
-                            Hover and click to ready up
-                          </div>
-                        )
-                      ) : isReady ? (
-                        <span className="font-bold text-pink-400">(Ready)</span>
-                      ) : (
-                        <span className="font-bold text-yellow-400">
-                          (Not Ready)
-                        </span>
-                      )}
-                    </div>
-                    {isHost && !isSelf && (
-                      <div className="mt-1 text-xs text-yellow-400">
-                        Click to kick/ban
-                      </div>
-                    )}
-                    {players[0]?.toLowerCase() === player.toLowerCase() && (
-                      <div className="mt-1 text-xs text-yellow-400">Host</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="pointer-events-none fixed bottom-0 left-0 flex w-full flex-col items-center pb-6">
-            <div className="pointer-events-auto flex flex-col items-center gap-2">
-              <div className="flex flex-col items-center">
-                {isHost && (
-                  <Button
-                    onClick={() => isMounted.current && startGame()}
-                    disabled={
-                      !isHost ||
-                      !allReady ||
-                      (mode === "default" && selectedYears.length === 0) ||
-                      (mode === "playlist" &&
-                        (!playlists.length ||
-                          playlists.every((p) => !p.trim())))
-                    }
-                    className="mb-4 h-14 w-48 bg-pink-500 text-xl font-bold text-white hover:bg-pink-600 disabled:bg-pink-300"
-                  >
-                    Start Game
-                  </Button>
-                )}
+        {isHost && (
+          <div className="text-center">
+            <Button
+              onClick={handleStartGame}
+              disabled={!canStartGame}
+              className={`${
+                canStartGame
+                  ? "bg-pink-500 text-white hover:bg-pink-600"
+                  : "cursor-not-allowed bg-gray-600"
+              } px-8 py-3 text-lg font-semibold`}
+            >
+              Start Game
+            </Button>
+            {!canStartGame && (
+              <p className="mt-2 text-sm text-white/70">
+                {players.length <= 1
+                  ? "Need at least 2 players to start"
+                  : "All players must be ready to start"}
+              </p>
+            )}
+          </div>
+        )}
 
-                {!isHost && allReady && (
-                  <div className="mb-4 text-center">
-                    <div className="text-xl font-bold text-green-400">
-                      Waiting for host to start the game
-                    </div>
-                  </div>
-                )}
-                {((mode === "default" && selectedYears.length === 0) ||
-                  (mode === "playlist" &&
-                    (!playlists.length ||
-                      playlists.every((p) => !p.trim())))) && (
-                  <div className="mt-2 text-center text-sm text-yellow-200">
-                    {mode === "default"
-                      ? isHost
-                        ? "You must select years in Game Settings"
-                        : "Host must select years in Game Settings"
-                      : isHost
-                        ? "You must type in a playlist URL in Game Settings"
-                        : "Host must type in a playlist URL in Game Settings"}
-                  </div>
-                )}
+        {!isHost && (
+          <div className="text-center">
+            <p className="text-lg text-white/90">
+              Waiting for host to start the game
+            </p>
+          </div>
+        )}
+
+        {isGameStarting && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+            <div className="text-center">
+              <h2 className="mb-4 text-4xl font-bold">
+                Starting in {countdown} seconds
+              </h2>
+              <div className="text-6xl font-bold text-pink-400">
+                {countdown}
               </div>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       {showKickPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="mx-4 max-w-sm">
             <div className="relative rounded-lg border border-red-500 bg-red-700 p-5">
               <button
-                onClick={() => isMounted.current && setShowKickPopup(false)}
+                onClick={() => setShowKickPopup(false)}
                 className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center text-xl font-bold text-white hover:text-red-200"
               >
                 ×
@@ -1015,136 +588,35 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   Remove Player
                 </h3>
 
-                <p className="mb-4 text-sm text-white/90">
-                  What would you like to do with{" "}
-                  <span className="font-bold text-white">{playerToKick}</span>?
+                <p className="mb-4 text-white/90">
+                  Are you sure you want to remove this player from the room?
                 </p>
 
-                <div className="space-y-2">
-                  <button
-                    onClick={() => isMounted.current && handleKickPlayer()}
-                    className="w-full rounded border border-yellow-400 bg-yellow-500 px-3 py-2 font-medium text-black"
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleKickPlayer(playerToKick)}
+                    className="w-full bg-yellow-500 text-black hover:bg-yellow-600"
                   >
-                    Kick (Can Rejoin)
-                  </button>
-
-                  <button
-                    onClick={() => isMounted.current && handleBanPlayer()}
-                    className="w-full rounded border border-red-400 bg-red-500 px-3 py-2 font-medium text-white"
+                    Kick
+                  </Button>
+                  <Button
+                    onClick={() => handleBanPlayer(playerToKick)}
+                    className="w-full bg-red-500 text-white hover:bg-red-600"
                   >
-                    Ban (Cannot Rejoin)
-                  </button>
-
-                  <button
-                    onClick={() => isMounted.current && setShowKickPopup(false)}
-                    className="w-full rounded border border-blue-400 bg-blue-500 px-3 py-2 font-medium text-white"
+                    Ban
+                  </Button>
+                  <Button
+                    onClick={() => setShowKickPopup(false)}
+                    className="w-full bg-blue-500 text-white hover:bg-blue-600"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {showKickedPopup && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
-          <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
-            <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
-                <div className="text-2xl text-white">🚪</div>
-              </div>
-
-              <h3 className="mb-3 text-xl font-bold text-gray-900">
-                {bannedPlayers.some(
-                  (bannedPlayer: string) =>
-                    bannedPlayer.toLowerCase() === name.toLowerCase(),
-                )
-                  ? "You Have Been Banned"
-                  : "You've Been Kicked"}
-              </h3>
-
-              <p className="mb-6 leading-relaxed text-gray-600">
-                {bannedPlayers.some(
-                  (bannedPlayer: string) =>
-                    bannedPlayer.toLowerCase() === name.toLowerCase(),
-                )
-                  ? "You have been banned from this room and cannot rejoin."
-                  : "The host has kicked you from the room."}
-              </p>
-
-              <Button
-                onClick={() => isMounted.current && handleKickedPopupClose()}
-                className="transform rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-600 hover:to-blue-700"
-              >
-                Return to Lobby
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showScore && gameMode === "single" && (
-        <div className="fixed right-4 bottom-20 rounded-lg bg-black/80 p-4 text-white">
-          <p className="text-xl font-bold">Score: {score}</p>
-        </div>
-      )}
-
-      {gameMode === "multiplayer" && Object.keys(playerScores).length > 0 && (
-        <div className="fixed right-4 bottom-20 rounded-lg bg-black/80 p-4 text-white">
-          <p className="mb-2 text-lg font-bold">Player Scores:</p>
-          {Object.entries(playerScores).map(([playerName, playerScore]) => (
-            <div
-              key={playerName}
-              className="mb-1 flex items-center justify-between"
-            >
-              <span className="text-sm">{playerName}:</span>
-              <span className="text-sm font-bold text-yellow-400">
-                {playerScore}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <style jsx>{`
-        .flowing-border {
-          --borderWidth: 10px;
-          padding: var(--borderWidth);
-          border-radius: 1rem;
-          background: linear-gradient(
-            45deg,
-            #ff0080,
-            #8000ff,
-            #0080ff,
-            #00ff80,
-            #ff8000,
-            #ff0080
-          );
-          background-size: 400% 400%;
-          animation: flowingGradient 3s ease infinite;
-          display: inline-block;
-        }
-
-        @keyframes flowingGradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          25% {
-            background-position: 100% 50%;
-          }
-          50% {
-            background-position: 100% 100%;
-          }
-          75% {
-            background-position: 0% 100%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-      `}</style>
     </main>
   );
 }

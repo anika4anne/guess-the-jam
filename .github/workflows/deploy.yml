@@ -1,0 +1,52 @@
+name: Deploy and Start Servers
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /path/to/your/app
+          git pull origin main
+          npm ci
+          npm run build
+          
+          # Restart services
+          sudo systemctl restart guess-the-jam-websocket
+          sudo systemctl restart guess-the-jam-nextjs
+          
+          echo "🚀 Servers deployed and restarted!"
+          
+    - name: Health check
+      run: |
+        echo "Checking server health..."
+        sleep 30
+        curl -f http://${{ secrets.HOST }}:3000 || exit 1
+        echo "✅ Servers are healthy!"
