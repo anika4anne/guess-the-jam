@@ -650,7 +650,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-6 text-white">
+    <main className="lobby-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -670,7 +670,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       ) : (
         <>
           <h1 className="mb-6 text-4xl font-extrabold drop-shadow-md">
-            🎧 Room <span className="text-green-500">{roomId}</span>
+            Room <span className="text-green-400">{roomId}</span>
             {isHost && (
               <span className="ml-2 rounded-full bg-pink-500 px-2 py-1 text-sm text-white">
                 Host
@@ -692,7 +692,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           {isHost && (
             <div className="mx-auto mb-6 w-full max-w-md">
               <div
-                className="flex cursor-pointer items-center justify-between rounded-t-xl bg-white/10 px-6 py-3 shadow-md select-none"
+                className="group cursor-pointer rounded-xl bg-white/10 px-6 py-4 shadow-md transition-all duration-200 select-none hover:bg-white/15"
                 onClick={() =>
                   isMounted.current && setSettingsOpen((open) => !open)
                 }
@@ -700,25 +700,25 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 tabIndex={0}
                 aria-expanded={settingsOpen}
               >
-                <span className="flex items-center gap-2 text-lg font-bold text-white">
-                  Game Settings{" "}
-                  <span role="img" aria-label="settings">
-                    ⚙️
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-3 text-lg font-semibold text-white">
+                    <i className="fas fa-cog text-white"></i>
+                    Game Settings
                   </span>
-                </span>
-                <span
-                  className={`text-white transition-transform duration-200 ${settingsOpen ? "rotate-90" : ""}`}
-                  style={{ fontSize: 24 }}
-                >
-                  ▶
-                </span>
+                  <span
+                    className={`text-white transition-transform duration-300 ${settingsOpen ? "rotate-180" : ""}`}
+                    style={{ fontSize: 20 }}
+                  >
+                    ▼
+                  </span>
+                </div>
               </div>
               <div
-                className={`overflow-hidden rounded-b-xl bg-white/5 transition-all duration-300 ${settingsOpen ? "max-h-[1000px] px-6 py-4" : "max-h-0 px-6 py-0"}`}
+                className={`overflow-hidden transition-all duration-300 ${settingsOpen ? "mt-3 max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                 style={{}}
               >
                 {settingsOpen && (
-                  <>
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-5">
                     <div className="mt-2 mb-4 flex items-center gap-4">
                       <button
                         onClick={() =>
@@ -737,7 +737,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                           isMounted.current &&
                           handleModeChange("playlist")
                         }
-                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-pink-400 text-white" : "bg-white/10 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
+                        className={`rounded-r-lg px-4 py-2 font-bold ${mode === "playlist" ? "bg-pink-400 text-white" : "bg-blue-600 text-white"} ${!isHost ? "cursor-not-allowed opacity-60" : ""}`}
                         disabled={!isHost}
                       >
                         Choose Playlist(s)
@@ -873,7 +873,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                         ))}
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -998,47 +998,50 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       )}
 
       {showKickPopup && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200">
-          <div className="flowing-border animate-in zoom-in-95 relative mx-4 max-w-md text-center duration-200">
-            <div className="rounded-2xl bg-gradient-to-br from-white to-gray-50 p-8 shadow-2xl">
-              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-lg">
-                <div className="flex items-center justify-center text-5xl text-white">
-                  😠
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 max-w-sm">
+            <div className="relative rounded-lg border border-red-500 bg-red-700 p-5">
+              <button
+                onClick={() => isMounted.current && setShowKickPopup(false)}
+                className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center text-xl font-bold text-white hover:text-red-200"
+              >
+                ×
+              </button>
+
+              <div className="text-center">
+                <div className="mb-3 text-3xl">⚠️</div>
+
+                <h3 className="mb-2 text-lg font-bold text-white">
+                  Remove Player
+                </h3>
+
+                <p className="mb-4 text-sm text-white/90">
+                  What would you like to do with{" "}
+                  <span className="font-bold text-white">{playerToKick}</span>?
+                </p>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => isMounted.current && handleKickPlayer()}
+                    className="w-full rounded border border-yellow-400 bg-yellow-500 px-3 py-2 font-medium text-black"
+                  >
+                    Kick (Can Rejoin)
+                  </button>
+
+                  <button
+                    onClick={() => isMounted.current && handleBanPlayer()}
+                    className="w-full rounded border border-red-400 bg-red-500 px-3 py-2 font-medium text-white"
+                  >
+                    Ban (Cannot Rejoin)
+                  </button>
+
+                  <button
+                    onClick={() => isMounted.current && setShowKickPopup(false)}
+                    className="w-full rounded border border-blue-400 bg-blue-500 px-3 py-2 font-medium text-white"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-
-              <h3 className="mb-3 text-xl font-bold text-gray-900">
-                Remove Player
-              </h3>
-
-              <p className="mb-6 leading-relaxed text-gray-600">
-                What would you like to do with{" "}
-                <span className="font-semibold text-red-600">
-                  {playerToKick}
-                </span>
-                ?
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => isMounted.current && handleKickPlayer()}
-                  className="transform rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-orange-600 hover:to-orange-700"
-                >
-                  <FontAwesomeIcon icon={faRightFromBracket} /> Kick (Can
-                  Rejoin)
-                </Button>
-                <Button
-                  onClick={() => isMounted.current && handleBanPlayer()}
-                  className="transform rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-red-600 hover:to-red-700"
-                >
-                  <FontAwesomeIcon icon={faBan} /> Ban (Cannot Rejoin)
-                </Button>
-                <Button
-                  onClick={() => isMounted.current && setShowKickPopup(false)}
-                  className="rounded-lg bg-gray-500 px-6 py-2 font-semibold text-white transition-all duration-200 hover:bg-gray-600"
-                >
-                  Cancel
-                </Button>
               </div>
             </div>
           </div>

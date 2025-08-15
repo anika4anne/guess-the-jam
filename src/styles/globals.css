@@ -145,3 +145,10 @@
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+
+.lobby-background {
+  background-image: url("/try4.svg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
