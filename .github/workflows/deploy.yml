@@ -28,11 +28,13 @@ jobs:
       - name: Build WebSocket server
         run: pnpm build:websocket
 
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
       - name: Deploy to Railway
-        uses: bervProject/railway-deploy@v1.0.0
-        with:
-          service: websocket
-          token: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service websocket
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
   deploy-frontend:
     runs-on: ubuntu-latest
