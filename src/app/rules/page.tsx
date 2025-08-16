@@ -78,7 +78,6 @@ export default function RulesPage() {
         </svg>
       </div>
 
-      {/* Vine Waves Right */}
       <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1]">
         <svg
           viewBox="0 0 100 600"
@@ -95,7 +94,6 @@ export default function RulesPage() {
         </svg>
       </div>
 
-      {/* Back Button */}
       <div className="absolute top-6 left-6">
         <Button
           variant="outline"
@@ -106,7 +104,6 @@ export default function RulesPage() {
         </Button>
       </div>
 
-      {/* Title */}
       <motion.h1
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -125,7 +122,6 @@ export default function RulesPage() {
         Scroll down and vibe with the rules.
       </motion.p>
 
-      {/* Rules List */}
       <section className="mx-auto mt-24 w-full max-w-4xl space-y-48">
         {rules.map((rule, index) => (
           <motion.div

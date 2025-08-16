@@ -53,7 +53,7 @@ export default function JoinRoomGamePage() {
           </div>
           <div className="mb-4 text-white/80">Mode: {mode}</div>
           {mode === "playlist" && (
-            <div className="mb-4 text-white/80">
+            <div className="fmb-4 text-white/80">
               Playlists: {playlists.join(", ")}
             </div>
           )}
