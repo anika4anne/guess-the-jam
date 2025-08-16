@@ -79,7 +79,7 @@ class GameServer {
             }, [playerId]);
             ws.on("message", (data) => {
                 try {
-                    const message = JSON.parse(data);
+                    const message = JSON.parse(data.toString());
                     this.handleMessage(playerId, message);
                 }
                 catch (error) {

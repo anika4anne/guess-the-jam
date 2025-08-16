@@ -122,9 +122,9 @@ class GameServer {
         [playerId],
       );
 
-      ws.on("message", (data: string) => {
+      ws.on("message", (data: any) => {
         try {
-          const message = JSON.parse(data);
+          const message = JSON.parse(data.toString());
           this.handleMessage(playerId, message);
         } catch (error) {
           console.error("Error parsing message:", error);
@@ -145,7 +145,7 @@ class GameServer {
     );
   }
 
-  private joinRoom(roomId: string, player: Player) {
+  private joinRoom(roomId: string, player: Player): void {
     if (!this.rooms.has(roomId)) {
       this.rooms.set(roomId, {
         id: roomId,
@@ -163,7 +163,7 @@ class GameServer {
     room.players.set(player.id, player);
   }
 
-  private getRoomState(roomId: string) {
+  private getRoomState(roomId: string): any {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
@@ -183,7 +183,7 @@ class GameServer {
     };
   }
 
-  private sendToPlayer(playerId: string, message: any) {
+  private sendToPlayer(playerId: string, message: any): void {
     const player = this.players.get(playerId);
     if (player && player.ws.readyState === WebSocket.OPEN) {
       player.ws.send(JSON.stringify(message));
@@ -194,7 +194,7 @@ class GameServer {
     roomId: string,
     message: any,
     excludePlayerIds: string[] = [],
-  ) {
+  ): void {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
@@ -205,7 +205,7 @@ class GameServer {
     });
   }
 
-  private handleMessage(playerId: string, message: any) {
+  private handleMessage(playerId: string, message: any): void {
     const player = this.players.get(playerId);
     if (!player) return;
 
@@ -236,7 +236,7 @@ class GameServer {
     }
   }
 
-  private handlePlayerDisconnect(playerId: string) {
+  private handlePlayerDisconnect(playerId: string): void {
     const player = this.players.get(playerId);
     if (!player) return;
 
@@ -249,11 +249,13 @@ class GameServer {
       } else if (room.hostId === playerId) {
         // Assign new host
         const newHost = room.players.values().next().value;
-        room.hostId = newHost.id;
-        this.broadcastToRoom(player.roomId, {
-          type: "new_host",
-          hostId: newHost.id,
-        });
+        if (newHost) {
+          room.hostId = newHost.id;
+          this.broadcastToRoom(player.roomId, {
+            type: "new_host",
+            hostId: newHost.id,
+          });
+        }
       }
     }
 

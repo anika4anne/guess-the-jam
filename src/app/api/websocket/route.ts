@@ -1,6 +1,6 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // This is a placeholder for WebSocket upgrade
   // Vercel Edge Functions don't support WebSocket upgrades directly
   // We'll need to use a different approach
