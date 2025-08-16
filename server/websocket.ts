@@ -32,6 +32,26 @@ class GameServer {
   constructor(port: number = config.websocket.port) {
     this.port = port;
     const server = createServer();
+
+    // Add health check endpoint for Railway
+    server.on("request", (req, res) => {
+      if (req.url === "/" || req.url === "/health") {
+        res.writeHead(200, { "Content-Type": "text/plain" });
+        res.end("🎮 Guess The Jam WebSocket Server is running!");
+        return;
+      }
+
+      // Handle WebSocket upgrade requests
+      if (req.headers.upgrade === "websocket") {
+        // Let the WebSocket server handle this
+        return;
+      }
+
+      // Default response for other requests
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("Not Found");
+    });
+
     this.wss = new WebSocketServer({ server });
 
     this.setupWebSocket();

@@ -1,4 +1,4 @@
-name: Deploy Game
+name: Deploy Frontend
 
 on:
   push:
@@ -6,40 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-websocket:
-    runs-on: ubuntu-latest
-    name: Deploy WebSocket Server
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build WebSocket server
-        run: pnpm build:websocket
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        run: railway up --service websocket
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
   deploy-frontend:
     runs-on: ubuntu-latest
-    name: Deploy Frontend
-    needs: deploy-websocket
+    name: Deploy Frontend to Vercel
     steps:
       - uses: actions/checkout@v4
 
