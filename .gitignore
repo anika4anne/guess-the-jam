@@ -27,7 +27,8 @@ yarn-error.log*
 .env*.local
 
 
-.vercel
+# Render deployment files
+.render
 
 *.tsbuildinfo
 
