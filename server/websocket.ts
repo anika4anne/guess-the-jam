@@ -21,6 +21,11 @@ interface Room {
   totalRounds: number;
   settings: any;
   gamePhase: "waiting" | "countdown" | "playing" | "scoring" | "finished";
+  currentSong?: string;
+  currentArtist?: string;
+  roundStartTime?: number;
+  roundDuration?: number;
+  guessedPlayers?: Set<string>;
 }
 
 class GameServer {
@@ -183,6 +188,10 @@ class GameServer {
         this.handleAnswer(playerId, message.answer);
         break;
 
+      case "chat_guess":
+        this.handleChatGuess(playerId, message.guess);
+        break;
+
       case "kick_player":
         if (room.hostId === playerId) {
           this.kickPlayer(player.roomId, message.targetPlayerId);
@@ -265,10 +274,102 @@ class GameServer {
 
     room.gamePhase = "playing";
 
+    if (room.settings.mode === "chat") {
+      this.startChatRound(roomId);
+    } else {
+      this.broadcastToRoom(roomId, {
+        type: "gameplay_started",
+        round: room.currentRound,
+        totalRounds: room.totalRounds,
+      });
+    }
+  }
+
+  private startChatRound(roomId: string) {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    room.roundStartTime = Date.now();
+    room.roundDuration = 30000; // 30 seconds
+    room.guessedPlayers = new Set();
+
+    const sampleSongs = [
+      { title: "Bohemian Rhapsody", artist: "Queen" },
+      { title: "Hotel California", artist: "Eagles" },
+      { title: "Imagine", artist: "John Lennon" },
+      { title: "Stairway to Heaven", artist: "Led Zeppelin" },
+      { title: "Like a Rolling Stone", artist: "Bob Dylan" },
+      { title: "Smells Like Teen Spirit", artist: "Nirvana" },
+      { title: "Hey Jude", artist: "The Beatles" },
+      { title: "Sweet Child O' Mine", artist: "Guns N' Roses" },
+      { title: "Wonderwall", artist: "Oasis" },
+      { title: "Creep", artist: "Radiohead" }
+    ];
+
+    const randomIndex = Math.floor(Math.random() * sampleSongs.length);
+    const randomSong = sampleSongs[randomIndex];
+    if (randomSong) {
+      room.currentSong = randomSong.title;
+      room.currentArtist = randomSong.artist;
+    }
+
     this.broadcastToRoom(roomId, {
-      type: "gameplay_started",
+      type: "chat_round_started",
       round: room.currentRound,
       totalRounds: room.totalRounds,
+      song: room.currentSong,
+      artist: room.currentArtist,
+      roundDuration: room.roundDuration,
+    });
+
+    setTimeout(() => {
+      this.endChatRound(roomId);
+    }, room.roundDuration);
+  }
+
+  private endChatRound(roomId: string) {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    room.gamePhase = "scoring";
+
+    this.broadcastToRoom(roomId, {
+      type: "chat_round_ended",
+      round: room.currentRound,
+      totalRounds: room.totalRounds,
+      song: room.currentSong,
+      artist: room.currentArtist,
+      scores: Array.from(room.players.values()).map(p => ({
+        id: p.id,
+        name: p.name,
+        score: p.score
+      }))
+    });
+
+    setTimeout(() => {
+      if (room.currentRound < room.totalRounds) {
+        room.currentRound++;
+        this.startChatRound(roomId);
+      } else {
+        this.endGame(roomId);
+      }
+    }, 5000);
+  }
+
+  private endGame(roomId: string) {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    room.gamePhase = "finished";
+
+    const finalScores = Array.from(room.players.values())
+      .map(p => ({ id: p.id, name: p.name, score: p.score }))
+      .sort((a, b) => b.score - a.score);
+
+    this.broadcastToRoom(roomId, {
+      type: "game_ended",
+      finalScores,
+      winner: finalScores[0]
     });
   }
 
@@ -281,6 +382,46 @@ class GameServer {
       playerId,
       answer,
     });
+  }
+
+  private handleChatGuess(playerId: string, guess: string) {
+    const player = this.players.get(playerId);
+    if (!player) return;
+
+    const room = this.rooms.get(player.roomId);
+    if (!room) return;
+
+    if (room.settings.mode !== "chat" || !room.currentSong) return;
+
+    const normalizedGuess = guess.toLowerCase().trim();
+    const normalizedSong = room.currentSong.toLowerCase().trim();
+
+    if (normalizedGuess === normalizedSong && !room.guessedPlayers?.has(playerId)) {
+      if (!room.guessedPlayers) {
+        room.guessedPlayers = new Set();
+      }
+      room.guessedPlayers.add(playerId);
+
+      player.score += 10;
+      room.players.set(playerId, player);
+
+      this.broadcastToRoom(player.roomId, {
+        type: "chat_guess_correct",
+        playerId,
+        playerName: player.name,
+        guess,
+        score: player.score,
+      });
+
+      console.log(`🎯 ${player.name} correctly guessed: ${guess}`);
+    } else {
+      this.broadcastToRoom(player.roomId, {
+        type: "chat_guess_incorrect",
+        playerId,
+        playerName: player.name,
+        guess,
+      });
+    }
   }
 
   private handleGameSettingsUpdate(roomId: string, settings: any) {
@@ -378,6 +519,7 @@ class GameServer {
       currentRound: room.currentRound,
       totalRounds: room.totalRounds,
       gamePhase: room.gamePhase,
+      settings: room.settings,
     };
   }
 
