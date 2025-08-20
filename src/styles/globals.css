@@ -147,8 +147,19 @@
 }
 
 .lobby-background {
-  background-image: url("/try4.svg") !important;
+  background-image: url("/lobby1.svg") !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }

@@ -17,6 +17,13 @@ interface WebSocketMessage {
     currentRound: number;
     totalRounds: number;
     gamePhase: string;
+    settings?: {
+      mode?: string;
+      rounds?: number;
+      playlists?: string[];
+      selectedYears?: number[];
+      [key: string]: unknown;
+    };
   };
   player?: {
     id: string;
@@ -33,6 +40,15 @@ interface WebSocketMessage {
   hostName?: string;
   event?: string;
   data?: unknown;
+  song?: string;
+  artist?: string;
+  guess?: string;
+  score?: number;
+  winner?: {
+    id: string;
+    name: string;
+    score: number;
+  };
   [key: string]: unknown;
 }
 
@@ -100,6 +116,10 @@ export const useWebSocket = (): WebSocketHook => {
             console.log("🚀 All players ready!");
             break;
 
+          case "game_settings_updated":
+            console.log("⚙️ Game settings updated:", message.settings);
+            break;
+
           case "game_starting":
             console.log("🎮 Game starting in:", message.countdown, "seconds");
             break;
@@ -110,6 +130,26 @@ export const useWebSocket = (): WebSocketHook => {
 
           case "gameplay_started":
             console.log("🎵 Gameplay started! Round:", message.round);
+            break;
+
+          case "chat_round_started":
+            console.log("💬 Chat round started! Song:", message.song);
+            break;
+
+          case "chat_guess_correct":
+            console.log("🎯 Correct guess by:", message.playerName, "Song:", message.guess);
+            break;
+
+          case "chat_guess_incorrect":
+            console.log("❌ Incorrect guess by:", message.playerName, "Song:", message.guess);
+            break;
+
+          case "chat_round_ended":
+            console.log("⏰ Chat round ended! Song was:", message.song);
+            break;
+
+          case "game_ended":
+            console.log("🏁 Game ended! Winner:", message.winner?.name);
             break;
 
           case "new_host":
