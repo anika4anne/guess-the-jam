@@ -1,7 +1,13 @@
 "use client";
 /* eslint-disable react-hooks/exhaustive-deps */
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Confetti from "react-confetti";
@@ -45,6 +51,7 @@ declare global {
 export default function PlayNowPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const roomMode = searchParams.get("mode") || "default";
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
 
@@ -99,6 +106,105 @@ export default function PlayNowPage() {
   const visualizerPhases = useRef(
     Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
   );
+
+  // Chat guess mode state
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      playerName: string;
+      message: string;
+      type: "guess" | "correct" | "system";
+      timestamp: number;
+    }>
+  >([]);
+  const [chatInput, setChatInput] = useState("");
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  // Chat message handler
+  const handleChatMessage = useCallback((message: any) => {
+    switch (message.type) {
+      case "chat_guess_correct":
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            playerName: message.playerName || "Unknown",
+            message: `${message.playerName || "Unknown"} has guessed the answer!`,
+            type: "correct",
+            timestamp: Date.now(),
+          },
+        ]);
+        break;
+      case "chat_guess_incorrect":
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            playerName: message.playerName || "Unknown",
+            message: `${message.playerName || "Unknown"}: ${message.guess}`,
+            type: "guess",
+            timestamp: Date.now(),
+          },
+        ]);
+        break;
+      case "chat_round_started":
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            playerName: "System",
+            message: `🎵 New round started! Listen to the song and guess the title.`,
+            type: "system",
+            timestamp: Date.now(),
+          },
+        ]);
+        break;
+      case "chat_round_ended":
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            playerName: "System",
+            message: `⏰ Round ended! The song was: ${message.song}`,
+            type: "system",
+            timestamp: Date.now(),
+          },
+        ]);
+        break;
+    }
+  }, []);
+
+  // Handle chat guess submission
+  const handleChatGuess = useCallback(() => {
+    if (!chatInput.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    const playerName = searchParams.get("name");
+    if (!playerName) return;
+
+    // Send guess to server
+    ws.send(
+      JSON.stringify({
+        type: "chat_guess",
+        guess: chatInput.trim(),
+        playerName: playerName,
+      }),
+    );
+
+    // Add local message
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        playerName: playerName,
+        message: `You: ${chatInput.trim()}`,
+        type: "guess",
+        timestamp: Date.now(),
+      },
+    ]);
+
+    // Clear input
+    setChatInput("");
+  }, [chatInput, ws, searchParams]);
 
   const [showArtist, setShowArtist] = useState(false);
   const [showSong, setShowSong] = useState(false);
@@ -542,6 +648,15 @@ export default function PlayNowPage() {
     }
   }, []);
 
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [ws]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const roomId = searchParams.get("roomId");
@@ -586,6 +701,38 @@ export default function PlayNowPage() {
         setPlayerNames(settings.playerNames);
         setMode("private");
 
+        // Check if this is a chat mode game
+        if (settings.mode === "chat") {
+          // Connect to WebSocket for chat functionality
+          const nameFromQuery = searchParams.get("name");
+          if (roomId && nameFromQuery) {
+            const wsUrl = `${process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? "ws://localhost:3001"}?roomId=${encodeURIComponent(roomId)}&name=${encodeURIComponent(nameFromQuery)}`;
+            const websocket = new WebSocket(wsUrl);
+
+            websocket.onopen = () => {
+              console.log("🔌 Chat WebSocket connected");
+            };
+
+            websocket.onmessage = (event) => {
+              try {
+                const message = JSON.parse(event.data);
+                handleChatMessage(message);
+              } catch (error) {
+                console.error("Error parsing chat message:", error);
+              }
+            };
+
+            websocket.onclose = () => {
+              console.log("🔌 Chat WebSocket disconnected");
+            };
+
+            setWs(websocket);
+          }
+
+          // For chat mode, we'll handle the game differently
+          return;
+        }
+
         const nameFromQuery = searchParams.get("name");
         const nameFromStorage = localStorage.getItem("playerName");
         setCurrentPlayerName(nameFromQuery ?? nameFromStorage ?? "");
@@ -619,11 +766,16 @@ export default function PlayNowPage() {
               setPlayerScores(initialScores);
               setCurrentPlayerIndex(0);
             }
-            setShowYouTubePlayer(false);
-            if (!showCountdown) {
-              setShowCountdown(true);
-              setCountdownNumber(3);
-              setFadeCountdown(false);
+            if (settings.mode === "chat") {
+              // For chat mode, show YouTube player immediately
+              setShowYouTubePlayer(true);
+            } else {
+              setShowYouTubePlayer(false);
+              if (!showCountdown) {
+                setShowCountdown(true);
+                setCountdownNumber(3);
+                setFadeCountdown(false);
+              }
             }
             setGameFinished(false);
             setGameStarted(true);
@@ -1146,159 +1298,227 @@ export default function PlayNowPage() {
               </div>
             )}
 
-            {showYouTubePlayer &&
-              selectedYears.length > 0 &&
-              selectedYears.map((year) => {
-                const playlistURL = playlistLinks[year];
-                if (!playlistURL) return null;
+            <div className="flex items-start justify-center gap-8">
+              {/* Main Game Content */}
+              <div>
+                {showYouTubePlayer &&
+                  selectedYears.length > 0 &&
+                  selectedYears.map((year) => {
+                    const playlistURL = playlistLinks[year];
+                    if (!playlistURL) return null;
 
-                const showVisualizer = showYouTubePlayer;
-                return (
-                  <div
-                    key={year}
-                    className="relative mx-auto w-fit"
-                    style={{ zIndex: 0 }}
-                  >
-                    <div
-                      style={{
-                        width: "1100px",
-                        height: "600px",
-                        overflow: "hidden",
-                        borderRadius: "12px",
-                        position: "relative",
-                        marginTop: "2rem",
-                      }}
-                    >
-                      <iframe
-                        ref={(el) => {
-                          iframeRefs.current[year] = el;
-                        }}
-                        id={`youtube-player-${year}`}
-                        src={`${playlistURL}&enablejsapi=1&index=${index}`}
-                        width="640"
-                        height="390"
-                        frameBorder="0"
-                        allowFullScreen={false}
-                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                        style={{
-                          borderRadius: "12px",
-                          marginTop: "-30px",
-                          pointerEvents: "none",
-                          zIndex: 1,
-                          position: "relative",
-                        }}
-                        loading="lazy"
-                      />
-                      {showVisualizer && (
+                    const showVisualizer = showYouTubePlayer;
+                    return (
+                      <div
+                        key={year}
+                        className="relative mx-auto w-fit"
+                        style={{ zIndex: 0 }}
+                      >
                         <div
                           style={{
-                            position: "absolute",
-                            left: 0,
-                            top: 0,
-                            width: "100%",
-                            height: "100%",
-                            zIndex: 9999,
-                            pointerEvents: "none",
+                            width: "1100px",
+                            height: "600px",
+                            overflow: "hidden",
+                            borderRadius: "12px",
+                            position: "relative",
+                            marginTop: "2rem",
                           }}
                         >
-                          <div
-                            style={{
-                              position: "absolute",
-                              left: 0,
-                              top: 0,
-                              width: "100%",
-                              height: "100%",
-                              background: "black",
-                              opacity: 1,
-                              zIndex: 1,
+                          <iframe
+                            ref={(el) => {
+                              iframeRefs.current[year] = el;
                             }}
-                          />
-                          <div
+                            id={`youtube-player-${year}`}
+                            src={`${playlistURL}&enablejsapi=1&index=${index}`}
+                            width="640"
+                            height="390"
+                            frameBorder="0"
+                            allowFullScreen={false}
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
                             style={{
-                              position: "absolute",
-                              left: "50%",
-                              top: "50%",
-                              width: 320,
-                              height: 320,
-                              transform: "translate(-50%, -50%)",
+                              borderRadius: "12px",
+                              marginTop: "-30px",
                               pointerEvents: "none",
-                              zIndex: 2,
+                              zIndex: 1,
+                              position: "relative",
                             }}
-                          >
-                            <svg
-                              width="320"
-                              height="320"
-                              style={{ position: "absolute", left: 0, top: 0 }}
-                            >
-                              {Array.from({ length: 48 }).map((_, i) => {
-                                const center = 160;
-                                const r0 = 100;
-                                const phase = visualizerPhases.current
-                                  ? visualizerPhases.current[i]
-                                  : 0;
-                                const t =
-                                  visualizerTime / 600 +
-                                  i * 0.18 +
-                                  (phase ?? 0);
-                                const len = 24 + 36 * Math.abs(Math.sin(t));
-                                const angle = i * 7.5;
-                                const rad = (angle * Math.PI) / 180;
-                                const x0 = center + r0 * Math.cos(rad);
-                                const y0 = center + r0 * Math.sin(rad);
-                                const x1 = center + (r0 + len) * Math.cos(rad);
-                                const y1 = center + (r0 + len) * Math.sin(rad);
-                                const color = `hsl(${angle}, 90%, 60%)`;
-                                return (
-                                  <line
-                                    key={i}
-                                    x1={x0}
-                                    y1={y0}
-                                    x2={x1}
-                                    y2={y1}
-                                    stroke={color}
-                                    strokeWidth={5}
-                                    strokeLinecap="round"
-                                    style={{
-                                      filter: `drop-shadow(0 0 6px ${color})`,
-                                    }}
-                                  />
-                                );
-                              })}
-                            </svg>
+                            loading="lazy"
+                          />
+                          {showVisualizer && (
                             <div
                               style={{
                                 position: "absolute",
-                                left: "50%",
-                                top: "50%",
-                                width: 200,
-                                height: 200,
-                                transform: "translate(-50%, -50%)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                zIndex: 2,
+                                left: 0,
+                                top: 0,
+                                width: "100%",
+                                height: "100%",
+                                zIndex: 9999,
+                                pointerEvents: "none",
                               }}
                             >
-                              <Image
-                                src="/Guess-The-Jam-Logo.png"
-                                alt="Guess the Jam Logo"
-                                width={200}
-                                height={200}
+                              <div
                                 style={{
-                                  borderRadius: "50%",
-                                  boxShadow: "0 0 32px 8px #0008",
-                                  zIndex: 2,
-                                  position: "relative",
+                                  position: "absolute",
+                                  left: 0,
+                                  top: 0,
+                                  width: "100%",
+                                  height: "100%",
+                                  background: "black",
+                                  opacity: 1,
+                                  zIndex: 1,
                                 }}
                               />
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  top: "50%",
+                                  width: 320,
+                                  height: 320,
+                                  transform: "translate(-50%, -50%)",
+                                  pointerEvents: "none",
+                                  zIndex: 2,
+                                }}
+                              >
+                                <svg
+                                  width="320"
+                                  height="320"
+                                  style={{
+                                    position: "absolute",
+                                    left: 0,
+                                    top: 0,
+                                  }}
+                                >
+                                  {Array.from({ length: 48 }).map((_, i) => {
+                                    const center = 160;
+                                    const r0 = 100;
+                                    const phase = visualizerPhases.current
+                                      ? visualizerPhases.current[i]
+                                      : 0;
+                                    const t =
+                                      visualizerTime / 600 +
+                                      i * 0.18 +
+                                      (phase ?? 0);
+                                    const len = 24 + 36 * Math.abs(Math.sin(t));
+                                    const angle = i * 7.5;
+                                    const rad = (angle * Math.PI) / 180;
+                                    const x0 = center + r0 * Math.cos(rad);
+                                    const y0 = center + r0 * Math.sin(rad);
+                                    const x1 =
+                                      center + (r0 + len) * Math.cos(rad);
+                                    const y1 =
+                                      center + (r0 + len) * Math.sin(rad);
+                                    const color = `hsl(${angle}, 90%, 60%)`;
+                                    return (
+                                      <line
+                                        key={i}
+                                        x1={x0}
+                                        y1={y0}
+                                        x2={x1}
+                                        y2={y1}
+                                        stroke={color}
+                                        strokeWidth={5}
+                                        strokeLinecap="round"
+                                        style={{
+                                          filter: `drop-shadow(0 0 6px ${color})`,
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </svg>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    left: "50%",
+                                    top: "50%",
+                                    width: 200,
+                                    height: 200,
+                                    transform: "translate(-50%, -50%)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    zIndex: 2,
+                                  }}
+                                >
+                                  <Image
+                                    src="/Guess-The-Jam-Logo.png"
+                                    alt="Guess the Jam Logo"
+                                    width={200}
+                                    height={200}
+                                    style={{
+                                      borderRadius: "50%",
+                                      boxShadow: "0 0 32px 8px #0008",
+                                      zIndex: 2,
+                                      position: "relative",
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Chat Box for Chat Guess Mode */}
+              {roomMode === "chat" && (
+                <div className="w-80 rounded-lg bg-white/10 p-4 backdrop-blur-sm">
+                  <h3 className="mb-4 text-lg font-bold text-white">
+                    💬 Chat Guess
+                  </h3>
+                  <div className="mb-4 h-96 overflow-y-auto rounded bg-black/20 p-3">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-sm text-gray-300">
+                        <p>🎵 Listen to the song and type your guess below!</p>
+                        <p className="mt-2 text-xs text-gray-400">
+                          Only song names count - no artist names needed
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {chatMessages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`text-sm ${
+                              msg.type === "correct"
+                                ? "font-semibold text-green-400"
+                                : msg.type === "system"
+                                  ? "text-blue-400 italic"
+                                  : "text-white"
+                            }`}
+                          >
+                            {msg.message}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && chatInput.trim()) {
+                          handleChatGuess();
+                        }
+                      }}
+                      placeholder="Type your song guess..."
+                      className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400 focus:border-pink-400 focus:outline-none"
+                    />
+                    <Button
+                      onClick={handleChatGuess}
+                      disabled={!chatInput.trim()}
+                      className="bg-pink-500 hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-gray-600"
+                    >
+                      Guess
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             {!volumeUnmuted && (
               <div className="mt-8 mb-4 flex justify-center">
                 <button
@@ -1322,7 +1542,7 @@ export default function PlayNowPage() {
               </div>
             )}
 
-            {showPrompt && (
+            {showPrompt && roomMode !== "chat" && (
               <div className="prompt-z fixed inset-0 z-[10001] flex items-center justify-center bg-black/80">
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
                   <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
