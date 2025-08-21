@@ -19,7 +19,7 @@ export function ChatGamePage() {
       return;
     }
 
-    // Connect to WebSocket for the chat game
+
     connect(roomId, playerName);
 
     return () => {

@@ -51,7 +51,7 @@ declare global {
 export default function PlayNowPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomMode = searchParams.get("mode") || "default";
+  const roomMode = searchParams.get("mode") ?? "default";
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
 
@@ -107,7 +107,6 @@ export default function PlayNowPage() {
     Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
   );
 
-  // Chat guess mode state
   const [chatMessages, setChatMessages] = useState<
     Array<{
       id: string;
@@ -120,68 +119,73 @@ export default function PlayNowPage() {
   const [chatInput, setChatInput] = useState("");
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  // Chat message handler
-  const handleChatMessage = useCallback((message: any) => {
-    switch (message.type) {
-      case "chat_guess_correct":
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            playerName: message.playerName || "Unknown",
-            message: `${message.playerName || "Unknown"} has guessed the answer!`,
-            type: "correct",
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-      case "chat_guess_incorrect":
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            playerName: message.playerName || "Unknown",
-            message: `${message.playerName || "Unknown"}: ${message.guess}`,
-            type: "guess",
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-      case "chat_round_started":
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            playerName: "System",
-            message: `🎵 New round started! Listen to the song and guess the title.`,
-            type: "system",
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-      case "chat_round_ended":
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            playerName: "System",
-            message: `⏰ Round ended! The song was: ${message.song}`,
-            type: "system",
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-    }
-  }, []);
+  const handleChatMessage = useCallback(
+    (message: {
+      type: string;
+      playerName?: string;
+      guess?: string;
+      song?: string;
+    }) => {
+      switch (message.type) {
+        case "chat_guess_correct":
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              playerName: message.playerName ?? "Unknown",
+              message: `${message.playerName ?? "Unknown"} has guessed the answer!`,
+              type: "correct",
+              timestamp: Date.now(),
+            },
+          ]);
+          break;
+        case "chat_guess_incorrect":
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              playerName: message.playerName ?? "Unknown",
+              message: `${message.playerName ?? "Unknown"}: ${message.guess}`,
+              type: "guess",
+              timestamp: Date.now(),
+            },
+          ]);
+          break;
+        case "chat_round_started":
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              playerName: "System",
+              message: `🎵 New round started! Listen to the song and guess the title.`,
+              type: "system",
+              timestamp: Date.now(),
+            },
+          ]);
+          break;
+        case "chat_round_ended":
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              playerName: "System",
+              message: `⏰ Round ended! The song was: ${message.song}`,
+              type: "system",
+              timestamp: Date.now(),
+            },
+          ]);
+          break;
+      }
+    },
+    [],
+  );
 
-  // Handle chat guess submission
   const handleChatGuess = useCallback(() => {
     if (!chatInput.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
 
     const playerName = searchParams.get("name");
     if (!playerName) return;
 
-    // Send guess to server
     ws.send(
       JSON.stringify({
         type: "chat_guess",
@@ -190,7 +194,6 @@ export default function PlayNowPage() {
       }),
     );
 
-    // Add local message
     setChatMessages((prev) => [
       ...prev,
       {
@@ -202,7 +205,6 @@ export default function PlayNowPage() {
       },
     ]);
 
-    // Clear input
     setChatInput("");
   }, [chatInput, ws, searchParams]);
 
@@ -648,7 +650,6 @@ export default function PlayNowPage() {
     }
   }, []);
 
-  // Cleanup WebSocket on unmount
   useEffect(() => {
     return () => {
       if (ws) {
@@ -701,9 +702,7 @@ export default function PlayNowPage() {
         setPlayerNames(settings.playerNames);
         setMode("private");
 
-        // Check if this is a chat mode game
         if (settings.mode === "chat") {
-          // Connect to WebSocket for chat functionality
           const nameFromQuery = searchParams.get("name");
           if (roomId && nameFromQuery) {
             const wsUrl = `${process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? "ws://localhost:3001"}?roomId=${encodeURIComponent(roomId)}&name=${encodeURIComponent(nameFromQuery)}`;
@@ -729,7 +728,6 @@ export default function PlayNowPage() {
             setWs(websocket);
           }
 
-          // For chat mode, we'll handle the game differently
           return;
         }
 
@@ -767,7 +765,6 @@ export default function PlayNowPage() {
               setCurrentPlayerIndex(0);
             }
             if (settings.mode === "chat") {
-              // For chat mode, show YouTube player immediately
               setShowYouTubePlayer(true);
             } else {
               setShowYouTubePlayer(false);
@@ -1299,7 +1296,6 @@ export default function PlayNowPage() {
             )}
 
             <div className="flex items-start justify-center gap-8">
-              {/* Main Game Content */}
               <div>
                 {showYouTubePlayer &&
                   selectedYears.length > 0 &&
