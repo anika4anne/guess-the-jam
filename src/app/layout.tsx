@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   icons: [
     {
       rel: "icon",
-      url: "https://res.cloudinary.com/dp0illmdm/image/upload/v1747014951/Untitled_design_gk5uao.png",
+      url: "/logo.png",
     },
   ],
 };
