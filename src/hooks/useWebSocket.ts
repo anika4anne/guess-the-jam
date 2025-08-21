@@ -63,8 +63,13 @@ interface WebSocketHook {
 export const useWebSocket = (): WebSocketHook => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connecting" | "connected" | "disconnected" | "error"
+  >("disconnected");
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
   const connect = useCallback((roomId: string, playerName: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -72,11 +77,16 @@ export const useWebSocket = (): WebSocketHook => {
     }
 
     const wsUrl = `${process.env.NEXT_PUBLIC_WEBSOCKET_URL ?? "ws://localhost:3001"}?roomId=${encodeURIComponent(roomId)}&name=${encodeURIComponent(playerName)}`;
+    console.log("🔌 Attempting WebSocket connection to:", wsUrl);
+    setConnectionStatus("connecting");
+
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log("🔌 WebSocket connected");
+      console.log("🔌 WebSocket connected successfully");
       setIsConnected(true);
+      setConnectionStatus("connected");
+      reconnectAttempts.current = 0;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -137,11 +147,21 @@ export const useWebSocket = (): WebSocketHook => {
             break;
 
           case "chat_guess_correct":
-            console.log("🎯 Correct guess by:", message.playerName, "Song:", message.guess);
+            console.log(
+              "🎯 Correct guess by:",
+              message.playerName,
+              "Song:",
+              message.guess,
+            );
             break;
 
           case "chat_guess_incorrect":
-            console.log("❌ Incorrect guess by:", message.playerName, "Song:", message.guess);
+            console.log(
+              "❌ Incorrect guess by:",
+              message.playerName,
+              "Song:",
+              message.guess,
+            );
             break;
 
           case "chat_round_ended":

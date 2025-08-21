@@ -38,7 +38,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerId, setPlayerId] = useState<string>("");
 
-  // Notification states
   const [notifications, setNotifications] = useState<
     Array<{
       id: string;
@@ -67,13 +66,10 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
   }, [name, roomId, connect, disconnect, router]);
 
-  // Clean up old notifications every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setNotifications(
-        (prev) => prev.filter((n) => now - n.timestamp < 30000), // Keep notifications for 30 seconds
-      );
+      setNotifications((prev) => prev.filter((n) => now - n.timestamp < 30000));
     }, 30000);
 
     return () => clearInterval(interval);
@@ -92,7 +88,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             "🏠 Room joined, setting players:",
             lastMessage.room.players,
           );
-          // Ensure no duplicate players in the room state
+
           const uniquePlayers = lastMessage.room.players.filter(
             (player, index, arr) =>
               arr.findIndex((p) => p.id === player.id) === index,
@@ -110,7 +106,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           const newPlayer = lastMessage.player as Player;
           console.log("🔄 Player joined message received:", newPlayer);
           setPlayers((prev) => {
-            // Check if player already exists to prevent duplicates (check both ID and name)
             const playerExistsById = prev.some((p) => p.id === newPlayer.id);
             const playerExistsByName = prev.some(
               (p) => p.name === newPlayer.name,
@@ -126,7 +121,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
             console.log("✅ Adding new player:", newPlayer.name);
             return [...prev, newPlayer];
           });
-          // Add join notification (prevent duplicate notifications for the same player)
+
           setNotifications((prev) => {
             const existingNotification = prev.find(
               (n) => n.type === "join" && n.message.includes(newPlayer.name),
@@ -159,7 +154,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           setPlayers((prev) =>
             prev.filter((p) => p.id !== lastMessage.playerId),
           );
-          // Add leave notification
+
           if (leavingPlayer) {
             setNotifications((prev) => [
               ...prev,
@@ -191,7 +186,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
       case "game_settings_updated":
         if (lastMessage.settings) {
-          const settings = lastMessage.settings as any;
+          const settings = lastMessage.settings as {
+            rounds?: number;
+            mode?: string;
+            playlists?: string[];
+            selectedYears?: number[];
+          };
           if (typeof settings.rounds === "number") setRounds(settings.rounds);
           if (typeof settings.mode === "string")
             setMode(settings.mode as "default" | "playlist" | "chat");
@@ -218,7 +218,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       case "gameplay_started":
         if (!hasRedirected.current) {
           hasRedirected.current = true;
-          // All modes go to the main game page, chat mode will be handled there
+
           router.push(`/playnow?name=${name}&roomId=${roomId}&mode=${mode}`);
         }
         break;
@@ -226,13 +226,36 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       case "new_host":
         if (lastMessage.hostId === playerId) {
           setIsHost(true);
+
+          setNotifications((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              message: `You are now the host!`,
+              type: "join",
+              timestamp: Date.now(),
+            },
+          ]);
+        } else {
+          setIsHost(false);
+          if (lastMessage.hostName) {
+            setNotifications((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                message: `👑 ${lastMessage.hostName} is now the host`,
+                type: "join",
+                timestamp: Date.now(),
+              },
+            ]);
+          }
         }
         break;
 
       case "player_kicked":
         const kickedPlayer = players.find((p) => p.id === lastMessage.playerId);
         setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
-        // Add kick notification
+
         if (kickedPlayer) {
           setNotifications((prev) => [
             ...prev,
@@ -249,7 +272,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       case "player_banned":
         const bannedPlayer = players.find((p) => p.id === lastMessage.playerId);
         setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
-        // Add ban notification
+
         if (bannedPlayer) {
           setNotifications((prev) => [
             ...prev,
@@ -276,7 +299,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
   }, []);
 
-  // Auto-remove notifications after 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setNotifications((prev) =>
@@ -291,7 +313,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   const handleReadyToggle = useCallback(() => {
     const currentPlayer = players.find((p) => p.id === playerId);
-    const isReady = currentPlayer?.ready || false;
+    const isReady = currentPlayer?.ready ?? false;
     sendMessage({
       type: "player_ready",
       ready: !isReady,
@@ -301,7 +323,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const handleStartGame = useCallback(() => {
     if (!isHost) return;
 
-    // Store game settings in localStorage for the game page
     const gameSettings = {
       years: selectedYears,
       rounds,
@@ -311,13 +332,11 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     };
     localStorage.setItem("privateRoomSettings", JSON.stringify(gameSettings));
 
-    // Send game settings to server first
     sendMessage({
       type: "game_settings_update",
       settings: gameSettings,
     });
 
-    // Then start the game
     sendMessage({
       type: "start_game",
     });
@@ -767,6 +786,16 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           <h2 className="mb-4 text-center text-2xl font-bold">
             Players in Lobby ({players.length})
           </h2>
+
+          {players.find((p) => p.id === playerId)?.ready === false && (
+            <div className="mb-4 text-center">
+              <p className="rounded-lg border border-white/20 bg-white/10 p-3 text-sm text-white/70">
+                <strong>Tip:</strong> Click on the "Not Ready" button to make
+                yourself ready and start the game!
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-3">
             {players.map((player) => (
               <div
@@ -904,6 +933,19 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         )}
       </div>
 
+      {/* Leave Room Button */}
+      <div className="mt-8 text-center">
+        <Button
+          onClick={() => {
+            disconnect();
+            router.push("/private");
+          }}
+          className="bg-red-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-red-700"
+        >
+          🚪 Leave Room
+        </Button>
+      </div>
+
       {showKickPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="mx-4 max-w-sm">
@@ -947,12 +989,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                     }`}
                   >
                     {kickAction === "kick" ? "Kick" : "Ban"}
-                  </Button>
-                  <Button
-                    onClick={() => setShowKickPopup(false)}
-                    className="w-full bg-gray-500 text-white hover:bg-gray-600"
-                  >
-                    Cancel
                   </Button>
                 </div>
               </div>
