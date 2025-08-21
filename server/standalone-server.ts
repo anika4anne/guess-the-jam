@@ -34,12 +34,11 @@ class GameServer {
   constructor(port: number = 3001) {
     this.port = port;
 
-    // Create Express app for HTTP endpoints
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
 
-    // Health check endpoint
+   
     this.app.get("/", (req, res) => {
       res.json({
         status: "online",
@@ -50,7 +49,7 @@ class GameServer {
       });
     });
 
-    // Server info endpoint
+
     this.app.get("/status", (req, res) => {
       res.json({
         server: "Guess The Jam",
@@ -61,15 +60,15 @@ class GameServer {
       });
     });
 
-    // Create HTTP server
+   
     const server = createServer(this.app);
 
-    // Create WebSocket server
+    
     this.wss = new WebSocketServer({ server });
 
     this.setupWebSocket();
 
-    // Start server
+
     server.listen(this.port, "0.0.0.0", () => {
       console.log(`🎮 Game server running on port ${this.port}`);
       console.log(`🌐 Health check: http://localhost:${this.port}/`);
