@@ -26,7 +26,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [isHost, setIsHost] = useState(false);
   const [showKickPopup, setShowKickPopup] = useState(false);
   const [playerToKick, setPlayerToKick] = useState("");
-  const [kickAction, setKickAction] = useState<"kick" | "ban">("kick");
+
+  const [showLeavePrompt, setShowLeavePrompt] = useState(false);
 
   const [isGameStarting, setIsGameStarting] = useState(false);
   const [countdown, setCountdown] = useState(5);
@@ -37,6 +38,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerId, setPlayerId] = useState<string>("");
+  const [currentHostId, setCurrentHostId] = useState<string>("");
 
   const [notifications, setNotifications] = useState<
     Array<{
@@ -84,17 +86,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           setPlayerId(lastMessage.playerId);
         }
         if (lastMessage.room) {
-          console.log(
-            "🏠 Room joined, setting players:",
-            lastMessage.room.players,
-          );
-
-          const uniquePlayers = lastMessage.room.players.filter(
-            (player, index, arr) =>
-              arr.findIndex((p) => p.id === player.id) === index,
-          );
-          console.log("🏠 Setting unique players:", uniquePlayers);
-          setPlayers(uniquePlayers);
+          setPlayers(lastMessage.room.players);
+          setCurrentHostId(lastMessage.room.hostId);
           if (lastMessage.playerId) {
             setIsHost(lastMessage.room.hostId === lastMessage.playerId);
           }
@@ -104,21 +97,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       case "player_joined":
         if (lastMessage.player) {
           const newPlayer = lastMessage.player as Player;
-          console.log("🔄 Player joined message received:", newPlayer);
           setPlayers((prev) => {
             const playerExistsById = prev.some((p) => p.id === newPlayer.id);
-            const playerExistsByName = prev.some(
-              (p) => p.name === newPlayer.name,
-            );
-
-            if (playerExistsById || playerExistsByName) {
-              console.log(
-                "⚠️ Player already exists (by ID or name), skipping:",
-                newPlayer.name,
-              );
-              return prev;
-            }
-            console.log("✅ Adding new player:", newPlayer.name);
+            if (playerExistsById) return prev;
             return [...prev, newPlayer];
           });
 
@@ -224,6 +205,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         break;
 
       case "new_host":
+        if (lastMessage.hostId) {
+          setCurrentHostId(lastMessage.hostId);
+        }
         if (lastMessage.hostId === playerId) {
           setIsHost(true);
 
@@ -350,20 +334,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       });
       setShowKickPopup(false);
       setPlayerToKick("");
-      setKickAction("kick");
-    },
-    [sendMessage],
-  );
-
-  const handleBanPlayer = useCallback(
-    (targetPlayerId: string) => {
-      sendMessage({
-        type: "ban_player",
-        targetPlayerId,
-      });
-      setShowKickPopup(false);
-      setPlayerToKick("");
-      setKickAction("kick");
     },
     [sendMessage],
   );
@@ -434,7 +404,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     isHost &&
     players.every((player) => player.ready) &&
     players.length > 1 &&
-    selectedYears.length > 0 &&
+    selectedYears.length === 1 &&
     mode !== undefined;
 
   return (
@@ -444,7 +414,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           Room <span className="text-green-400">{roomId}</span>
         </h1>
 
-        {/* Notifications */}
         <div className="fixed top-4 right-4 z-50 space-y-2">
           {notifications.map((notification) => (
             <div
@@ -676,62 +645,41 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
                 <div className="mb-4">
                   <label className="mb-2 block text-sm font-medium">
-                    Selected Years:
+                    Selected Year:
                   </label>
                   {isHost ? (
-                    <>
-                      <div className="mb-2 flex flex-wrap gap-2">
-                        {selectedYears.map((year) => (
-                          <div
-                            key={year}
-                            className="flex items-center gap-2 rounded-full bg-pink-400/20 px-3 py-1"
-                          >
-                            <span>{year}</span>
-                            <button
-                              onClick={() => handleDeleteYear(year)}
-                              className="text-pink-400 hover:text-pink-300"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        {[
-                          2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-                          2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017,
-                          2018, 2019, 2020, 2021, 2022, 2023, 2024,
-                        ].map((year) => (
-                          <Button
-                            key={year}
-                            onClick={() => handleAddYear(year)}
-                            disabled={selectedYears.includes(year)}
-                            className={`${
-                              selectedYears.includes(year)
-                                ? "cursor-not-allowed bg-gray-600"
-                                : "bg-pink-400 text-black hover:bg-pink-500"
-                            }`}
-                          >
-                            {year}
-                          </Button>
-                        ))}
-                      </div>
-                    </>
+                    <select
+                      value={selectedYears[0] || ""}
+                      onChange={(e) => {
+                        const year = parseInt(e.target.value);
+                        if (year) {
+                          setSelectedYears([year]);
+                          handleSettingsUpdate({ selectedYears: [year] });
+                        }
+                      }}
+                      className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white focus:border-pink-400 focus:outline-none"
+                    >
+                      <option value="">Select a year</option>
+                      {[
+                        2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+                        2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017,
+                        2018, 2019, 2020, 2021, 2022, 2023, 2024,
+                      ].map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
-                    <div className="mb-2 flex flex-wrap gap-2">
+                    <div className="mb-2">
                       {selectedYears.length > 0 ? (
-                        selectedYears.map((year) => (
-                          <div
-                            key={year}
-                            className="rounded-full bg-pink-400/20 px-3 py-1"
-                          >
-                            {year}
-                          </div>
-                        ))
+                        <span className="rounded-full bg-pink-400/20 px-3 py-1 text-white">
+                          {selectedYears[0]}
+                        </span>
                       ) : (
-                        <div className="text-gray-400 italic">
-                          No years selected
-                        </div>
+                        <span className="text-gray-400 italic">
+                          No year selected
+                        </span>
                       )}
                     </div>
                   )}
@@ -741,7 +689,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           </div>
         )}
 
-        {/* Show current game settings for all players */}
         <div className="mb-8 rounded-lg bg-white/5 p-4">
           <h3 className="mb-3 text-lg font-semibold text-white">
             Current Game Settings
@@ -762,11 +709,9 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               <span className="ml-2 text-white">{rounds}</span>
             </div>
             <div>
-              <span className="text-gray-300">Years:</span>
+              <span className="text-gray-300">Year:</span>
               <span className="ml-2 text-white">
-                {selectedYears.length > 0
-                  ? selectedYears.join(", ")
-                  : "None selected"}
+                {selectedYears.length > 0 ? selectedYears[0] : "None selected"}
               </span>
             </div>
             {mode === "playlist" && (
@@ -811,7 +756,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                       You
                     </span>
                   )}
-                  {isHost && player.id === playerId && (
+                  {player.id === currentHostId && (
                     <span className="rounded bg-yellow-500 px-2 py-1 text-xs text-black">
                       Host
                     </span>
@@ -824,7 +769,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Show ready button for current player (on the right side) */}
                   {player.id === playerId && (
                     <Button
                       onClick={handleReadyToggle}
@@ -839,7 +783,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                     </Button>
                   )}
 
-                  {/* Show ready status for other players (non-clickable) */}
                   {player.id !== playerId && (
                     <div
                       className={`rounded px-3 py-2 text-sm font-medium ${
@@ -857,24 +800,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                       <Button
                         onClick={() => {
                           setPlayerToKick(player.id);
-                          setKickAction("kick");
                           setShowKickPopup(true);
                         }}
                         className="bg-orange-600 hover:bg-orange-700"
                         size="sm"
                       >
                         Kick
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setPlayerToKick(player.id);
-                          setKickAction("ban");
-                          setShowKickPopup(true);
-                        }}
-                        className="bg-red-600 hover:bg-red-700"
-                        size="sm"
-                      >
-                        Ban
                       </Button>
                     </div>
                   )}
@@ -891,7 +822,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               disabled={!canStartGame}
               className={`${
                 canStartGame
-                  ? "animate-pulse bg-pink-500 text-white shadow-lg shadow-pink-500/50 hover:bg-pink-600"
+                  ? "animate-pulse bg-yellow-500 text-black shadow-lg shadow-yellow-500/50 hover:bg-yellow-600"
                   : "cursor-not-allowed bg-gray-600"
               } px-8 py-3 text-lg font-semibold transition-all duration-300`}
             >
@@ -901,8 +832,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
               <p className="mt-2 text-sm text-white/70">
                 {players.length <= 1
                   ? "Need at least 2 players to start"
-                  : selectedYears.length === 0
-                    ? "Host must select at least one year"
+                  : selectedYears.length !== 1
+                    ? "Host must select exactly one year"
                     : mode === undefined
                       ? "Host must select a game mode"
                       : "All players must be ready to start"}
@@ -933,16 +864,12 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
         )}
       </div>
 
-      {/* Leave Room Button */}
       <div className="mt-8 text-center">
         <Button
-          onClick={() => {
-            disconnect();
-            router.push("/private");
-          }}
+          onClick={() => setShowLeavePrompt(true)}
           className="bg-red-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-red-700"
         >
-          🚪 Leave Room
+          Leave Room
         </Button>
       </div>
 
@@ -954,7 +881,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 onClick={() => {
                   setShowKickPopup(false);
                   setPlayerToKick("");
-                  setKickAction("kick");
                 }}
                 className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center text-xl font-bold text-white hover:text-red-200"
               >
@@ -965,30 +891,65 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 <div className="mb-3 text-3xl">⚠️</div>
 
                 <h3 className="mb-2 text-lg font-bold text-white">
-                  {kickAction === "kick" ? "Kick Player" : "Ban Player"}
+                  Kick Player
                 </h3>
 
                 <p className="mb-4 text-white/90">
-                  Are you sure you want to {kickAction} this player from the
-                  room?
+                  Are you sure you want to kick this player from the room?
                 </p>
 
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => {
-                      if (kickAction === "kick") {
-                        handleKickPlayer(playerToKick);
-                      } else {
-                        handleBanPlayer(playerToKick);
-                      }
-                    }}
-                    className={`w-full ${
-                      kickAction === "kick"
-                        ? "bg-orange-500 text-white hover:bg-orange-600"
-                        : "bg-red-500 text-white hover:bg-red-600"
-                    }`}
+                    onClick={() => handleKickPlayer(playerToKick)}
+                    className="w-full bg-orange-500 text-white hover:bg-orange-600"
                   >
-                    {kickAction === "kick" ? "Kick" : "Ban"}
+                    Kick
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLeavePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 max-w-sm">
+            <div className="relative rounded-lg border border-red-500 bg-red-700 p-5">
+              <button
+                onClick={() => setShowLeavePrompt(false)}
+                className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center text-xl font-bold text-white hover:text-red-200"
+              >
+                ×
+              </button>
+
+              <div className="text-center">
+                <div className="mb-3 text-3xl">🚪</div>
+
+                <h3 className="mb-2 text-lg font-bold text-white">
+                  Leave Room
+                </h3>
+
+                <p className="mb-4 text-white/90">
+                  Are you sure you want to leave this room?
+                </p>
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={() => {
+                      disconnect();
+                      router.push("/");
+                      setShowLeavePrompt(false);
+                    }}
+                    className="w-full bg-red-500 text-white hover:bg-red-600"
+                  >
+                    Yes, Leave
+                  </Button>
+                  <Button
+                    onClick={() => setShowLeavePrompt(false)}
+                    className="w-full bg-gray-500 text-white hover:bg-gray-600"
+                  >
+                    Stay
                   </Button>
                 </div>
               </div>

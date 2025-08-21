@@ -121,10 +121,6 @@ export default function HomePage() {
             </a>
           </div> */}
         </div>
-
-        <div className="absolute right-6 bottom-4 text-sm text-white/60">
-          © Copyright 2025. Developed by Anika Anne.
-        </div>
       </main>
     </>
   );
