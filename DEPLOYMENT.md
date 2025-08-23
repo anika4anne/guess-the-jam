@@ -12,47 +12,26 @@ Your game currently runs locally, which means:
 
 ## Solution
 
-Deploy both components to the cloud:
+Deploy your frontend to the cloud:
 
-1. **WebSocket Server** - Deploy to Render/DigitalOcean
-2. **Next.js Frontend** - Deploy to Vercel
+1. **Next.js Frontend** - Deploy to Vercel
 
-## Step 1: Deploy WebSocket Server
+## Step 1: Deploy Frontend to Vercel
 
-### Option A: Render (Recommended - Free tier available)
+### Vercel (Recommended - Free tier available)
 
-1. Go to [render.com](https://render.com) and sign up
-2. Create a new Web Service
+1. Go to [vercel.com](https://vercel.com) and sign up
+2. Create a new project
 3. Connect your GitHub repository
-4. Set environment variables:
-   ```
-   NODE_ENV=production
-   WEBSOCKET_HOST=0.0.0.0
-   WEBSOCKET_PORT=3001
-   ```
-5. Render will automatically detect the Dockerfile.websocket and deploy
-6. Note the generated URL (e.g., `https://your-app.onrender.com`)
+4. Vercel will automatically detect your Next.js app and deploy
+5. Note the generated URL (e.g., `https://your-app.vercel.app`)
 
-### Option B: Render
+## Step 2: Environment Variables (Optional)
 
-1. Go to [render.com](https://render.com) and sign up
-2. Create a new Web Service
-3. Connect your GitHub repository
-4. Set build command: `pnpm install && pnpm build:websocket`
-5. Set start command: `pnpm start:websocket`
-6. Set environment variables as above
+If you need to set any environment variables:
 
-## Step 2: Update Frontend Configuration
-
-Once your WebSocket server is deployed, update your environment variables:
-
-1. Create `.env.local` file:
-
-   ```bash
-   NEXT_PUBLIC_WEBSOCKET_URL=wss://your-app.onrender.com
-   ```
-
-2. For Vercel deployment, add this environment variable in your Vercel dashboard
+1. Create `.env.local` file for local development
+2. For Vercel deployment, add environment variables in your Vercel dashboard
 
 ## Step 3: Deploy to Vercel
 
@@ -105,7 +84,6 @@ Once your WebSocket server is deployed, update your environment variables:
 
 ## Cost
 
-- **Render**: Free tier available, then $7/month
 - **Vercel**: Free tier available, then $20/month
 - **Total**: Can be completely free for small usage!
 

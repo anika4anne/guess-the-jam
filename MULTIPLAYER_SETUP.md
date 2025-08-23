@@ -122,14 +122,14 @@ POST /api/webhooks/game-events
 
 ### Deployment Options
 
-#### Option 1: Vercel + Render
+#### Option 1: Vercel Only
 
 ```bash
 # Deploy Next.js app to Vercel
 vercel --prod
 
-# Deploy WebSocket server to Render
-render deploy
+# Deploy frontend to Vercel
+vercel --prod
 ```
 
 #### Option 2: DigitalOcean Droplet

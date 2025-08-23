@@ -4,25 +4,19 @@ Your game now has a **standalone server** that works just like Among Us - one ce
 
 ## ✨ **What You Get:**
 
-- ✅ **No more Render issues**
+- ✅ **Simple deployment**
 - ✅ **Simple, reliable server**
 - ✅ **Works like Among Us** - one server, all players connect
 - ✅ **Easy to deploy anywhere**
 
 ## 🚀 **Deployment Options:**
 
-### **Option 1: Render (Recommended - Free)**
+### **Option 1: Vercel (Recommended - Free)**
 
-1. Go to [render.com](https://render.com) and sign up
-2. Create **New Web Service**
+1. Go to [vercel.com](https://vercel.com) and sign up
+2. Create **New Project**
 3. Connect your GitHub repository
-4. **Build Command**: `pnpm install && pnpm build:standalone`
-5. **Start Command**: `pnpm start:standalone`
-6. **Environment Variables**:
-   ```
-   NODE_ENV=production
-   PORT=10000
-   ```
+4. Deploy and note your URL
 
 ### **Option 2: DigitalOcean App Platform (Free Tier)**
 
@@ -57,7 +51,7 @@ curl http://localhost:3001/
 
 ## 🌐 **After Deployment:**
 
-1. **Get your server URL** (e.g., `https://yourgame.render.com`)
+1. **Get your server URL** (e.g., `https://yourgame.vercel.app`)
 2. **Update your frontend** to connect to it
 3. **Test multi-device play!**
 
@@ -66,19 +60,19 @@ curl http://localhost:3001/
 Once deployed, update your `.env.local`:
 
 ```bash
-NEXT_PUBLIC_WEBSOCKET_URL=wss://yourgame.render.com
+NEXT_PUBLIC_WEBSOCKET_URL=wss://yourgame.vercel.app
 ```
 
 ## 💡 **Why This is Better:**
 
-- **No Render authentication issues**
+- **Simple deployment process**
 - **Simple, reliable deployment**
 - **Works exactly like Among Us**
 - **Easy to scale and maintain**
 
 ## 🎯 **Next Steps:**
 
-1. **Choose a hosting service** (Render recommended)
+1. **Choose a hosting service** (Vercel recommended)
 2. **Deploy the standalone server**
 3. **Update frontend connection**
 4. **Test multi-device multiplayer!**

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Deploying Guess The Jam for Multi-Device Play!"
+echo "🚀 Deploying Guess The Jam to Vercel!"
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
@@ -9,9 +9,8 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "📋 Prerequisites:"
-echo "1. Make sure you have Render CLI installed (npm i -g @render/cli)"
-echo "2. Make sure you have Vercel CLI installed (npm i -g vercel)"
-echo "3. Make sure you're logged into both services"
+echo "1. Make sure you have Vercel CLI installed (npm i -g vercel)"
+echo "2. Make sure you're logged into Vercel"
 echo ""
 
 read -p "Have you completed the prerequisites? (y/n): " -n 1 -r
@@ -22,50 +21,18 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo "🔧 Step 1: Building WebSocket server..."
-pnpm build:websocket
+echo "🔧 Step 1: Building frontend..."
+pnpm build
 
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to build WebSocket server"
+    echo "❌ Failed to build frontend"
     exit 1
 fi
 
-echo "✅ WebSocket server built successfully"
+echo "✅ Frontend built successfully"
 
 echo ""
-echo "🌐 Step 2: Deploying WebSocket server to Render..."
-render deploy
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to deploy to Render"
-    echo "Please deploy manually following the DEPLOYMENT.md guide"
-    exit 1
-fi
-
-echo "✅ WebSocket server deployed to Render"
-
-echo ""
-echo "🔗 Step 3: Getting Render URL..."
-RENDER_URL=$(render status --json | grep -o '"url":"[^"]*"' | cut -d'"' -f4)
-
-if [ -z "$RENDER_URL" ]; then
-    echo "⚠️  Could not automatically get Render URL"
-    echo "Please get it manually from your Render dashboard"
-    read -p "Enter your Render URL (without https://): " RENDER_URL
-fi
-
-echo "✅ Render URL: $RENDER_URL"
-
-echo ""
-echo "📝 Step 4: Creating environment file..."
-cat > .env.local << EOF
-NEXT_PUBLIC_WEBSOCKET_URL=wss://$RENDER_URL
-EOF
-
-echo "✅ Environment file created"
-
-echo ""
-echo "🌍 Step 5: Deploying frontend to Vercel..."
+echo "🌍 Step 2: Deploying frontend to Vercel..."
 vercel --prod
 
 if [ $? -ne 0 ]; then
@@ -77,9 +44,8 @@ fi
 echo ""
 echo "🎉 Deployment complete!"
 echo ""
-echo "📱 Your game is now playable on multiple devices!"
+echo "📱 Your game is now deployed!"
 echo "🌐 Frontend URL: Check your Vercel dashboard"
-echo "🔌 WebSocket URL: wss://$RENDER_URL"
 echo ""
 echo "💡 To test:"
 echo "1. Open your Vercel URL on one device"
@@ -89,4 +55,3 @@ echo "4. Join the room using the room ID"
 echo ""
 echo "🔧 If you need to update environment variables in Vercel:"
 echo "Go to your Vercel dashboard → Project Settings → Environment Variables"
-echo "Add: NEXT_PUBLIC_WEBSOCKET_URL = wss://$RENDER_URL"

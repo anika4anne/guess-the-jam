@@ -19,10 +19,9 @@ Your game will now deploy automatically every time you push code to GitHub!
 
 This script will guide you through:
 
-- Creating Render account (WebSocket server)
 - Creating Vercel account (Frontend)
 - Getting API tokens
-- Setting up GitHub secrets
+- Setting up deployment configuration
 
 ### 2. Push Your Code
 
@@ -34,29 +33,27 @@ git push origin main
 
 ## 🔄 How It Works
 
-1. **You push code to GitHub** → `git push origin main`
-2. **GitHub Actions automatically runs** → Deploys both servers
-3. **Your game is updated online** → Available to play immediately
+1. **You run the deploy script** → `./deploy.sh`
+2. **Vercel automatically deploys** → Your frontend is updated
+3. **Your game is available online** → Ready to play immediately
 
 ## 📱 After Setup
 
-- **Local development**: Still works with `pnpm dev:full`
-- **Online play**: Always available at your Vercel URL
+- **Local development**: Still works with `pnpm dev`
+- **Online play**: Available at your Vercel URL
 - **Multi-device**: Works on any device with internet
-- **No scripts needed**: Everything happens automatically
+- **Simple deployment**: Just run `./deploy.sh` when you want to update
 
 ## 🆘 If Something Goes Wrong
 
-- Check the **Actions** tab in your GitHub repo
-- Look for any error messages
-- The deployment will retry automatically
-- You can manually trigger deployment from the Actions tab
+- Check your **Vercel dashboard** for deployment status
+- Look for any error messages in the deployment logs
+- You can redeploy by running `./deploy.sh` again
+- Check the Vercel documentation for troubleshooting
 
 ## 💰 Cost
 
-- **Render**: Free tier available
 - **Vercel**: Free tier available
-
 - **Total**: Can be completely free!
 
 ## 🎮 Ready to Play!
@@ -70,4 +67,4 @@ Once setup is complete:
 
 ---
 
-**Need help?** Check the Actions tab in your GitHub repo for deployment status and any error messages.
+**Need help?** Check your Vercel dashboard for deployment status and any error messages.

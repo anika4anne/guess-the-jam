@@ -26,6 +26,6 @@ You can check out the [create-t3-app GitHub repository](https://github.com/t3-os
 
 ## How do I deploy this?
 
-Follow our deployment guide for [Render](RENDER_DEPLOYMENT.md) for more information.
+Follow our deployment guide for [Vercel](DEPLOYMENT.md) for more information.
 
 For other deployment options, check out the [create-t3-app deployment guides](https://create.t3.gg/en/deployment).
