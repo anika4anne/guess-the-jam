@@ -4,7 +4,7 @@ Your game now has a **standalone server** that works just like Among Us - one ce
 
 ## ✨ **What You Get:**
 
-- ✅ **No more Railway issues**
+- ✅ **No more Render issues**
 - ✅ **Simple, reliable server**
 - ✅ **Works like Among Us** - one server, all players connect
 - ✅ **Easy to deploy anywhere**
@@ -71,7 +71,7 @@ NEXT_PUBLIC_WEBSOCKET_URL=wss://yourgame.render.com
 
 ## 💡 **Why This is Better:**
 
-- **No Railway authentication issues**
+- **No Render authentication issues**
 - **Simple, reliable deployment**
 - **Works exactly like Among Us**
 - **Easy to scale and maintain**

@@ -14,15 +14,15 @@ Your game currently runs locally, which means:
 
 Deploy both components to the cloud:
 
-1. **WebSocket Server** - Deploy to Railway/Render/DigitalOcean
+1. **WebSocket Server** - Deploy to Render/DigitalOcean
 2. **Next.js Frontend** - Deploy to Vercel
 
 ## Step 1: Deploy WebSocket Server
 
-### Option A: Railway (Recommended - Free tier available)
+### Option A: Render (Recommended - Free tier available)
 
-1. Go to [railway.app](https://railway.app) and sign up
-2. Create a new project
+1. Go to [render.com](https://render.com) and sign up
+2. Create a new Web Service
 3. Connect your GitHub repository
 4. Set environment variables:
    ```
@@ -30,8 +30,8 @@ Deploy both components to the cloud:
    WEBSOCKET_HOST=0.0.0.0
    WEBSOCKET_PORT=3001
    ```
-5. Railway will automatically detect the Dockerfile.websocket and deploy
-6. Note the generated URL (e.g., `https://your-app.railway.app`)
+5. Render will automatically detect the Dockerfile.websocket and deploy
+6. Note the generated URL (e.g., `https://your-app.onrender.com`)
 
 ### Option B: Render
 
@@ -49,7 +49,7 @@ Once your WebSocket server is deployed, update your environment variables:
 1. Create `.env.local` file:
 
    ```bash
-   NEXT_PUBLIC_WEBSOCKET_URL=wss://your-app.railway.app
+   NEXT_PUBLIC_WEBSOCKET_URL=wss://your-app.onrender.com
    ```
 
 2. For Vercel deployment, add this environment variable in your Vercel dashboard
@@ -105,7 +105,6 @@ Once your WebSocket server is deployed, update your environment variables:
 
 ## Cost
 
-- **Railway**: Free tier available, then $5/month
 - **Render**: Free tier available, then $7/month
 - **Vercel**: Free tier available, then $20/month
 - **Total**: Can be completely free for small usage!

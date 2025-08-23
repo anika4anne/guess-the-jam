@@ -11,32 +11,32 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-echo "📋 Step 1: Setting up Railway (WebSocket Server)"
-echo "1. Go to https://railway.app and sign up/login"
-echo "2. Create a new project"
+echo "📋 Step 1: Setting up Render (WebSocket Server)"
+echo "1. Go to https://render.com and sign up/login"
+echo "2. Create a new Web Service"
 echo "3. Connect your GitHub repository"
-echo "4. Copy your Railway token from your account settings"
+echo "4. Copy your Render API key from your account settings"
 echo ""
 
-read -p "Have you created a Railway project? (y/n): " -n 1 -r
+read -p "Have you created a Render project? (y/n): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Please create a Railway project first and run this script again."
+    echo "Please create a Render project first and run this script again."
     exit 1
 fi
 
 echo ""
-echo "🔑 Step 2: Getting Railway Token"
-echo "1. Go to Railway dashboard → Account → Tokens"
-echo "2. Create a new token"
-echo "3. Copy the token"
+echo "🔑 Step 2: Getting Render API Key"
+echo "1. Go to Render dashboard → Account → API Keys"
+echo "2. Create a new API key"
+echo "3. Copy the API key"
 echo ""
 
-read -s -p "Enter your Railway token: " RAILWAY_TOKEN
+read -s -p "Enter your Render API key: " RENDER_API_KEY
 echo
 
-if [ -z "$RAILWAY_TOKEN" ]; then
-    echo "❌ Railway token is required"
+if [ -z "$RENDER_API_KEY" ]; then
+    echo "❌ Render API key is required"
     exit 1
 fi
 
@@ -86,13 +86,11 @@ if [ -z "$VERCEL_PROJECT_ID" ] || [ -z "$VERCEL_ORG_ID" ]; then
 fi
 
 echo ""
-echo "🔧 Step 6: Setting up GitHub Secrets"
-echo "1. Go to your GitHub repository"
-echo "2. Go to Settings → Secrets and variables → Actions"
-echo "3. Add the following secrets:"
+echo "🔧 Step 6: Manual Deployment Setup"
+echo "You now have all the necessary tokens and IDs to deploy manually:"
 echo ""
 
-echo "RAILWAY_TOKEN = $RAILWAY_TOKEN"
+echo "RENDER_API_KEY = $RENDER_API_KEY"
 echo "VERCEL_TOKEN = $VERCEL_TOKEN"
 echo "VERCEL_PROJECT_ID = $VERCEL_PROJECT_ID"
 echo "VERCEL_ORG_ID = $VERCEL_ORG_ID"
@@ -109,20 +107,19 @@ echo "✅ Environment file created for local development"
 echo ""
 echo "🎉 Setup Complete!"
 echo ""
-echo "📱 What happens now:"
-echo "1. Every time you push code to the 'main' branch"
-echo "2. GitHub Actions will automatically:"
-echo "   - Deploy your WebSocket server to Railway"
-echo "   - Deploy your frontend to Vercel"
-echo "3. Your game will always be available online!"
+echo "📱 What to do next:"
+echo "1. Use the deploy.sh script to deploy manually:"
+echo "   ./deploy.sh"
+echo "2. Or deploy each service individually:"
+echo "   - WebSocket server to Render using: render deploy"
+echo "   - Frontend to Vercel using: vercel --prod"
 echo ""
 echo "🚀 To test:"
-echo "1. Push some code to GitHub: git push origin main"
-echo "2. Check the Actions tab in your GitHub repo"
-echo "3. Wait for deployment to complete"
-echo "4. Your game will be available at your Vercel URL!"
+echo "1. Run the deploy.sh script"
+echo "2. Wait for both deployments to complete"
+echo "3. Your game will be available at your Vercel URL!"
 echo ""
-echo "💡 Pro tip: You can also manually trigger deployment from the Actions tab"
+echo "💡 Pro tip: You can also deploy each service separately for more control"
 echo ""
-echo "🔧 If you need to update secrets later:"
-echo "Go to GitHub → Settings → Secrets and variables → Actions"
+echo "🔧 If you need to update tokens later:"
+echo "Re-run this setup script or update them manually in your deployment services"

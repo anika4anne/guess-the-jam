@@ -19,7 +19,7 @@ Your game will now deploy automatically every time you push code to GitHub!
 
 This script will guide you through:
 
-- Creating Railway account (WebSocket server)
+- Creating Render account (WebSocket server)
 - Creating Vercel account (Frontend)
 - Getting API tokens
 - Setting up GitHub secrets
@@ -54,9 +54,9 @@ git push origin main
 
 ## 💰 Cost
 
-- **Railway**: Free tier available
+- **Render**: Free tier available
 - **Vercel**: Free tier available
-- **GitHub Actions**: Free tier available
+
 - **Total**: Can be completely free!
 
 ## 🎮 Ready to Play!

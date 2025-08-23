@@ -38,7 +38,7 @@ class GameServer {
     this.port = port;
     const server = createServer();
 
-    // Add health check endpoint for Railway
+    // Add health check endpoint for Render
     server.on("request", (req, res) => {
       if (req.url === "/" || req.url === "/health") {
         res.writeHead(200, { "Content-Type": "text/plain" });

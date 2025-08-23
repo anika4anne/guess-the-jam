@@ -9,7 +9,7 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "📋 Prerequisites:"
-echo "1. Make sure you have Railway CLI installed (npm i -g @railway/cli)"
+echo "1. Make sure you have Render CLI installed (npm i -g @render/cli)"
 echo "2. Make sure you have Vercel CLI installed (npm i -g vercel)"
 echo "3. Make sure you're logged into both services"
 echo ""
@@ -33,33 +33,33 @@ fi
 echo "✅ WebSocket server built successfully"
 
 echo ""
-echo "🌐 Step 2: Deploying WebSocket server to Railway..."
-railway up
+echo "🌐 Step 2: Deploying WebSocket server to Render..."
+render deploy
 
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to deploy to Railway"
+    echo "❌ Failed to deploy to Render"
     echo "Please deploy manually following the DEPLOYMENT.md guide"
     exit 1
 fi
 
-echo "✅ WebSocket server deployed to Railway"
+echo "✅ WebSocket server deployed to Render"
 
 echo ""
-echo "🔗 Step 3: Getting Railway URL..."
-RAILWAY_URL=$(railway status --json | grep -o '"url":"[^"]*"' | cut -d'"' -f4)
+echo "🔗 Step 3: Getting Render URL..."
+RENDER_URL=$(render status --json | grep -o '"url":"[^"]*"' | cut -d'"' -f4)
 
-if [ -z "$RAILWAY_URL" ]; then
-    echo "⚠️  Could not automatically get Railway URL"
-    echo "Please get it manually from your Railway dashboard"
-    read -p "Enter your Railway URL (without https://): " RAILWAY_URL
+if [ -z "$RENDER_URL" ]; then
+    echo "⚠️  Could not automatically get Render URL"
+    echo "Please get it manually from your Render dashboard"
+    read -p "Enter your Render URL (without https://): " RENDER_URL
 fi
 
-echo "✅ Railway URL: $RAILWAY_URL"
+echo "✅ Render URL: $RENDER_URL"
 
 echo ""
 echo "📝 Step 4: Creating environment file..."
 cat > .env.local << EOF
-NEXT_PUBLIC_WEBSOCKET_URL=wss://$RAILWAY_URL
+NEXT_PUBLIC_WEBSOCKET_URL=wss://$RENDER_URL
 EOF
 
 echo "✅ Environment file created"
@@ -79,7 +79,7 @@ echo "🎉 Deployment complete!"
 echo ""
 echo "📱 Your game is now playable on multiple devices!"
 echo "🌐 Frontend URL: Check your Vercel dashboard"
-echo "🔌 WebSocket URL: wss://$RAILWAY_URL"
+echo "🔌 WebSocket URL: wss://$RENDER_URL"
 echo ""
 echo "💡 To test:"
 echo "1. Open your Vercel URL on one device"
@@ -89,4 +89,4 @@ echo "4. Join the room using the room ID"
 echo ""
 echo "🔧 If you need to update environment variables in Vercel:"
 echo "Go to your Vercel dashboard → Project Settings → Environment Variables"
-echo "Add: NEXT_PUBLIC_WEBSOCKET_URL = wss://$RAILWAY_URL"
+echo "Add: NEXT_PUBLIC_WEBSOCKET_URL = wss://$RENDER_URL"
