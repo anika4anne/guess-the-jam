@@ -360,24 +360,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
     }
   }, [roomId]);
 
-  const handleAddYear = useCallback(
-    (year: number) => {
-      const newYears = selectedYears.concat([year]);
-      setSelectedYears(newYears);
-      handleSettingsUpdate({ selectedYears: newYears });
-    },
-    [selectedYears, handleSettingsUpdate],
-  );
-
-  const handleDeleteYear = useCallback(
-    (year: number) => {
-      const newYears = selectedYears.filter((y) => y !== year);
-      setSelectedYears(newYears);
-      handleSettingsUpdate({ selectedYears: newYears });
-    },
-    [selectedYears, handleSettingsUpdate],
-  );
-
   if (!name) {
     return null;
   }
@@ -649,7 +631,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                   </label>
                   {isHost ? (
                     <select
-                      value={selectedYears[0] || ""}
+                      value={selectedYears[0] ?? ""}
                       onChange={(e) => {
                         const year = parseInt(e.target.value);
                         if (year) {
@@ -735,8 +717,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
           {players.find((p) => p.id === playerId)?.ready === false && (
             <div className="mb-4 text-center">
               <p className="rounded-lg border border-white/20 bg-white/10 p-3 text-sm text-white/70">
-                <strong>Tip:</strong> Click on the "Not Ready" button to make
-                yourself ready and start the game!
+                <strong>Tip:</strong> Click on the &quot;Not Ready&quot; button
+                to make yourself ready and start the game!
               </p>
             </div>
           )}
