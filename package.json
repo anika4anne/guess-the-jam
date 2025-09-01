@@ -7,13 +7,18 @@
     "build": "next build",
     "build:websocket": "tsc server/websocket.ts --outDir dist --target es2020 --module esnext --moduleResolution node",
     "build:standalone": "tsc server/standalone-server.ts --outDir dist --target es2020 --module esnext --moduleResolution node --allowSyntheticDefaultImports",
+    "build:production": "tsc server/production-server.ts --outDir dist --target es2020 --module esnext --moduleResolution node --allowSyntheticDefaultImports",
+    "build:server": "tsc server/index.ts --outDir dist --target es2020 --module esnext --moduleResolution node --allowSyntheticDefaultImports",
     "check": "next lint && tsc --noEmit",
     "dev": "next dev --turbo",
     "dev:full": "concurrently \"npm run dev\" \"npm run websocket\"",
     "websocket": "tsx server/websocket.ts",
     "standalone": "tsx server/standalone-server.ts",
+    "production": "tsx server/production-server.ts",
     "start:websocket": "node dist/websocket.js",
     "start:standalone": "node dist/standalone-server.js",
+    "start:production": "node dist/production-server.js",
+    "start:server": "node dist/index.js",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "next lint",
@@ -21,7 +26,8 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next dist"
+    "clean": "rm -rf .next dist",
+    "deploy:pi": "./deploy-raspberry-pi.sh"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",

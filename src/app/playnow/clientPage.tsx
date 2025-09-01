@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import playlistLinks from "~/lib/playlistLinks";
+import { useGameWebSocket } from "~/hooks/useGameWebSocket";
 
 interface Song {
   title: string;
@@ -96,6 +97,19 @@ export default function PlayNowPage() {
   >({});
   const [showAllResults, setShowAllResults] = useState(false);
   const [gameMode, setGameMode] = useState<"single" | "multiplayer">("single");
+
+  // WebSocket multiplayer integration
+  const {
+    isConnected,
+    connect,
+    disconnect,
+    room: wsRoom,
+    currentPlayerId,
+    isHost: wsIsHost,
+    submitAnswer,
+    waitForAllAnswers,
+    lastMessage: wsMessage,
+  } = useGameWebSocket();
 
   const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
 
@@ -798,36 +812,81 @@ export default function PlayNowPage() {
     }
   }, [searchParams]);
 
+  // Connect to WebSocket when in private mode
+  useEffect(() => {
+    if (mode === "private" && roomId && currentPlayerName) {
+      connect(roomId, currentPlayerName);
+      return () => disconnect();
+    }
+  }, [mode, roomId, currentPlayerName, connect, disconnect]);
+
+  // Handle WebSocket messages for multiplayer
+  useEffect(() => {
+    if (!wsMessage) return;
+
+    switch (wsMessage.type) {
+      case "answer_submitted":
+        if (wsMessage.answers) {
+          setAllAnswers(wsMessage.answers);
+
+          // Check if all players have answered
+          const validPlayers = playerNames.filter((n) => n.trim() !== "");
+          if (Object.keys(wsMessage.answers).length >= validPlayers.length) {
+            setWaitingForOthers(false);
+            setShowAllResults(true);
+          }
+        }
+        break;
+
+      case "gameplay_started":
+        if (wsMessage.round) setRound(wsMessage.round);
+        if (wsMessage.totalRounds) setTotalRounds(wsMessage.totalRounds);
+        break;
+
+      case "chat_round_started":
+        if (wsMessage.song) setCurrentSong(wsMessage.song);
+        if (wsMessage.artist) setCurrentArtist(wsMessage.artist);
+        if (wsMessage.round) setRound(wsMessage.round);
+        if (wsMessage.totalRounds) setTotalRounds(wsMessage.totalRounds);
+        break;
+    }
+  }, [wsMessage, playerNames]);
+
   useEffect(() => {
     privateSettingsLoaded.current = false;
   }, [searchParams]);
 
+  // WebSocket-based answer synchronization (replaces localStorage polling)
   useEffect(() => {
     if (mode !== "private" || !roomId || !showPrompt) return;
-    const key = `room-${roomId}-answers-round-${round}`;
-    const interval = setInterval(() => {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setAllAnswers(parsed);
-        const validPlayers = playerNames.filter((n) => n.trim() !== "");
-        if (Object.keys(parsed).length === validPlayers.length) {
-          setWaitingForOthers(false);
-          setShowAllResults(true);
-        }
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [mode, roomId, round, playerNames, showPrompt]);
 
-  const handleMultiplayerSubmit = (
+    // If WebSocket is connected, answers will come via WebSocket messages
+    // If not connected, fall back to localStorage polling
+    if (!isConnected) {
+      const key = `room-${roomId}-answers-round-${round}`;
+      const interval = setInterval(() => {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setAllAnswers(parsed);
+          const validPlayers = playerNames.filter((n) => n.trim() !== "");
+          if (Object.keys(parsed).length === validPlayers.length) {
+            setWaitingForOthers(false);
+            setShowAllResults(true);
+          }
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [mode, roomId, round, playerNames, showPrompt, isConnected]);
+
+  const handleMultiplayerSubmit = async (
     points: number,
     artistCorrect: boolean,
     songCorrect: boolean,
   ) => {
-    if (!roomId) return;
-    const key = `room-${roomId}-answers-round-${round}`;
-    const currentPlayer = currentPlayerName;
+    if (!roomId || !currentPlayerName) return;
+
     const answer = {
       song: userSongAnswer,
       songRaw: userSongAnswer,
@@ -838,16 +897,36 @@ export default function PlayNowPage() {
       artistCorrect,
     };
 
-    let answers: Record<string, unknown> = {};
-    try {
-      answers = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<
-        string,
-        unknown
-      >;
-    } catch {}
-    answers[currentPlayer] = answer;
-    localStorage.setItem(key, JSON.stringify(answers));
-    setWaitingForOthers(true);
+    // Submit answer via WebSocket instead of localStorage
+    if (isConnected) {
+      submitAnswer(answer);
+      setWaitingForOthers(true);
+
+      // Wait for all answers to come in via WebSocket
+      try {
+        const allPlayerAnswers = await waitForAllAnswers();
+        setAllAnswers(allPlayerAnswers);
+        setWaitingForOthers(false);
+        setShowAllResults(true);
+      } catch (error) {
+        console.error("Error waiting for answers:", error);
+        // Fallback to manual waiting
+        setWaitingForOthers(true);
+      }
+    } else {
+      // Fallback to localStorage if WebSocket not connected
+      const key = `room-${roomId}-answers-round-${round}`;
+      let answers: Record<string, unknown> = {};
+      try {
+        answers = JSON.parse(localStorage.getItem(key) ?? "{}") as Record<
+          string,
+          unknown
+        >;
+      } catch {}
+      answers[currentPlayerName] = answer;
+      localStorage.setItem(key, JSON.stringify(answers));
+      setWaitingForOthers(true);
+    }
   };
 
   useEffect(() => {
@@ -862,7 +941,7 @@ export default function PlayNowPage() {
   if (!gameStarted) {
     return (
       <main className="playnow-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white">
-        <div className="absolute top-6 left-6">
+        <div className="absolute left-6 top-6">
           <Button
             variant="outline"
             onClick={() => router.push("/")}
@@ -872,7 +951,7 @@ export default function PlayNowPage() {
           </Button>
         </div>
 
-        <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
+        <div className="animate-wave pointer-events-none absolute left-0 top-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
             preserveAspectRatio="none"
@@ -887,7 +966,7 @@ export default function PlayNowPage() {
             />
           </svg>
         </div>
-        <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1] opacity-20">
+        <div className="animate-wave pointer-events-none absolute right-0 top-0 h-full w-24 scale-x-[-1] opacity-20">
           <svg
             viewBox="0 0 100 600"
             preserveAspectRatio="none"
@@ -1108,7 +1187,7 @@ export default function PlayNowPage() {
 
     return (
       <main className="playnow-background relative flex min-h-screen flex-col items-center justify-start overflow-hidden px-6 pt-8 text-white">
-        <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
+        <div className="animate-wave pointer-events-none absolute left-0 top-0 h-full w-24 opacity-20">
           <svg
             viewBox="0 0 100 600"
             preserveAspectRatio="none"
@@ -1123,7 +1202,7 @@ export default function PlayNowPage() {
             />
           </svg>
         </div>
-        <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1] opacity-20">
+        <div className="animate-wave pointer-events-none absolute right-0 top-0 h-full w-24 scale-x-[-1] opacity-20">
           <svg
             viewBox="0 0 100 600"
             preserveAspectRatio="none"
@@ -1141,7 +1220,7 @@ export default function PlayNowPage() {
 
         {showCountdown && (
           <div
-            className="bg-opacity-90 fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-6xl font-bold tracking-widest text-white transition-opacity duration-500"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-90 text-6xl font-bold tracking-widest text-white transition-opacity duration-500"
             style={{ opacity: fadeCountdown ? 0 : 1 }}
           >
             <p>ARE YOU READY?</p>
@@ -1266,7 +1345,7 @@ export default function PlayNowPage() {
               <h1 className="w-full text-center text-4xl font-bold">
                 🎵 Let the Game Begin! 🎵
               </h1>
-              <div className="absolute top-1/2 right-0 flex -translate-y-1/2 gap-2">
+              <div className="absolute right-0 top-1/2 flex -translate-y-1/2 gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setGameFinished(true)}
@@ -1481,7 +1560,7 @@ export default function PlayNowPage() {
                               msg.type === "correct"
                                 ? "font-semibold text-green-400"
                                 : msg.type === "system"
-                                  ? "text-blue-400 italic"
+                                  ? "italic text-blue-400"
                                   : "text-white"
                             }`}
                           >
@@ -1516,7 +1595,7 @@ export default function PlayNowPage() {
               )}
             </div>
             {!volumeUnmuted && (
-              <div className="mt-8 mb-4 flex justify-center">
+              <div className="mb-4 mt-8 flex justify-center">
                 <button
                   onClick={() => {
                     try {
@@ -1788,7 +1867,7 @@ export default function PlayNowPage() {
                                     <button
                                       type="button"
                                       onClick={() => setShowArtist((v) => !v)}
-                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                      className="absolute bottom-2 right-3 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
                                       tabIndex={-1}
                                       aria-label={
                                         showArtist
@@ -1831,7 +1910,7 @@ export default function PlayNowPage() {
                                     <button
                                       type="button"
                                       onClick={() => setShowSong((v) => !v)}
-                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                      className="absolute bottom-2 right-3 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
                                       tabIndex={-1}
                                       aria-label={
                                         showSong ? "Hide song" : "Show song"
@@ -2043,7 +2122,7 @@ export default function PlayNowPage() {
             )}
 
             {playerNames.filter((name) => name.trim() !== "").length > 1 && (
-              <div className="mt-6 mb-8 flex w-full flex-col items-center">
+              <div className="mb-8 mt-6 flex w-full flex-col items-center">
                 <div className="mb-1 text-center text-lg font-extrabold text-white">
                   Round {round} of {totalRounds}
                 </div>
@@ -2073,7 +2152,7 @@ export default function PlayNowPage() {
               </div>
             )}
             {playerNames.filter((name) => name.trim() !== "").length === 1 && (
-              <div className="mt-6 mb-8 flex w-full flex-col items-center">
+              <div className="mb-8 mt-6 flex w-full flex-col items-center">
                 <div className="mb-1 text-center text-lg font-extrabold text-white">
                   Round {round} of {totalRounds}
                 </div>
@@ -2104,7 +2183,7 @@ export default function PlayNowPage() {
 
   return (
     <main className="playnow-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden font-sans text-white">
-      <div className="absolute top-6 left-6">
+      <div className="absolute left-6 top-6">
         <Button
           variant="outline"
           onClick={() => router.push("/")}
@@ -2114,7 +2193,7 @@ export default function PlayNowPage() {
         </Button>
       </div>
 
-      <div className="animate-wave pointer-events-none absolute top-0 left-0 h-full w-24 opacity-20">
+      <div className="animate-wave pointer-events-none absolute left-0 top-0 h-full w-24 opacity-20">
         <svg
           viewBox="0 0 100 600"
           preserveAspectRatio="none"
@@ -2129,7 +2208,7 @@ export default function PlayNowPage() {
           />
         </svg>
       </div>
-      <div className="animate-wave pointer-events-none absolute top-0 right-0 h-full w-24 scale-x-[-1] opacity-20">
+      <div className="animate-wave pointer-events-none absolute right-0 top-0 h-full w-24 scale-x-[-1] opacity-20">
         <svg
           viewBox="0 0 100 600"
           preserveAspectRatio="none"

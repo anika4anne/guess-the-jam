@@ -139,7 +139,7 @@ export default function RulesPage() {
         ))}
       </section>
 
-      {/* Animations */}
+
       <style jsx>{`
         @keyframes wave {
           0% {

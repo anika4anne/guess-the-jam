@@ -3,10 +3,10 @@ export const config = {
     port: process.env.WEBSOCKET_PORT
       ? parseInt(process.env.WEBSOCKET_PORT)
       : 3001,
-    host: process.env.WEBSOCKET_HOST || "localhost",
+    host: process.env.WEBSOCKET_HOST || "0.0.0.0",
     url:
       process.env.WEBSOCKET_URL ||
-      `ws://${process.env.WEBSOCKET_HOST || "localhost"}:${process.env.WEBSOCKET_PORT || 3001}`,
+      `ws://${process.env.WEBSOCKET_HOST || "0.0.0.0"}:${process.env.WEBSOCKET_PORT || 3001}`,
   },
 
   webhook: {
@@ -26,4 +26,11 @@ export const config = {
   },
 
   isDevelopment: process.env.NODE_ENV === "development",
+
+  server: {
+    cors: {
+      origin: process.env.CORS_ORIGIN || "*",
+      credentials: true,
+    },
+  },
 };

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "~/components/ui/button";
 
-import { useWebSocket } from "~/hooks/useWebSocket";
+import { useGameWebSocket } from "~/hooks/useGameWebSocket";
 
 interface PrivateRoomProps {
   roomId: string;
@@ -53,7 +53,7 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasRedirected = useRef(false);
 
-  const { sendMessage, lastMessage, connect, disconnect } = useWebSocket();
+  const { sendMessage, lastMessage, connect, disconnect, room: wsRoom, currentPlayerId: wsPlayerId, isHost: wsIsHost } = useGameWebSocket();
 
   useEffect(() => {
     if (!name) {
@@ -76,6 +76,23 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Sync WebSocket room state with local state
+  useEffect(() => {
+    if (wsRoom) {
+      setPlayers(wsRoom.players);
+      setCurrentHostId(wsRoom.hostId);
+      if (wsPlayerId) {
+        setIsHost(wsRoom.hostId === wsPlayerId);
+      }
+      if (wsRoom.settings) {
+        if (typeof wsRoom.settings.rounds === "number") setRounds(wsRoom.settings.rounds);
+        if (typeof wsRoom.settings.mode === "string") setMode(wsRoom.settings.mode as "default" | "playlist" | "chat");
+        if (Array.isArray(wsRoom.settings.playlists)) setPlaylists(wsRoom.settings.playlists);
+        if (Array.isArray(wsRoom.settings.selectedYears)) setSelectedYears(wsRoom.settings.selectedYears);
+      }
+    }
+  }, [wsRoom, wsPlayerId]);
 
   useEffect(() => {
     if (!lastMessage) return;
@@ -314,8 +331,8 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       mode,
       playlists: mode === "playlist" ? playlists : [],
     };
-    localStorage.setItem("privateRoomSettings", JSON.stringify(gameSettings));
 
+    // Send settings to server instead of localStorage
     sendMessage({
       type: "game_settings_update",
       settings: gameSettings,

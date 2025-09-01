@@ -1,39 +1,28 @@
 module.exports = {
   apps: [
     {
-      name: 'guess-the-jam-websocket',
-      script: 'server/websocket.ts',
-      interpreter: 'tsx',
+      name: "guess-the-jam-server",
+      script: "dist/index.js",
       instances: 1,
       autorestart: true,
       watch: false,
-      max_memory_restart: '1G',
+      max_memory_restart: "1G",
       env: {
-        NODE_ENV: 'production',
-        WEBSOCKET_PORT: 3001
+        NODE_ENV: "production",
+        WEBSOCKET_PORT: 3001,
+        WEBSOCKET_HOST: "0.0.0.0",
+        CORS_ORIGIN: "*",
       },
-      env_development: {
-        NODE_ENV: 'development',
-        WEBSOCKET_PORT: 3001
-      }
+      env_production: {
+        NODE_ENV: "production",
+        WEBSOCKET_PORT: 3001,
+        WEBSOCKET_HOST: "0.0.0.0",
+        CORS_ORIGIN: "*",
+      },
+      error_file: "./logs/err.log",
+      out_file: "./logs/out.log",
+      log_file: "./logs/combined.log",
+      time: true,
     },
-    {
-      name: 'guess-the-jam-nextjs',
-      script: 'npm',
-      args: 'start',
-      cwd: './',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '1G',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000
-      },
-      env_development: {
-        NODE_ENV: 'development',
-        PORT: 3000
-      }
-    }
-  ]
+  ],
 };
