@@ -82,8 +82,22 @@ export default function HomePage() {
                   Pick Artist Mode →
                 </h3>
                 <p className="relative text-lg">
-                  Guess which artist sings each song!
+                  Select multiple artists and guess which one sings each song!
                 </p>
+                <div className="relative mt-2 flex flex-wrap gap-1">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                    🎤
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                    🎵
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                    🎶
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                    🎸
+                  </div>
+                </div>
               </Link>
 
               <Link

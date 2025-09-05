@@ -15,7 +15,8 @@ const artists: Artist[] = [
   {
     id: "1",
     name: "Taylor Swift",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://www.ensembleschools.com/the-inside-voice/wp-content/uploads/sites/47/2016/11/taylore-swift-kid-appropriate-songs-to-sing.jpg",
     songs: [
       "Shake It Off",
       "Love Story",
@@ -27,7 +28,8 @@ const artists: Artist[] = [
   {
     id: "2",
     name: "Drake",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSO8mIGIKONJtXjHVRvWi1-K0rIiW8KjWpc2gtroCxrUab-P7bzgSXnrAOIsDSMwXfaO1_3c5vtHrlplEwUDuAnnJggr01SOeUorWwW67k",
     songs: [
       "God's Plan",
       "One Dance",
@@ -39,7 +41,8 @@ const artists: Artist[] = [
   {
     id: "3",
     name: "Billie Eilish",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://static01.nyt.com/images/2020/03/15/magazine/15mag-billie-03/15mag-billie-03-superJumbo-v3.jpg",
     songs: [
       "Bad Guy",
       "Lovely",
@@ -268,8 +271,12 @@ export default function PickArtistPage() {
                 }`}
               >
                 <div className="text-center">
-                  <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-gray-400 text-2xl">
-                    🎤
+                  <div className="mx-auto mb-2 h-16 w-16 overflow-hidden rounded-full">
+                    <img
+                      src={artist.image}
+                      alt={artist.name}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <h3 className="font-semibold text-white">{artist.name}</h3>
                 </div>
