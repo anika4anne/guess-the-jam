@@ -139,7 +139,6 @@ export default function RulesPage() {
         ))}
       </section>
 
-
       <style jsx>{`
         @keyframes wave {
           0% {
