@@ -38,7 +38,7 @@ const rules = [
 ];
 
 export default function RulesPage() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null!);
   const router = useRouter();
 
   useEffect(() => {
