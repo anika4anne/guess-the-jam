@@ -54,7 +54,8 @@ const artists: Artist[] = [
   {
     id: "4",
     name: "The Weeknd",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://cdn-images.dzcdn.net/images/cover/fd00ebd6d30d7253f813dba3bb1c66a9/0x1900-000000-80-0-0.jpg",
     songs: [
       "Blinding Lights",
       "Starboy",
@@ -66,7 +67,8 @@ const artists: Artist[] = [
   {
     id: "5",
     name: "Ariana Grande",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://imageio.forbes.com/specials-images/imageserve/5ed562613dbc9800060b280b/0x0.jpg?format=jpg&crop=1080,1080,x0,y0,safe&height=416&width=416&fit=bounds",
     songs: [
       "Thank U, Next",
       "7 Rings",
@@ -78,7 +80,8 @@ const artists: Artist[] = [
   {
     id: "6",
     name: "Ed Sheeran",
-    image: "https://i.scdn.co/image/ab6761610000e5ebec0b9c1a2a8b8b8b8b8b8b8b",
+    image:
+      "https://image.iheart.com/images/artists/39/67/90/683f1c3f4f0777c0b4c24d18.jpg?ops=fit(240%2C240)",
     songs: [
       "Shape of You",
       "Perfect",

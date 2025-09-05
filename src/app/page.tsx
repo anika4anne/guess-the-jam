@@ -32,12 +32,16 @@ export default function HomePage() {
         <div className="absolute top-20 left-8 h-2 w-2 animate-pulse rounded-full bg-pink-300/30"></div>
         <div className="absolute top-40 right-12 h-1.5 w-1.5 animate-pulse rounded-full bg-blue-300/40 delay-1000"></div>
         <div className="absolute top-60 left-1/4 h-1 w-1 animate-pulse rounded-full bg-purple-300/50 delay-2000"></div>
+        <div className="absolute top-32 right-1/3 h-1 w-1 animate-pulse rounded-full bg-yellow-300/40 delay-500"></div>
+        <div className="absolute top-80 left-16 h-1.5 w-1.5 animate-pulse rounded-full bg-green-300/30 delay-1500"></div>
 
         <div className="container -mt-40 flex flex-col items-center justify-center gap-12 px-4 py-8">
           <h1 className="text-center text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-[4rem]">
             Guess the <span className="text-pink-300">Jam</span>
           </h1>
-          <p className="max-w-2xl text-center text-xl text-white/80"></p>
+          <p className="mb-4 max-w-2xl text-center text-xl text-white/80">
+            Test your music knowledge and challenge your friends
+          </p>
 
           <div className="-mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
             <button
@@ -50,7 +54,7 @@ export default function HomePage() {
                 Play Now →
               </h3>
               <p className="relative text-lg">
-                Start guessing songs in our game mode!
+                Jump right into the action and start guessing!
               </p>
             </button>
 
@@ -61,15 +65,17 @@ export default function HomePage() {
             >
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
               <h3 className="relative text-2xl font-bold text-white">
-                Rules →
+                How to Play →
               </h3>
-              <p className="relative text-lg">Learn how to play the game!</p>
+              <p className="relative text-lg">
+                Get the lowdown on scoring and winning
+              </p>
             </Link>
           </div>
 
-          <div className="mt-2">
-            <h2 className="mb-3 text-center text-3xl font-semibold text-white">
-              Game Modes
+          <div className="mt-8">
+            <h2 className="mb-6 text-center text-3xl font-semibold text-white">
+              Choose Your Mode
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
               <Link
@@ -82,7 +88,7 @@ export default function HomePage() {
                   Pick Artist Mode →
                 </h3>
                 <p className="relative text-lg">
-                  Select multiple artists and guess which one sings each song!
+                  Pick your favorite artists and test your music knowledge
                 </p>
                 <div className="relative mt-2 flex flex-wrap gap-1">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
@@ -110,7 +116,7 @@ export default function HomePage() {
                   How to Play →
                 </h3>
                 <p className="relative text-lg">
-                  Learn the rules and game modes!
+                  Master the game with our quick guide
                 </p>
               </Link>
             </div>
