@@ -93,16 +93,16 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href="/rules"
+                href="/lyrics-challenge"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#EC4899" }}
+                style={{ backgroundColor: "#A855F7" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <h3 className="relative text-xl font-bold text-white">
-                  How to Play →
+                  Lyrics Challenge →
                 </h3>
                 <p className="relative text-lg">
-                  Master the game with our quick guide
+                  Complete the lyrics and show off your memory
                 </p>
               </Link>
             </div>
