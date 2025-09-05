@@ -253,13 +253,13 @@ export default function PickArtistPage() {
         </div>
 
         <h1 className="mb-8 text-4xl font-bold text-pink-300">
-          Pick Artist Mode
+          Choose Your Artists
         </h1>
 
         <div className="w-full max-w-4xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
           <p className="mb-6 text-center text-lg text-white/80">
-            Select the artists you want to guess songs from. You&apos;ll be
-            given song titles and need to identify which artist sings them!
+            Pick your favorite artists and we'll test how well you know their
+            hits. You'll hear song snippets and guess who's singing!
           </p>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -297,8 +297,8 @@ export default function PickArtistPage() {
                   : "bg-green-600 hover:bg-green-700"
               }`}
             >
-              Start Game ({selectedArtists.length} artist
-              {selectedArtists.length !== 1 ? "s" : ""} selected)
+              Let's Go! ({selectedArtists.length} artist
+              {selectedArtists.length !== 1 ? "s" : ""} picked)
             </Button>
           </div>
         </div>
@@ -311,14 +311,20 @@ export default function PickArtistPage() {
       <main className="pick-artist-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
         <div className="w-full max-w-2xl rounded-2xl bg-white/10 p-8 text-center shadow-lg backdrop-blur-md">
           <h1 className="mb-6 text-4xl font-bold text-pink-300">
-            Game Complete!
+            Nice Work! 🎵
           </h1>
           <p className="mb-4 text-2xl text-white">
-            Final Score:{" "}
-            <span className="font-bold text-yellow-400">{score}</span>
+            You scored{" "}
+            <span className="font-bold text-yellow-400">{score}</span> points
           </p>
           <p className="mb-8 text-lg text-white/80">
-            You got {score / 10} out of {totalRounds} songs correct!
+            {score >= 8
+              ? "You're a music genius! 🔥"
+              : score >= 6
+                ? "Pretty solid! You know your stuff 👌"
+                : score >= 4
+                  ? "Not bad! Keep practicing 💪"
+                  : "Better luck next time! The music world is vast 🎶"}
           </p>
 
           <div className="space-y-4">
@@ -326,7 +332,7 @@ export default function PickArtistPage() {
               onClick={resetGame}
               className="w-full bg-green-600 py-3 text-lg font-semibold text-white hover:bg-green-700"
             >
-              Play Again
+              Try Again
             </Button>
             <Button
               onClick={handleBack}
@@ -354,7 +360,7 @@ export default function PickArtistPage() {
 
       <div className="w-full max-w-2xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-pink-300">Pick Artist Mode</h1>
+          <h1 className="text-2xl font-bold text-pink-300">Artist Challenge</h1>
           <div className="text-right">
             <p className="text-white">
               Round {round} of {totalRounds}
@@ -366,12 +372,12 @@ export default function PickArtistPage() {
         {gamePhase === "playing" && (
           <>
             <div className="mb-6 text-center">
-              <h2 className="mb-4 text-xl text-white">Guess the Artist!</h2>
+              <h2 className="mb-4 text-xl text-white">Who sings this song?</h2>
               <p className="mb-4 text-3xl font-bold text-pink-300">
                 {currentSong}
               </p>
               <div className="mb-4">
-                <div className="mb-2 text-lg text-white">Time Left:</div>
+                <div className="mb-2 text-lg text-white">⏰ Time Left:</div>
                 <div className="text-4xl font-bold text-yellow-400">
                   {timeLeft}s
                 </div>
@@ -396,20 +402,20 @@ export default function PickArtistPage() {
           <div className="text-center">
             <div className="mb-6">
               <h2 className="mb-4 text-2xl font-bold">
-                {isCorrect ? "🎉 Correct!" : "❌ Wrong!"}
+                {isCorrect ? "🎉 Nice one!" : "😅 Oops!"}
               </h2>
               <p className="mb-2 text-lg text-white">
-                The song was:{" "}
-                <span className="font-bold text-pink-300">{currentSong}</span>
+                Song:{" "}
+                <span className="font-bold text-pink-300">"{currentSong}"</span>
               </p>
               <p className="mb-2 text-lg text-white">
-                By:{" "}
+                Artist:{" "}
                 <span className="font-bold text-yellow-400">
                   {currentArtist?.name}
                 </span>
               </p>
               <p className="text-lg text-white">
-                Your answer:{" "}
+                You guessed:{" "}
                 <span
                   className={`font-bold ${isCorrect ? "text-green-400" : "text-red-400"}`}
                 >
@@ -417,7 +423,7 @@ export default function PickArtistPage() {
                 </span>
               </p>
               {isCorrect && (
-                <p className="mt-2 font-bold text-green-400">+10 points!</p>
+                <p className="mt-2 font-bold text-green-400">+10 points! 🎵</p>
               )}
             </div>
 
@@ -425,7 +431,7 @@ export default function PickArtistPage() {
               onClick={nextRound}
               className="bg-green-600 px-8 py-3 text-lg font-semibold text-white hover:bg-green-700"
             >
-              {round >= totalRounds ? "Finish Game" : "Next Round"}
+              {round >= totalRounds ? "See Results" : "Next Song"}
             </Button>
           </div>
         )}
