@@ -4,21 +4,29 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
     "checkJs": true,
     "lib": ["dom", "dom.iterable", "ES2022"],
     "noEmit": true,
     "moduleResolution": "bundler",
     "jsx": "preserve",
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "incremental": true,
     "types": ["node", "youtube"],
     "typeRoots": ["./node_modules/@types", "src/app/types"],
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
-    }
+    },
+    "target": "ES2022",
+    "skipLibCheck": true,
+    "strict": true,
+    "module": "esnext",
+    "esModuleInterop": true
   },
   "include": [
     "next-env.d.ts",
