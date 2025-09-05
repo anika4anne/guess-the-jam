@@ -4,8 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "~/components/ui/button";
 
-import { useGameWebSocket } from "~/hooks/useGameWebSocket";
-
 interface PrivateRoomProps {
   roomId: string;
 }
@@ -51,9 +49,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
   const isMounted = useRef(true);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const hasRedirected = useRef(false);
-
-  const { sendMessage, lastMessage, connect, disconnect, room: wsRoom, currentPlayerId: wsPlayerId, isHost: wsIsHost } = useGameWebSocket();
 
   useEffect(() => {
     if (!name) {
@@ -61,12 +56,54 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       return;
     }
 
-    connect(roomId, name);
+    const roomData = localStorage.getItem(`room_${roomId}`);
+    if (roomData) {
+      const parsed = JSON.parse(roomData);
+      setPlayers(parsed.players ?? []);
+      setCurrentHostId(parsed.hostId ?? "");
+      setRounds(parsed.rounds ?? 10);
+      setMode(parsed.mode ?? "default");
+      setPlaylists(parsed.playlists ?? [""]);
+      setSelectedYears(parsed.selectedYears ?? []);
+    } else {
+      const newPlayer: Player = {
+        id: Date.now().toString(),
+        name: name,
+        ready: false,
+        score: 0,
+      };
+      const newRoom = {
+        players: [newPlayer],
+        hostId: newPlayer.id,
+        rounds: 10,
+        mode: "default",
+        playlists: [""],
+        selectedYears: [],
+      };
+      localStorage.setItem(`room_${roomId}`, JSON.stringify(newRoom));
+      setPlayers([newPlayer]);
+      setCurrentHostId(newPlayer.id);
+      setPlayerId(newPlayer.id);
+      setIsHost(true);
+    }
+
+    const pollInterval = setInterval(() => {
+      const roomData = localStorage.getItem(`room_${roomId}`);
+      if (roomData) {
+        const parsed = JSON.parse(roomData);
+        setPlayers(parsed.players ?? []);
+        setCurrentHostId(parsed.hostId ?? "");
+        setRounds(parsed.rounds ?? 10);
+        setMode(parsed.mode ?? "default");
+        setPlaylists(parsed.playlists ?? [""]);
+        setSelectedYears(parsed.selectedYears ?? []);
+      }
+    }, 1000);
 
     return () => {
-      disconnect();
+      clearInterval(pollInterval);
     };
-  }, [name, roomId, connect, disconnect, router]);
+  }, [name, roomId, router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -76,218 +113,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Sync WebSocket room state with local state
-  useEffect(() => {
-    if (wsRoom) {
-      setPlayers(wsRoom.players);
-      setCurrentHostId(wsRoom.hostId);
-      if (wsPlayerId) {
-        setIsHost(wsRoom.hostId === wsPlayerId);
-      }
-      if (wsRoom.settings) {
-        if (typeof wsRoom.settings.rounds === "number") setRounds(wsRoom.settings.rounds);
-        if (typeof wsRoom.settings.mode === "string") setMode(wsRoom.settings.mode as "default" | "playlist" | "chat");
-        if (Array.isArray(wsRoom.settings.playlists)) setPlaylists(wsRoom.settings.playlists);
-        if (Array.isArray(wsRoom.settings.selectedYears)) setSelectedYears(wsRoom.settings.selectedYears);
-      }
-    }
-  }, [wsRoom, wsPlayerId]);
-
-  useEffect(() => {
-    if (!lastMessage) return;
-
-    switch (lastMessage.type) {
-      case "room_joined":
-        if (lastMessage.playerId) {
-          setPlayerId(lastMessage.playerId);
-        }
-        if (lastMessage.room) {
-          setPlayers(lastMessage.room.players);
-          setCurrentHostId(lastMessage.room.hostId);
-          if (lastMessage.playerId) {
-            setIsHost(lastMessage.room.hostId === lastMessage.playerId);
-          }
-        }
-        break;
-
-      case "player_joined":
-        if (lastMessage.player) {
-          const newPlayer = lastMessage.player as Player;
-          setPlayers((prev) => {
-            const playerExistsById = prev.some((p) => p.id === newPlayer.id);
-            if (playerExistsById) return prev;
-            return [...prev, newPlayer];
-          });
-
-          setNotifications((prev) => {
-            const existingNotification = prev.find(
-              (n) => n.type === "join" && n.message.includes(newPlayer.name),
-            );
-            if (existingNotification) {
-              console.log(
-                "⚠️ Notification already exists for:",
-                newPlayer.name,
-              );
-              return prev;
-            }
-            return [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                message: `${newPlayer.name} has joined the room`,
-                type: "join",
-                timestamp: Date.now(),
-              },
-            ];
-          });
-        }
-        break;
-
-      case "player_left":
-        if (lastMessage.playerId) {
-          const leavingPlayer = players.find(
-            (p) => p.id === lastMessage.playerId,
-          );
-          setPlayers((prev) =>
-            prev.filter((p) => p.id !== lastMessage.playerId),
-          );
-
-          if (leavingPlayer) {
-            setNotifications((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                message: `${leavingPlayer.name} has left the room`,
-                type: "leave",
-                timestamp: Date.now(),
-              },
-            ]);
-          }
-        }
-        break;
-
-      case "player_ready_update":
-        if (lastMessage.playerId && typeof lastMessage.ready === "boolean") {
-          setPlayers((prev) =>
-            prev.map((p) =>
-              p.id === lastMessage.playerId
-                ? { ...p, ready: lastMessage.ready! }
-                : p,
-            ),
-          );
-        }
-        break;
-
-      case "all_players_ready":
-        break;
-
-      case "game_settings_updated":
-        if (lastMessage.settings) {
-          const settings = lastMessage.settings as {
-            rounds?: number;
-            mode?: string;
-            playlists?: string[];
-            selectedYears?: number[];
-          };
-          if (typeof settings.rounds === "number") setRounds(settings.rounds);
-          if (typeof settings.mode === "string")
-            setMode(settings.mode as "default" | "playlist" | "chat");
-          if (Array.isArray(settings.playlists))
-            setPlaylists(settings.playlists);
-          if (Array.isArray(settings.selectedYears))
-            setSelectedYears(settings.selectedYears);
-        }
-        break;
-
-      case "game_starting":
-        setIsGameStarting(true);
-        if (typeof lastMessage.countdown === "number") {
-          setCountdown(lastMessage.countdown);
-        }
-        break;
-
-      case "countdown_update":
-        if (typeof lastMessage.countdown === "number") {
-          setCountdown(lastMessage.countdown);
-        }
-        break;
-
-      case "gameplay_started":
-        if (!hasRedirected.current) {
-          hasRedirected.current = true;
-
-          router.push(`/playnow?name=${name}&roomId=${roomId}&mode=${mode}`);
-        }
-        break;
-
-      case "new_host":
-        if (lastMessage.hostId) {
-          setCurrentHostId(lastMessage.hostId);
-        }
-        if (lastMessage.hostId === playerId) {
-          setIsHost(true);
-
-          setNotifications((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              message: `You are now the host!`,
-              type: "join",
-              timestamp: Date.now(),
-            },
-          ]);
-        } else {
-          setIsHost(false);
-          if (lastMessage.hostName) {
-            setNotifications((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                message: `👑 ${lastMessage.hostName} is now the host`,
-                type: "join",
-                timestamp: Date.now(),
-              },
-            ]);
-          }
-        }
-        break;
-
-      case "player_kicked":
-        const kickedPlayer = players.find((p) => p.id === lastMessage.playerId);
-        setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
-
-        if (kickedPlayer) {
-          setNotifications((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              message: `${kickedPlayer.name} has been kicked`,
-              type: "kick",
-              timestamp: Date.now(),
-            },
-          ]);
-        }
-        break;
-
-      case "player_banned":
-        const bannedPlayer = players.find((p) => p.id === lastMessage.playerId);
-        setPlayers((prev) => prev.filter((p) => p.id !== lastMessage.playerId));
-
-        if (bannedPlayer) {
-          setNotifications((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              message: `${bannedPlayer.name} has been banned`,
-              type: "ban",
-              timestamp: Date.now(),
-            },
-          ]);
-        }
-        break;
-    }
-  }, [lastMessage, playerId, name, roomId, router, mode, players]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -315,11 +140,17 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
   const handleReadyToggle = useCallback(() => {
     const currentPlayer = players.find((p) => p.id === playerId);
     const isReady = currentPlayer?.ready ?? false;
-    sendMessage({
-      type: "player_ready",
-      ready: !isReady,
-    });
-  }, [playerId, players, sendMessage]);
+
+    const roomData = localStorage.getItem(`room_${roomId}`);
+    if (roomData) {
+      const parsed = JSON.parse(roomData);
+      const updatedPlayers = parsed.players.map((p: Player) =>
+        p.id === playerId ? { ...p, ready: !isReady } : p,
+      );
+      const updatedRoom = { ...parsed, players: updatedPlayers };
+      localStorage.setItem(`room_${roomId}`, JSON.stringify(updatedRoom));
+    }
+  }, [playerId, players, roomId]);
 
   const handleStartGame = useCallback(() => {
     if (!isHost) return;
@@ -332,39 +163,62 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
       playlists: mode === "playlist" ? playlists : [],
     };
 
-    // Send settings to server instead of localStorage
-    sendMessage({
-      type: "game_settings_update",
-      settings: gameSettings,
-    });
+    localStorage.setItem("privateRoomSettings", JSON.stringify(gameSettings));
 
-    sendMessage({
-      type: "start_game",
-    });
-  }, [isHost, selectedYears, rounds, players, mode, playlists, sendMessage]);
+    setIsGameStarting(true);
+    setCountdown(5);
+
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          router.push(`/playnow?name=${name}&roomId=${roomId}&mode=${mode}`);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [
+    isHost,
+    selectedYears,
+    rounds,
+    players,
+    mode,
+    playlists,
+    name,
+    roomId,
+    router,
+  ]);
 
   const handleKickPlayer = useCallback(
     (targetPlayerId: string) => {
-      sendMessage({
-        type: "kick_player",
-        targetPlayerId,
-      });
+      const roomData = localStorage.getItem(`room_${roomId}`);
+      if (roomData) {
+        const parsed = JSON.parse(roomData);
+        const updatedPlayers = parsed.players.filter(
+          (p: Player) => p.id !== targetPlayerId,
+        );
+        const updatedRoom = { ...parsed, players: updatedPlayers };
+        localStorage.setItem(`room_${roomId}`, JSON.stringify(updatedRoom));
+      }
       setShowKickPopup(false);
       setPlayerToKick("");
     },
-    [sendMessage],
+    [roomId],
   );
 
   const handleSettingsUpdate = useCallback(
     (settings: Record<string, unknown>) => {
       if (!isHost) return;
 
-      sendMessage({
-        type: "game_settings_update",
-        settings,
-      });
+      const roomData = localStorage.getItem(`room_${roomId}`);
+      if (roomData) {
+        const parsed = JSON.parse(roomData);
+        const updatedRoom = { ...parsed, ...settings };
+        localStorage.setItem(`room_${roomId}`, JSON.stringify(updatedRoom));
+      }
     },
-    [isHost, sendMessage],
+    [isHost, roomId],
   );
 
   const copyRoomCode = useCallback(async () => {
@@ -936,7 +790,6 @@ export function PrivateRoom({ roomId }: PrivateRoomProps) {
                 <div className="flex flex-col gap-2">
                   <Button
                     onClick={() => {
-                      disconnect();
                       router.push("/");
                       setShowLeavePrompt(false);
                     }}
