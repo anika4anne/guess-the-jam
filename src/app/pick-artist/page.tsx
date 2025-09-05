@@ -258,8 +258,9 @@ export default function PickArtistPage() {
 
         <div className="w-full max-w-4xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
           <p className="mb-6 text-center text-lg text-white/80">
-            Pick your favorite artists and we'll test how well you know their
-            hits. You'll hear song snippets and guess who's singing!
+            Pick your favorite artists and we&apos;ll test how well you know
+            their hits. You&apos;ll hear song snippets and guess who&apos;s
+            singing!
           </p>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -297,7 +298,7 @@ export default function PickArtistPage() {
                   : "bg-green-600 hover:bg-green-700"
               }`}
             >
-              Let's Go! ({selectedArtists.length} artist
+              Let&apos;s Go! ({selectedArtists.length} artist
               {selectedArtists.length !== 1 ? "s" : ""} picked)
             </Button>
           </div>
@@ -406,7 +407,9 @@ export default function PickArtistPage() {
               </h2>
               <p className="mb-2 text-lg text-white">
                 Song:{" "}
-                <span className="font-bold text-pink-300">"{currentSong}"</span>
+                <span className="font-bold text-pink-300">
+                  &quot;{currentSong}&quot;
+                </span>
               </p>
               <p className="mb-2 text-lg text-white">
                 Artist:{" "}
