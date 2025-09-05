@@ -153,6 +153,13 @@
   background-repeat: no-repeat !important;
 }
 
+.pick-artist-background {
+  background-image: url("/final.svg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
