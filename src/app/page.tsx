@@ -53,50 +53,38 @@ export default function HomePage() {
                 Start guessing songs in our game mode!
               </p>
             </button>
-
-            <Link
-              href="/rules"
-              className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-left text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-              style={{ backgroundColor: "#EC4899" }}
-            >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-              <h3 className="relative text-2xl font-bold text-white">
-                How to Play →
-              </h3>
-              <p className="relative text-lg">Learn the rules here!</p>
-            </Link>
           </div>
 
           <div className="mt-2">
             <h2 className="mb-3 text-center text-3xl font-semibold text-white">
-              Private Rooms
+              Game Modes
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-10">
               <Link
-                href="/private/create"
+                href="/pick-artist"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
                 style={{ backgroundColor: "#A855F7" }}
               >
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <h3 className="relative text-xl font-bold text-white">
-                  Create Private Room →
+                  Pick Artist Mode →
                 </h3>
                 <p className="relative text-lg">
-                  Start a private game with friends!
+                  Guess which artist sings each song!
                 </p>
               </Link>
 
               <Link
-                href="/private/join"
+                href="/rules"
                 className="group relative flex max-w-xs flex-col gap-3 rounded-2xl p-6 text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl"
-                style={{ backgroundColor: "#A855F7" }}
+                style={{ backgroundColor: "#EC4899" }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-                <h3 className="relative text-2xl font-bold text-white">
-                  Join Private Room →
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <h3 className="relative text-xl font-bold text-white">
+                  How to Play →
                 </h3>
                 <p className="relative text-lg">
-                  Enter a private room with a code!
+                  Learn the rules and game modes!
                 </p>
               </Link>
             </div>
