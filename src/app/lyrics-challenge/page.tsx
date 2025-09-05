@@ -84,8 +84,10 @@ export default function LyricsChallengePage() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [isCorrect, setIsCorrect] = useState(false);
   const [usedSongs, setUsedSongs] = useState<string[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const startGame = () => {
     setGamePhase("playing");
@@ -109,6 +111,7 @@ export default function LyricsChallengePage() {
     setUserInput("");
     setTimeLeft(30);
     setIsCorrect(false);
+    setIsTyping(false);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -117,7 +120,9 @@ export default function LyricsChallengePage() {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          handleSubmit();
+          if (!isTyping) {
+            setTimeout(() => handleSubmit(), 100);
+          }
           return 0;
         }
         return prev - 1;
@@ -126,7 +131,7 @@ export default function LyricsChallengePage() {
   };
 
   const handleSubmit = () => {
-    if (!currentSong || !userInput.trim()) {
+    if (!currentSong) {
       setIsCorrect(false);
       nextRound();
       return;
@@ -135,10 +140,20 @@ export default function LyricsChallengePage() {
     const userAnswer = userInput.toLowerCase().trim();
     const correctAnswer = currentSong.fullLyrics.toLowerCase().trim();
 
-    const isAnswerCorrect =
-      correctAnswer.includes(userAnswer) ||
-      userAnswer.includes(correctAnswer) ||
-      checkPartialMatch(userAnswer, correctAnswer);
+    let isAnswerCorrect = false;
+
+    if (userAnswer.length === 0) {
+      isAnswerCorrect = false;
+    } else {
+      if (
+        correctAnswer.includes(userAnswer) ||
+        userAnswer.includes(correctAnswer)
+      ) {
+        isAnswerCorrect = true;
+      } else {
+        isAnswerCorrect = checkPartialMatch(userAnswer, correctAnswer);
+      }
+    }
 
     setIsCorrect(isAnswerCorrect);
 
@@ -154,24 +169,28 @@ export default function LyricsChallengePage() {
   };
 
   const checkPartialMatch = (userAnswer: string, correctAnswer: string) => {
-    const userWords = userAnswer.split(/\s+/);
-    const correctWords = correctAnswer.split(/\s+/);
+    const userWords = userAnswer.split(/\s+/).filter((word) => word.length > 1);
+    const correctWords = correctAnswer
+      .split(/\s+/)
+      .filter((word) => word.length > 1);
+
+    if (userWords.length === 0) return false;
 
     let matches = 0;
     for (const word of userWords) {
       if (
         correctWords.some(
           (correctWord) =>
-            correctWord.includes(word) || word.includes(correctWord),
+            correctWord.toLowerCase().includes(word.toLowerCase()) ||
+            word.toLowerCase().includes(correctWord.toLowerCase()),
         )
       ) {
         matches++;
       }
     }
 
-    return (
-      matches >= Math.min(userWords.length * 0.6, correctWords.length * 0.6)
-    );
+    const requiredMatches = Math.max(2, Math.floor(userWords.length * 0.3));
+    return matches >= requiredMatches;
   };
 
   const nextRound = () => {
@@ -204,6 +223,9 @@ export default function LyricsChallengePage() {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
     };
   }, []);
@@ -333,6 +355,19 @@ export default function LyricsChallengePage() {
           </div>
         </div>
 
+        <div className="mb-6">
+          <div className="mb-2 flex justify-between text-sm text-white/60">
+            <span>Progress</span>
+            <span>{Math.round((round / totalRounds) * 100)}%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-white/10">
+            <div
+              className="h-2 rounded-full bg-yellow-400 transition-all duration-300"
+              style={{ width: `${(round / totalRounds) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
         {gamePhase === "playing" && currentSong && (
           <>
             <div className="mb-6 text-center">
@@ -362,8 +397,26 @@ export default function LyricsChallengePage() {
             <div className="mb-6">
               <textarea
                 value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder="Type the rest of the lyrics here..."
+                onChange={(e) => {
+                  setUserInput(e.target.value);
+                  setIsTyping(true);
+
+                  if (typingTimeoutRef.current) {
+                    clearTimeout(typingTimeoutRef.current);
+                  }
+
+                  typingTimeoutRef.current = setTimeout(() => {
+                    setIsTyping(false);
+                  }, 2000);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.ctrlKey) {
+                    setIsTyping(false);
+                    handleSubmit();
+                  }
+                }}
+                onBlur={() => setIsTyping(false)}
+                placeholder="Type the rest of the lyrics here... (Ctrl+Enter to submit)"
                 className="w-full rounded-lg bg-white/10 p-4 text-lg text-white placeholder-white/50 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
                 rows={4}
                 autoFocus
@@ -385,7 +438,7 @@ export default function LyricsChallengePage() {
           <div className="text-center">
             <div className="mb-6">
               <h2 className="mb-4 text-2xl font-bold">
-                {isCorrect ? "🎉 Nice one!" : "😅 Close!"}
+                {isCorrect ? "🎉 Nice one!" : "😅 Not quite!"}
               </h2>
               <p className="mb-2 text-lg text-white">
                 Song:{" "}
