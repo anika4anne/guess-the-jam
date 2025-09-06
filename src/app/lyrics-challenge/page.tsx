@@ -81,15 +81,19 @@ export default function LyricsChallengePage() {
   const [gamePhase, setGamePhase] = useState<
     "select" | "playing" | "result" | "complete"
   >("select");
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(10);
   const [isCorrect, setIsCorrect] = useState(false);
   const [usedSongs, setUsedSongs] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<
+    "easy" | "medium" | "hard" | null
+  >(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const startGame = () => {
+    if (!selectedDifficulty) return;
     setGamePhase("playing");
     setRound(1);
     setScore(0);
@@ -99,7 +103,12 @@ export default function LyricsChallengePage() {
   };
 
   const startNewRound = () => {
-    const availableSongs = songs.filter((song) => !usedSongs.includes(song.id));
+    if (!selectedDifficulty) return;
+
+    const availableSongs = songs.filter(
+      (song) =>
+        !usedSongs.includes(song.id) && song.difficulty === selectedDifficulty,
+    );
     if (availableSongs.length === 0) {
       setGamePhase("complete");
       return;
@@ -109,9 +118,10 @@ export default function LyricsChallengePage() {
       availableSongs[Math.floor(Math.random() * availableSongs.length)];
     setCurrentSong(randomSong ?? null);
     setUserInput("");
-    setTimeLeft(30);
+    setTimeLeft(10);
     setIsCorrect(false);
     setIsTyping(false);
+    setGamePhase("playing");
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -213,6 +223,7 @@ export default function LyricsChallengePage() {
     setUsedSongs([]);
     setCurrentSong(null);
     setUserInput("");
+    setSelectedDifficulty(null);
   };
 
   const handleBack = () => {
@@ -255,32 +266,50 @@ export default function LyricsChallengePage() {
           </p>
 
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-xl bg-white/10 p-4 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-yellow-400">
-                Easy
-              </h3>
-              <p className="text-sm text-white/80">
-                Popular hits everyone knows
-              </p>
-            </div>
-            <div className="rounded-xl bg-white/10 p-4 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-yellow-400">
-                Medium
-              </h3>
-              <p className="text-sm text-white/80">Chart-topping favorites</p>
-            </div>
-            <div className="rounded-xl bg-white/10 p-4 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-yellow-400">
-                Hard
-              </h3>
-              <p className="text-sm text-white/80">For the true music fans</p>
-            </div>
+            <button
+              onClick={() => setSelectedDifficulty("easy")}
+              className={`rounded-xl p-4 text-center transition-all ${
+                selectedDifficulty === "easy"
+                  ? "bg-yellow-400 text-black"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+            >
+              <h3 className="mb-2 text-lg font-semibold">Easy</h3>
+              <p className="text-sm opacity-80">Popular hits everyone knows</p>
+            </button>
+            <button
+              onClick={() => setSelectedDifficulty("medium")}
+              className={`rounded-xl p-4 text-center transition-all ${
+                selectedDifficulty === "medium"
+                  ? "bg-yellow-400 text-black"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+            >
+              <h3 className="mb-2 text-lg font-semibold">Medium</h3>
+              <p className="text-sm opacity-80">Chart-topping favorites</p>
+            </button>
+            <button
+              onClick={() => setSelectedDifficulty("hard")}
+              className={`rounded-xl p-4 text-center transition-all ${
+                selectedDifficulty === "hard"
+                  ? "bg-yellow-400 text-black"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+            >
+              <h3 className="mb-2 text-lg font-semibold">Hard</h3>
+              <p className="text-sm opacity-80">For the true music fans</p>
+            </button>
           </div>
 
           <div className="text-center">
             <Button
               onClick={startGame}
-              className="bg-yellow-600 px-8 py-3 text-lg font-semibold text-white hover:bg-yellow-700"
+              disabled={!selectedDifficulty}
+              className={`px-8 py-3 text-lg font-semibold text-white ${
+                selectedDifficulty
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "cursor-not-allowed bg-gray-600"
+              }`}
             >
               Start Challenge
             </Button>
@@ -438,7 +467,7 @@ export default function LyricsChallengePage() {
           <div className="text-center">
             <div className="mb-6">
               <h2 className="mb-4 text-2xl font-bold">
-                {isCorrect ? "🎉 Nice one!" : "😅 Not quite!"}
+                {isCorrect ? "🎉 Nice one!" : "❌ Not quite!"}
               </h2>
               <p className="mb-2 text-lg text-white">
                 Song:{" "}
