@@ -44,6 +44,12 @@ See!! Whenever you type its now masked so none of the other players can see it u
 When everyone answers it looks like that, if its green it means its right and red means wrong
 
 
+Game completes board
+<img width="1687" height="1075" alt="image" src="https://github.com/user-attachments/assets/c7b54500-5cf0-47ab-a3dd-08602d337b20" />
+So (this is actually a party background off of google lol) 
+anyways i've added some cool effects (confetti)
+and it shows who won by gathering up the data from the scoreboard
+
 
 
 
