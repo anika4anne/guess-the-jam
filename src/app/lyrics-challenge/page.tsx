@@ -340,7 +340,7 @@ export default function LyricsChallengePage() {
 
         {showSettings && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl bg-white/10 p-6 shadow-lg backdrop-blur-md">
+            <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-black p-6 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Game Settings</h2>
                 <button
@@ -370,7 +370,7 @@ export default function LyricsChallengePage() {
                 <select
                   value={totalRounds}
                   onChange={(e) => setTotalRounds(Number(e.target.value))}
-                  className="w-full rounded-lg bg-white/10 px-3 py-2 text-white focus:ring-2 focus:ring-yellow-400 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:ring-2 focus:ring-pink-400 focus:outline-none"
                 >
                   <option value={3} className="bg-gray-800">
                     3 rounds
@@ -399,7 +399,7 @@ export default function LyricsChallengePage() {
                 </Button>
                 <Button
                   onClick={() => setShowSettings(false)}
-                  className="flex-1 bg-yellow-600 py-2 text-white hover:bg-yellow-700"
+                  className="flex-1 bg-pink-500 py-2 text-white hover:bg-pink-600"
                 >
                   Save Settings
                 </Button>
