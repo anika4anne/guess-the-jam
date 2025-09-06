@@ -2,7 +2,7 @@
 
 You can clone my website with the following commands (if you want to)
 
-git clone [https://github.com/your-username/your-repo](https://github.com/anika4anne/guess-the-jam.git)]
+git clone (https://github.com/anika4anne/guess-the-jam.git)
 cd dice
 npm install
 npm start
@@ -73,7 +73,8 @@ Then this is how the results look like
 
 
 
-
+There's a few more stuff my website can do but it's pretty minor, but you should proabaly also know this
+Before the lyrics challenege and artist button were there i used to have private rooms and it was a really cool idea. I even made a chat to guess mode like skribbl io but for guessing the song, but i needed a server for it to work. So before messing anything up in this repo i wanted to see if i could actually make a server(i've never made one ever) with my raspberry pi for my dice game, but after pulling out all nighters and trying raliways, digital ocean, render, adn a bunch of other stuff i decided it wasn't gonna happen anytime soon. And since i couldn't get the dice game to work, there was probabaly gonna be no way i could get this server to work for this game. (Also might be because i have a very old rapsberry pi and can't run pnpm or literally anything)
 
 
 
