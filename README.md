@@ -1,4 +1,5 @@
 # Guess The Jam
+[![Athena Award Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Faward.athena.hackclub.com%2Fapi%2Fbadge)](https://award.athena.hackclub.com?utm_source=readme)
 What your project is/does (and what it's called)
 - My project is guess the jam, and is basially a guessing game for songs!
 Why you made your project
