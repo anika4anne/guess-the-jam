@@ -33,6 +33,20 @@ Thats what single player mode looks like when you are trying to answer
 <img width="481" height="281" alt="image" src="https://github.com/user-attachments/assets/aac02f30-f0d2-40fe-ab61-845f4c66a26b" />
 it also checks whether you got it right or wrong and gives you points accordingly (i find out song names by using the youtube api)
 
+Multiplayer on same device:
+<img width="1704" height="1072" alt="image" src="https://github.com/user-attachments/assets/6932d9f1-45a8-4eaf-bc94-490117a705c8" />
+you can see that the scoreboard on the bottom now has the three players
+<img width="1234" height="940" alt="image" src="https://github.com/user-attachments/assets/125645b5-0fab-400d-9103-12aa6cdb4828" />
+See!! Whenever you type its now masked so none of the other players can see it until everyone submits, and if you don't remeber what you typed you can always unmask it by clicking the eye
+<img width="387" height="420" alt="image" src="https://github.com/user-attachments/assets/b4983aeb-287e-4abc-bfc3-f99a8612687b" />
+
+<img width="1697" height="1068" alt="image" src="https://github.com/user-attachments/assets/92e6cfe8-d788-4b4d-879d-dc73cf59fe9b" />
+When everyone answers it looks like that, if its green it means its right and red means wrong
+
+
+
+
+
 
 
 
