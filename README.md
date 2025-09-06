@@ -50,6 +50,35 @@ So (this is actually a party background off of google lol)
 anyways i've added some cool effects (confetti)
 and it shows who won by gathering up the data from the scoreboard
 
+GUESS ARTIST MODE!!!!
+<img width="1716" height="1074" alt="image" src="https://github.com/user-attachments/assets/fa23b823-41ba-4a61-af4b-b4f856bc4eb8" />
+You can choose which artists you want to play the game with. Anyways, so essentially what the game does is that it shows a song name ex. trouble and you have to guess who sang that song, (yes, it's multiple choice it makes a little easier for you)
+
+<img width="1715" height="1083" alt="image" src="https://github.com/user-attachments/assets/7f387f6f-20aa-400f-8022-18aecf6b2742" />
+Like this is what it looks like after you start the game, and you can press the answer and then get the points added to you
+
+LYRICS CHALLENGE:
+<img width="1715" height="1073" alt="image" src="https://github.com/user-attachments/assets/60ca2182-b15c-4d67-ba86-feafaf21b9dd" />
+There will be a lyrics from a random song, and you have to guess what the next few words are
+You can choose between three different modes, easy, medium, and hard
+
+<img width="879" height="799" alt="image" src="https://github.com/user-attachments/assets/05a71ec9-726e-42a4-9e05-c79f421bce7b" />
+To make it harder, you only get 10 seconds to type your answer, and if you don't compelete it in time it moves on to the next questions and you get a 0 for the one you didn't submit on time
+
+This is how it grades you, too see if it matches with the correct answer
+<img width="830" height="645" alt="image" src="https://github.com/user-attachments/assets/710c5128-40ae-424d-a279-8d7cb7069bed" />
+
+Then this is how the results look like 
+<img width="1055" height="651" alt="image" src="https://github.com/user-attachments/assets/c1122c71-ad7d-48c3-92d8-1208e60dab10" />
+
+
+
+
+
+
+
+
+
 
 
 
