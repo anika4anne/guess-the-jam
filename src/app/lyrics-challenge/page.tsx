@@ -88,6 +88,7 @@ export default function LyricsChallengePage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<
     "easy" | "medium" | "hard" | null
   >(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -224,6 +225,7 @@ export default function LyricsChallengePage() {
     setCurrentSong(null);
     setUserInput("");
     setSelectedDifficulty(null);
+    setShowSettings(false);
   };
 
   const handleBack = () => {
@@ -254,9 +256,29 @@ export default function LyricsChallengePage() {
           </Button>
         </div>
 
-        <h1 className="mb-8 text-4xl font-bold text-yellow-400">
-          Lyrics Challenge
-        </h1>
+        <div className="mb-8 flex items-center justify-center gap-4">
+          <h1 className="text-4xl font-bold text-yellow-400">
+            Lyrics Challenge
+          </h1>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-white transition-all hover:bg-white/20"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-sm font-medium">Game Settings</span>
+          </button>
+        </div>
 
         <div className="w-full max-w-4xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
           <p className="mb-6 text-center text-lg text-white/80">
@@ -315,6 +337,76 @@ export default function LyricsChallengePage() {
             </Button>
           </div>
         </div>
+
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl bg-white/10 p-6 shadow-lg backdrop-blur-md">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Game Settings</h2>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="text-white/60 hover:text-white"
+                >
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Number of Rounds
+                </label>
+                <select
+                  value={totalRounds}
+                  onChange={(e) => setTotalRounds(Number(e.target.value))}
+                  className="w-full rounded-lg bg-white/10 px-3 py-2 text-white focus:ring-2 focus:ring-yellow-400 focus:outline-none"
+                >
+                  <option value={3} className="bg-gray-800">
+                    3 rounds
+                  </option>
+                  <option value={5} className="bg-gray-800">
+                    5 rounds
+                  </option>
+                  <option value={10} className="bg-gray-800">
+                    10 rounds
+                  </option>
+                  <option value={15} className="bg-gray-800">
+                    15 rounds
+                  </option>
+                  <option value={20} className="bg-gray-800">
+                    20 rounds
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1 bg-gray-600 py-2 text-white hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1 bg-yellow-600 py-2 text-white hover:bg-yellow-700"
+                >
+                  Save Settings
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     );
   }
