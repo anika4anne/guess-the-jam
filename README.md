@@ -1,4 +1,15 @@
 # Guess The Jam
+What your project is/does (and what it's called)
+- My project is guess the jam, and is basially a guessing game for songs!
+Why you made your project
+- I made my projects because i used to always play skribbl.io with my cousisn and i thought it would be really fun to play a guess the song game with them instead
+How you made your project
+- I made my projet using next.js, and t3-app for setting up the project, also i used a youtube api to get the song name and artist name from youtube videos
+
+What you struggled with and what you learned
+- Something I struggled with was getting the YouTube video to be unmuted, because due to autoplay, it would always be muted and nobody could hear the songs. So to overcome this, I added a volume up button on the bottom of the actual game, and when you click it, it unmutes the audio, and you can finally hear the game. Also i struggled with finding something that will be music, i first used spotify but no matter how much i tried the spotify would have to either be logging in to access the music or manually click play. Since it was lke embded, i couldn't cover it up bc if i covered it up, players can click the play button, so then i went for youtube music but that didn't work because youtube music doesn't have an embed thing. Hence, my last option was youtube video playlist ebded and that finally worked!!
+
+
 
 You can clone my website with the following commands (if you want to)
 
