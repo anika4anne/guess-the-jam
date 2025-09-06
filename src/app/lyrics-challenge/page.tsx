@@ -308,7 +308,7 @@ export default function LyricsChallengePage() {
               }`}
             >
               <h3 className="mb-2 text-lg font-semibold">Medium</h3>
-              <p className="text-sm opacity-80">Chart-topping favorites</p>
+              <p className="text-sm opacity-80">Billboard favorites</p>
             </button>
             <button
               onClick={() => setSelectedDifficulty("hard")}
@@ -416,7 +416,7 @@ export default function LyricsChallengePage() {
       <main className="pick-artist-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
         <div className="w-full max-w-2xl rounded-2xl bg-white/10 p-8 text-center shadow-lg backdrop-blur-md">
           <h1 className="mb-6 text-4xl font-bold text-yellow-400">
-            Challenge Complete! 🎵
+            Challenge Complete!
           </h1>
           <p className="mb-4 text-2xl text-white">
             You scored{" "}
@@ -429,7 +429,7 @@ export default function LyricsChallengePage() {
                 ? "Pretty impressive! You know your songs 👌"
                 : score >= 20
                   ? "Not bad! Keep practicing those lyrics 💪"
-                  : "Better luck next time! The music world is vast 🎶"}
+                  : "Better luck next time!"}
           </p>
 
           <div className="space-y-4">
