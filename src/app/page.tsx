@@ -85,7 +85,7 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
                 <h3 className="relative text-xl font-bold text-white">
-                  Pick Artist Mode →
+                  Guess Artist Mode →
                 </h3>
                 <p className="relative text-lg">
                   Pick your favorite artists and test your music knowledge
