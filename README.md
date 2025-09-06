@@ -1,31 +1,43 @@
-# Create T3 App
+# Guess The Jam
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+You can clone my website with the following commands (if you want to)
 
-## What's next? How do I make an app with this?
+git clone [https://github.com/your-username/your-repo](https://github.com/anika4anne/guess-the-jam.git)]
+cd dice
+npm install
+npm start
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+Website: (https://guessthejam.space/)
+Some things to know: I've got the background image for free from google (yes i've check for copyright and it's made for people to use)
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+Images:
+Homepage
+<img width="1719" height="1076" alt="image" src="https://github.com/user-attachments/assets/1ea96f83-6b34-43c8-ae84-73d47f3eea66" />
+[i've spent hours on canva tryna get the bottom part to be more down bc originally it covered most of the screen]
+There's a play now button for the actual game where you hear the song and guess what it is
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+Play Now page:
+<img width="1719" height="1077" alt="image" src="https://github.com/user-attachments/assets/e60b7516-9e39-4bb5-b5f3-1bcf2c0bd25b" />
+Over here you can choose which year you want to play in (only choose one year) & you can choose how many players are playing on same laptop screen
+it's different because on single player mode it just asks you, but with more people each players answers are masked so nobody else can see what your tying
 
-## Learn More
+Here's single player mode:
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+<img width="1728" height="1071" alt="image" src="https://github.com/user-attachments/assets/74a02bcb-27b9-43fb-a2f5-59b7fde4d2da" />
+There should be a green volume up button on the bottom, you NEED to CLICK it in order to here the music. Why? Because youtube automatically mutes autoplayed songs, so thats why you need to click that button to unmute the video
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+<img width="1105" height="728" alt="image" src="https://github.com/user-attachments/assets/a8db3ab8-5d4c-443e-867e-25c1a7e17af5" />
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+Thats what single player mode looks like when you are trying to answer 
 
-## How do I deploy this?
+<img width="481" height="281" alt="image" src="https://github.com/user-attachments/assets/aac02f30-f0d2-40fe-ab61-845f4c66a26b" />
+it also checks whether you got it right or wrong and gives you points accordingly (i find out song names by using the youtube api)
 
-Follow our deployment guide for [Vercel](DEPLOYMENT.md) for more information.
 
-For other deployment options, check out the [create-t3-app deployment guides](https://create.t3.gg/en/deployment).
+
+
+
+
+
+
+
