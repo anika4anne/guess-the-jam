@@ -1187,7 +1187,7 @@ export default function PlayNowPage() {
             </p>
             {showVolumeReminder && (
               <div className="mb-4 font-bold text-green-400">
-                Don&apos;t forget to press Volume Up
+                Don&apos;t forget to press Unmute Volume
               </div>
             )}
 
@@ -1429,7 +1429,7 @@ export default function PlayNowPage() {
                   }}
                   className="rounded-full bg-green-500 px-6 py-2 text-lg text-white transition-all hover:bg-green-600"
                 >
-                  ▶️ Volume Up
+                  ▶️ UNMUTE VOLUME
                 </button>
               </div>
             )}
