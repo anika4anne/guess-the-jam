@@ -90,6 +90,93 @@ const artists: Artist[] = [
       "Castle on the Hill",
     ],
   },
+  {
+    id: "7",
+    name: "Post Malone",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOfEBef-wEFE6bzm3tAwYrqeha9q0ZqP06qWrBCHs1BWfC8caa6-Ix5aL6p-qXbGaUVqFbJ4hz8zBEhB9_sXdjVTdWm76T6aeJlKRLPyZF",
+    songs: ["Circles", "Sunflower", "Rockstar", "Better Now", "Goodbyes"],
+  },
+  {
+    id: "8",
+    name: "Dua Lipa",
+    image:
+      "data:image/jpeg;base64,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",
+    songs: [
+      "Levitating",
+      "Don't Start Now",
+      "New Rules",
+      "Physical",
+      "Break My Heart",
+    ],
+  },
+  {
+    id: "9",
+    name: "Harry Styles",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcStxaR6xJAdj8b-byoWt6K8NiFUYKseuIU_qViH7tBPwayFm7QgqQ9c1qQDQUt6CiLLRed1EkLLYcN_X3urqluY4NBM29sFmOpWF59H7un5",
+    songs: [
+      "As It Was",
+      "Watermelon Sugar",
+      "Adore You",
+      "Sign of the Times",
+      "Late Night Talking",
+    ],
+  },
+  {
+    id: "10",
+    name: "Olivia Rodrigo",
+    image:
+      "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcSUGdBVQwJkxZB3djBeNOxO3YB14dkK3e2X-TNUC1AohR1DKVtubLEadYQRx4YaVChOBmz5HGFJWB4CaDmwwBzJHMv8EFsQvHue4HzKHqZXSQ",
+    songs: ["Drivers License", "Good 4 U", "Deja Vu", "Traitor", "Vampire"],
+  },
+  {
+    id: "11",
+    name: "Bad Bunny",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQbxwplq_BcDAGNq2tZ5f1F4ZfzQJ50J-bJ4CfFxLEARn3ok9B-IwKXg2uVHtp1h9owmdfEbX7i8oCXc07Tp6AwkI9TVf25jtvZJRqueggq",
+    songs: [
+      "Tití Me Preguntó",
+      "Moscow Mule",
+      "Después de la Playa",
+      "Efecto",
+      "Un Coco",
+    ],
+  },
+  {
+    id: "12",
+    name: "SZA",
+    image:
+      "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcRp9wMrGqzaGyypGXEFowDyWrkDhAoXKoXkadFf9tBXB9Z3EN6uyHilo0Y0lLq8mgkaQuPlncUjKzf8TjhnMkd4trsIe49GJQkG_z3WwZzIRA",
+    songs: ["Kill Bill", "Snooze", "Good Days", "I Hate U", "Shirt"],
+  },
+  {
+    id: "13",
+    name: "Kendrick Lamar",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrEJWQD6K71-M7X-86-lyr5b_PVPkYj0stg7PaVy6DPJNq9tB89hqi6ULFC0hll2wJgnsic6qYkSWDFkGYXPVI28eC-n7DidO-DOM5LtMDhQ",
+    songs: ["HUMBLE.", "DNA.", "LOVE.", "Alright", "Swimming Pools"],
+  },
+  {
+    id: "14",
+    name: "Doja Cat",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQafl8T-6bWn9aPsAAIihbmxHKxmYn3ukMY4OGnDfNlfqBkaEHYkcSB_tbItVXBaIg3ddSEg_4ZNg7brUlHfAlISRf3BgIqU5_flJKWwwEi",
+    songs: ["Say So", "Kiss Me More", "Woman", "Need to Know", "Agora Hills"],
+  },
+  {
+    id: "15",
+    name: "Travis Scott",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcRiT4Dp_Q9irSAs9snlj9hs2ui5ZiEKj5I7hjMJ-vcTaBJL3SydErVZ5IE8aAri_SVVVld9J0IjRaqaQ6EZylm2RZkoJipOXaaoGkvzEKggIw",
+    songs: [
+      "SICKO MODE",
+      "goosebumps",
+      "Butterfly Effect",
+      "Highest in the Room",
+      "FE!N",
+    ],
+  },
 ];
 
 export default function PickArtistPage() {
@@ -262,7 +349,7 @@ export default function PickArtistPage() {
             who it is.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {artists.map((artist) => (
               <div
                 key={artist.id}
