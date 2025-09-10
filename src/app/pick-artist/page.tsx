@@ -253,14 +253,13 @@ export default function PickArtistPage() {
         </div>
 
         <h1 className="mb-8 text-4xl font-bold text-pink-300">
-          Choose Your Artists
+          Pick Your Artists
         </h1>
 
         <div className="w-full max-w-4xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
           <p className="mb-6 text-center text-lg text-white/80">
-            Pick your favorite artists and we&apos;ll test how well you know
-            their hits. You&apos;ll see song names and will have to guess
-            who&apos;s singing!
+            Choose at least 2 artists. We&apos;ll play their songs and you guess
+            who it is.
           </p>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -288,7 +287,19 @@ export default function PickArtistPage() {
             ))}
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 space-y-6 text-center">
+            <Button
+              onClick={() => {
+                const shuffled = [...artists].sort(() => Math.random() - 0.5);
+                const randomCount = Math.floor(Math.random() * 4) + 2; // 2-5 artists
+                setSelectedArtists(
+                  shuffled.slice(0, randomCount).map((a) => a.id),
+                );
+              }}
+              className="bg-purple-600 px-6 py-2 text-base font-semibold text-white hover:bg-purple-700"
+            >
+              Surprise Me
+            </Button>
             <Button
               onClick={startGame}
               disabled={selectedArtists.length === 0}
@@ -311,21 +322,19 @@ export default function PickArtistPage() {
     return (
       <main className="pick-artist-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
         <div className="w-full max-w-2xl rounded-2xl bg-white/10 p-8 text-center shadow-lg backdrop-blur-md">
-          <h1 className="mb-6 text-4xl font-bold text-pink-300">
-            Nice Work! 🎵
-          </h1>
+          <h1 className="mb-6 text-4xl font-bold text-pink-300">Game Over</h1>
           <p className="mb-4 text-2xl text-white">
             You scored{" "}
             <span className="font-bold text-yellow-400">{score}</span> points
           </p>
           <p className="mb-8 text-lg text-white/80">
             {score >= 8
-              ? "You're a music genius! 🔥"
+              ? "You know your music!"
               : score >= 6
-                ? "Pretty solid! You know your stuff 👌"
+                ? "Not bad at all"
                 : score >= 4
-                  ? "Not bad! Keep practicing 💪"
-                  : "Better luck next time! The music world is vast 🎶"}
+                  ? "Keep trying"
+                  : "Better luck next time"}
           </p>
 
           <div className="space-y-4">
@@ -373,15 +382,12 @@ export default function PickArtistPage() {
         {gamePhase === "playing" && (
           <>
             <div className="mb-6 text-center">
-              <h2 className="mb-4 text-xl text-white">Who sings this song?</h2>
+              <h2 className="mb-4 text-xl text-white">Who sings this?</h2>
               <p className="mb-4 text-3xl font-bold text-pink-300">
                 {currentSong}
               </p>
               <div className="mb-4">
-                <div className="mb-2 text-lg text-white">⏰ Time Left:</div>
-                <div className="text-4xl font-bold text-yellow-400">
-                  {timeLeft}s
-                </div>
+                <div className="mb-2 text-lg text-white">Time: {timeLeft}s</div>
               </div>
             </div>
 
@@ -403,7 +409,7 @@ export default function PickArtistPage() {
           <div className="text-center">
             <div className="mb-6">
               <h2 className="mb-4 text-2xl font-bold">
-                {isCorrect ? "🎉 Nice one!" : "😅 Oops!"}
+                {isCorrect ? "Nice!" : "Wrong"}
               </h2>
               <p className="mb-2 text-lg text-white">
                 Song:{" "}
@@ -426,7 +432,7 @@ export default function PickArtistPage() {
                 </span>
               </p>
               {isCorrect && (
-                <p className="mt-2 font-bold text-green-400">+10 points! 🎵</p>
+                <p className="mt-2 font-bold text-green-400">+10 points!</p>
               )}
             </div>
 
