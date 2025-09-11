@@ -9,6 +9,7 @@ interface Artist {
   name: string;
   image: string;
   songs: string[];
+  genre: string;
 }
 
 const artists: Artist[] = [
@@ -24,6 +25,7 @@ const artists: Artist[] = [
       "Blank Space",
       "You Belong With Me",
     ],
+    genre: "Pop",
   },
   {
     id: "2",
@@ -37,6 +39,7 @@ const artists: Artist[] = [
       "In My Feelings",
       "Started From The Bottom",
     ],
+    genre: "Hip-Hop",
   },
   {
     id: "3",
@@ -50,6 +53,7 @@ const artists: Artist[] = [
       "Therefore I Am",
       "Ocean Eyes",
     ],
+    genre: "Pop",
   },
   {
     id: "4",
@@ -63,6 +67,7 @@ const artists: Artist[] = [
       "Save Your Tears",
       "Can't Feel My Face",
     ],
+    genre: "Pop",
   },
   {
     id: "5",
@@ -76,6 +81,7 @@ const artists: Artist[] = [
       "Side To Side",
       "No Tears Left To Cry",
     ],
+    genre: "Pop",
   },
   {
     id: "6",
@@ -89,6 +95,7 @@ const artists: Artist[] = [
       "Photograph",
       "Castle on the Hill",
     ],
+    genre: "Pop",
   },
   {
     id: "7",
@@ -96,6 +103,7 @@ const artists: Artist[] = [
     image:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOfEBef-wEFE6bzm3tAwYrqeha9q0ZqP06qWrBCHs1BWfC8caa6-Ix5aL6p-qXbGaUVqFbJ4hz8zBEhB9_sXdjVTdWm76T6aeJlKRLPyZF",
     songs: ["Circles", "Sunflower", "Rockstar", "Better Now", "Goodbyes"],
+    genre: "Hip-Hop",
   },
   {
     id: "8",
@@ -109,6 +117,7 @@ const artists: Artist[] = [
       "Physical",
       "Break My Heart",
     ],
+    genre: "Pop",
   },
   {
     id: "9",
@@ -122,6 +131,7 @@ const artists: Artist[] = [
       "Sign of the Times",
       "Late Night Talking",
     ],
+    genre: "Pop",
   },
   {
     id: "10",
@@ -129,6 +139,7 @@ const artists: Artist[] = [
     image:
       "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcSUGdBVQwJkxZB3djBeNOxO3YB14dkK3e2X-TNUC1AohR1DKVtubLEadYQRx4YaVChOBmz5HGFJWB4CaDmwwBzJHMv8EFsQvHue4HzKHqZXSQ",
     songs: ["Drivers License", "Good 4 U", "Deja Vu", "Traitor", "Vampire"],
+    genre: "Pop",
   },
   {
     id: "11",
@@ -142,6 +153,7 @@ const artists: Artist[] = [
       "Efecto",
       "Un Coco",
     ],
+    genre: "Hip-Hop",
   },
   {
     id: "12",
@@ -149,6 +161,7 @@ const artists: Artist[] = [
     image:
       "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcRp9wMrGqzaGyypGXEFowDyWrkDhAoXKoXkadFf9tBXB9Z3EN6uyHilo0Y0lLq8mgkaQuPlncUjKzf8TjhnMkd4trsIe49GJQkG_z3WwZzIRA",
     songs: ["Kill Bill", "Snooze", "Good Days", "I Hate U", "Shirt"],
+    genre: "Hip-Hop",
   },
   {
     id: "13",
@@ -156,6 +169,7 @@ const artists: Artist[] = [
     image:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrEJWQD6K71-M7X-86-lyr5b_PVPkYj0stg7PaVy6DPJNq9tB89hqi6ULFC0hll2wJgnsic6qYkSWDFkGYXPVI28eC-n7DidO-DOM5LtMDhQ",
     songs: ["HUMBLE.", "DNA.", "LOVE.", "Alright", "Swimming Pools"],
+    genre: "Hip-Hop",
   },
   {
     id: "14",
@@ -163,6 +177,7 @@ const artists: Artist[] = [
     image:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQafl8T-6bWn9aPsAAIihbmxHKxmYn3ukMY4OGnDfNlfqBkaEHYkcSB_tbItVXBaIg3ddSEg_4ZNg7brUlHfAlISRf3BgIqU5_flJKWwwEi",
     songs: ["Say So", "Kiss Me More", "Woman", "Need to Know", "Agora Hills"],
+    genre: "Hip-Hop",
   },
   {
     id: "15",
@@ -176,6 +191,269 @@ const artists: Artist[] = [
       "Highest in the Room",
       "FE!N",
     ],
+    genre: "Hip-Hop",
+  },
+  {
+    id: "16",
+    name: "BTS",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: ["Dynamite", "Butter", "Permission to Dance", "Boy With Luv", "DNA"],
+    genre: "K-Pop",
+  },
+  {
+    id: "17",
+    name: "BLACKPINK",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: [
+      "How You Like That",
+      "Kill This Love",
+      "DDU-DU DDU-DU",
+      "Pink Venom",
+      "Shut Down",
+    ],
+    genre: "K-Pop",
+  },
+  {
+    id: "18",
+    name: "Imagine Dragons",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bb",
+    songs: ["Thunder", "Believer", "Radioactive", "Demons", "Natural"],
+    genre: "Rock",
+  },
+  {
+    id: "19",
+    name: "Twenty One Pilots",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bc",
+    songs: ["Stressed Out", "Heathens", "Ride", "Tear in My Heart", "Chlorine"],
+    genre: "Rock",
+  },
+  {
+    id: "21",
+    name: "Shawn Mendes",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzwxtC3l-lekrGskgeU_j5HZrwep6NgLX9KjprrEJhXDlFJB1f-mKwX7HioqWJndY8qsZ5-GirNH6FCbccAXQwzIqcMRss4zczaBBpqvKy",
+    songs: [
+      "Stitches",
+      "Treat You Better",
+      "There's Nothing Holdin' Me Back",
+      "Senorita",
+      "Wonder",
+    ],
+    genre: "Pop",
+  },
+
+  {
+    id: "22",
+    name: "Justin Bieber",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxEbyirutCd9BDb_OhURtDwTM5L1OIB5coXrDeCC9JiBboNwOHAYIluUAAm7aRFfAflGAYE-pXLO7dv3IsU3uGHDQ_rTRPtuHWPbt_NVbXIg",
+    songs: ["Sorry", "Love Yourself", "Peaches", "Stay", "Ghost"],
+    genre: "Pop",
+  },
+  {
+    id: "23",
+    name: "Adele",
+    image:
+      "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSkdp3pjOO1gHyZ9pRxWvC9tqRx8chuOrQctEoBGfidCE2zaT--92VXN0QPEGUx4yF0S2KnC1h3-_pEaxriQ0bL3BHPiqvGvpklfahlW-jr",
+    songs: [
+      "Hello",
+      "Easy On Me",
+      "Someone Like You",
+      "Rolling in the Deep",
+      "Set Fire to the Rain",
+    ],
+    genre: "Pop",
+  },
+  {
+    id: "24",
+    name: "Bruno Mars",
+    image:
+      "https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcTjqEv0gYy4R3E6ApE1ICJLMl_4-u5bBDkXC23ayTuADUtUI-wUebh9cIazDKvwO3td1dfoL5mDoEGoKlizoZjwvZhxH8CrPhSA4YGrGqbT7pNyCvFBVL81T171-y5it3_qZf4I3fP95ns",
+    songs: [
+      "Uptown Funk",
+      "24K Magic",
+      "That's What I Like",
+      "Grenade",
+      "Just The Way You Are",
+    ],
+    genre: "Pop",
+  },
+
+  {
+    id: "25",
+    name: "Kanye West",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: [
+      "Stronger",
+      "Gold Digger",
+      "Heartless",
+      "All of the Lights",
+      "Runaway",
+    ],
+    genre: "Hip-Hop",
+  },
+  {
+    id: "26",
+    name: "Eminem",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: [
+      "Lose Yourself",
+      "Not Afraid",
+      "Love The Way You Lie",
+      "Rap God",
+      "Stan",
+    ],
+    genre: "Hip-Hop",
+  },
+
+  {
+    id: "28",
+    name: "The Weeknd",
+    image:
+      "https://cdn-images.dzcdn.net/images/cover/fd00ebd6d30d7253f813dba3bb1c66a9/0x1900-000000-80-0-0.jpg",
+    songs: [
+      "Blinding Lights",
+      "Starboy",
+      "The Hills",
+      "Save Your Tears",
+      "After Hours",
+    ],
+    genre: "Pop",
+  },
+  {
+    id: "29",
+    name: "Tame Impala",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bm",
+    songs: [
+      "The Less I Know The Better",
+      "Let It Happen",
+      "Borderline",
+      "Feels Like We Only Go Backwards",
+      "Elephant",
+    ],
+    genre: "Pop",
+  },
+  {
+    id: "30",
+    name: "Arctic Monkeys",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bn",
+    songs: [
+      "Do I Wanna Know?",
+      "505",
+      "I Bet You Look Good On The Dancefloor",
+      "Arabella",
+      "R U Mine?",
+    ],
+    genre: "Pop",
+  },
+
+  {
+    id: "31",
+    name: "TWICE",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: [
+      "Fancy",
+      "Feel Special",
+      "The Feels",
+      "I Can't Stop Me",
+      "Scientist",
+    ],
+    genre: "K-Pop",
+  },
+  {
+    id: "32",
+    name: "NewJeans",
+    image:
+      "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcT2sKPYq6-V0gHkz88N7HBHDs6gneJ8LAIsDvu9ZPzB93F4Dw5thlaQRgVGGOkfE23I7KlUDDOnwqVebsSiqBVseTPpXlw5qxES6vbYPZ9Dwg",
+    songs: ["Attention", "Hype Boy", "OMG", "Ditto", "Get Up"],
+    genre: "K-Pop",
+  },
+  {
+    id: "33",
+    name: "Stray Kids",
+    image:
+      "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT3E4QAVJQCQ2tGGM_fuDFngZIbYAhHkoqa3y6eUuggL0GejNc9bKSkZ4nKP8Z1-v1z7kAb2z3jtPtD7NJWvMjMx992qLcM4Y9-1NzlilCG",
+    songs: ["God's Menu", "Thunderous", "Maniac", "Case 143", "S-Class"],
+    genre: "K-Pop",
+  },
+
+  {
+    id: "34",
+    name: "Foo Fighters",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0br",
+    songs: [
+      "Everlong",
+      "The Pretender",
+      "Learn to Fly",
+      "Best of You",
+      "Times Like These",
+    ],
+    genre: "Rock",
+  },
+  {
+    id: "35",
+    name: "Green Day",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bs",
+    songs: [
+      "American Idiot",
+      "Basket Case",
+      "Good Riddance",
+      "Boulevard of Broken Dreams",
+      "Wake Me Up When September Ends",
+    ],
+    genre: "Rock",
+  },
+  {
+    id: "36",
+    name: "Red Hot Chili Peppers",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bt",
+    songs: [
+      "Californication",
+      "Under the Bridge",
+      "Scar Tissue",
+      "By the Way",
+      "Dani California",
+    ],
+    genre: "Rock",
+  },
+
+  {
+    id: "37",
+    name: "Morgan Wallen",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bu",
+    songs: [
+      "Whiskey Glasses",
+      "7 Summers",
+      "Wasted on You",
+      "You Proof",
+      "Thought You Should Know",
+    ],
+    genre: "Pop",
+  },
+  {
+    id: "38",
+    name: "Maren Morris",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bv",
+    songs: ["The Middle", "My Church", "80s Mercedes", "Rich", "Girl"],
+    genre: "Pop",
+  },
+  {
+    id: "39",
+    name: "Kane Brown",
+    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bw",
+    songs: [
+      "What Ifs",
+      "Heaven",
+      "Good as You",
+      "One Thing Right",
+      "Be Like That",
+    ],
+    genre: "Pop",
   },
 ];
 
@@ -194,8 +472,21 @@ export default function PickArtistPage() {
     "select" | "playing" | "result" | "complete"
   >("select");
   const [answerOptions, setAnswerOptions] = useState<string[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string>("All");
+  const [showAllArtists, setShowAllArtists] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const genres = ["All", "Pop", "Hip-Hop", "K-Pop"];
+
+  const filteredArtists =
+    selectedGenre === "All"
+      ? artists
+      : artists.filter((artist) => artist.genre === selectedGenre);
+
+  const displayedArtists = showAllArtists
+    ? filteredArtists
+    : filteredArtists.slice(0, 12);
 
   const handleArtistSelect = (artistId: string) => {
     setSelectedArtists((prev) => {
@@ -349,8 +640,32 @@ export default function PickArtistPage() {
             who it is.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {artists.map((artist) => (
+          <div className="mb-6">
+            <h3 className="mb-3 text-center text-lg font-semibold text-white">
+              Filter by Genre:
+            </h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              {genres.map((genre) => (
+                <button
+                  key={genre}
+                  onClick={() => {
+                    setSelectedGenre(genre);
+                    setShowAllArtists(false);
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                    selectedGenre === genre
+                      ? "bg-pink-500 text-white"
+                      : "bg-white/10 text-white/80 hover:bg-white/20"
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            {displayedArtists.map((artist) => (
               <div
                 key={artist.id}
                 onClick={() => handleArtistSelect(artist.id)}
@@ -374,10 +689,25 @@ export default function PickArtistPage() {
             ))}
           </div>
 
+          {filteredArtists.length > 0 && (
+            <div className="mt-6 text-center">
+              <Button
+                onClick={() => setShowAllArtists(!showAllArtists)}
+                className="bg-white/10 px-6 py-2 text-base font-semibold text-white hover:bg-white/20"
+              >
+                {showAllArtists
+                  ? "Show Less"
+                  : `View More (${Math.max(0, filteredArtists.length - 12)} more)`}
+              </Button>
+            </div>
+          )}
+
           <div className="mt-8 space-y-6 text-center">
             <Button
               onClick={() => {
-                const shuffled = [...artists].sort(() => Math.random() - 0.5);
+                const shuffled = [...filteredArtists].sort(
+                  () => Math.random() - 0.5,
+                );
                 const randomCount = Math.floor(Math.random() * 4) + 2; // 2-5 artists
                 setSelectedArtists(
                   shuffled.slice(0, randomCount).map((a) => a.id),
