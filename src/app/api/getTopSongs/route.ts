@@ -3,14 +3,12 @@ import { NextResponse } from "next/server";
 const sampleSongs: Record<number, Array<{ title: string; artist: string }>> = {
   2024: [
     { title: "Flowers", artist: "Miley Cyrus" },
-    { title: "Last Night", artist: "Morgan Wallen" },
     { title: "Vampire", artist: "Olivia Rodrigo" },
     { title: "Kill Bill", artist: "SZA" },
     { title: "Anti-Hero", artist: "Taylor Swift" },
   ],
   2023: [
     { title: "Flowers", artist: "Miley Cyrus" },
-    { title: "Last Night", artist: "Morgan Wallen" },
     { title: "Vampire", artist: "Olivia Rodrigo" },
     { title: "Kill Bill", artist: "SZA" },
     { title: "Anti-Hero", artist: "Taylor Swift" },
@@ -26,14 +24,12 @@ const sampleSongs: Record<number, Array<{ title: string; artist: string }>> = {
     { title: "drivers license", artist: "Olivia Rodrigo" },
     { title: "good 4 u", artist: "Olivia Rodrigo" },
     { title: "deja vu", artist: "Olivia Rodrigo" },
-    { title: "Levitating", artist: "Dua Lipa" },
     { title: "Blinding Lights", artist: "The Weeknd" },
   ],
   2020: [
     { title: "Blinding Lights", artist: "The Weeknd" },
     { title: "Dance Monkey", artist: "Tones and I" },
     { title: "The Box", artist: "Roddy Ricch" },
-    { title: "Don't Start Now", artist: "Dua Lipa" },
     { title: "Circles", artist: "Post Malone" },
   ],
   2010: [
@@ -95,8 +91,6 @@ const sampleSongs: Record<number, Array<{ title: string; artist: string }>> = {
   2018: [
     { title: "God's Plan", artist: "Drake" },
     { title: "Perfect", artist: "Ed Sheeran" },
-    { title: "The Middle", artist: "Zedd, Maren Morris & Grey" },
-    { title: "New Rules", artist: "Dua Lipa" },
     { title: "Finesse", artist: "Bruno Mars ft. Cardi B" },
   ],
   2019: [
@@ -139,7 +133,6 @@ const sampleSongs: Record<number, Array<{ title: string; artist: string }>> = {
     { title: "Hollaback Girl", artist: "Gwen Stefani" },
     { title: "Since U Been Gone", artist: "Kelly Clarkson" },
     { title: "Gold Digger", artist: "Kanye West" },
-    { title: "Boulevard of Broken Dreams", artist: "Green Day" },
   ],
   2004: [
     { title: "Yeah!", artist: "Usher" },
