@@ -320,7 +320,8 @@ const artists: Artist[] = [
   {
     id: "18",
     name: "Imagine Dragons",
-    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bb",
+    image:
+      "https://i8.amplience.net/i/naras/Imagine-Dragons-Eric-Ray%20-Davidson",
     songs: [
       "Thunder",
       "Believer",
@@ -335,24 +336,7 @@ const artists: Artist[] = [
     ],
     genre: "Rock",
   },
-  {
-    id: "19",
-    name: "Twenty One Pilots",
-    image: "https://i.scdn.co/image/ab6761610000e5eb8c2336e6c8d0b5b0b0b0b0bc",
-    songs: [
-      "Stressed Out",
-      "Heathens",
-      "Ride",
-      "Tear in My Heart",
-      "Chlorine",
-      "Car Radio",
-      "Holding On To You",
-      "House of Gold",
-      "The Judge",
-      "Morph",
-    ],
-    genre: "Rock",
-  },
+
   {
     id: "21",
     name: "Shawn Mendes",
@@ -781,7 +765,7 @@ export default function PickArtistPage() {
             ))}
           </div>
 
-          {filteredArtists.length >= 12 && (
+          {filteredArtists.length >= 12 && selectedGenre !== "Pop" && (
             <div className="mt-6 text-center">
               <Button
                 onClick={() => setShowAllArtists(!showAllArtists)}
