@@ -54,6 +54,8 @@ export default function PlayNowPage() {
   const roomMode = searchParams.get("mode") ?? "default";
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
+  const [useCustomPlaylist, setUseCustomPlaylist] = useState(false);
+  const [customPlaylistUrl, setCustomPlaylistUrl] = useState("");
 
   const [, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
@@ -64,7 +66,9 @@ export default function PlayNowPage() {
   const [countdownNumber, setCountdownNumber] = useState(3);
 
   const [fadeCountdown, setFadeCountdown] = useState(false);
-  const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
+  const iframeRefs = useRef<Record<number | string, HTMLIFrameElement | null>>(
+    {},
+  );
 
   const [currentQuestionYear, setCurrentQuestionYear] = useState<number | null>(
     null,
@@ -97,9 +101,11 @@ export default function PlayNowPage() {
   const [showAllResults, setShowAllResults] = useState(false);
   const [gameMode, setGameMode] = useState<"single" | "multiplayer">("single");
 
-  const playerRefs = useRef<Record<number, YouTubePlayer | null>>({});
+  const playerRefs = useRef<Record<number | string, YouTubePlayer | null>>({});
 
-  const intervalRefs = useRef<Record<number, NodeJS.Timeout | null>>({});
+  const intervalRefs = useRef<Record<number | string, NodeJS.Timeout | null>>(
+    {},
+  );
   const [index] = useState(Math.floor(Math.random() * 80));
 
   const [visualizerTime, setVisualizerTime] = useState(0);
@@ -200,18 +206,19 @@ export default function PlayNowPage() {
   useEffect(() => {
     if (!window.YT || !showYouTubePlayer) return;
     const currentIntervalRefs = Object.assign({}, intervalRefs.current);
-    selectedYears.forEach((year) => {
-      const iframe = iframeRefs.current[year];
+
+    if (useCustomPlaylist && customPlaylistUrl) {
+      const iframe = iframeRefs.current["custom"];
       if (!iframe) return;
-      playerRefs.current[year] = new window.YT.Player(iframe, {
+      playerRefs.current["custom"] = new window.YT.Player(iframe, {
         height: "0",
         width: "0",
         events: {
           onReady: () => {
-            console.log(`YouTube Player for year ${year} is ready`);
+            console.log("YouTube Player for custom playlist is ready");
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
-            const player = playerRefs.current[year];
+            const player = playerRefs.current["custom"];
             if (!player) return;
             if (event.data === window.YT.PlayerState.PLAYING) {
               const videoData = player.getVideoData();
@@ -223,64 +230,143 @@ export default function PlayNowPage() {
                 setCurrentSong(song);
                 setCurrentArtist(artist);
               }
-              if (currentIntervalRefs[year]) {
-                const interval = currentIntervalRefs[year];
+              if (currentIntervalRefs["custom"]) {
+                const interval = currentIntervalRefs["custom"];
                 if (interval) {
                   clearInterval(interval);
                 }
-                currentIntervalRefs[year] = null;
-                console.log(`Cleared previous interval for year ${year}`);
+                currentIntervalRefs["custom"] = null;
+                console.log("Cleared previous interval for custom playlist");
               }
-              console.log(`Setting up new interval for year ${year}`);
-              currentIntervalRefs[year] = setInterval(() => {
+              console.log("Setting up new interval for custom playlist");
+              currentIntervalRefs["custom"] = setInterval(() => {
                 const currentTime = player.getCurrentTime();
                 console.log(
-                  `Year ${year} currentTime:`,
+                  "Custom playlist currentTime:",
                   currentTime,
-                  `Target: 15 seconds`,
+                  "Target: 15 seconds",
                 );
                 if (currentTime >= 15) {
-                  console.log(`Year ${year} reached 15 seconds, pausing video`);
+                  console.log(
+                    "Custom playlist reached 15 seconds, pausing video",
+                  );
                   player.pauseVideo();
-                  const interval = currentIntervalRefs[year];
+                  const interval = currentIntervalRefs["custom"];
                   if (interval) {
                     clearInterval(interval);
                   }
-                  currentIntervalRefs[year] = null;
-                  setCurrentQuestionYear(year);
+                  currentIntervalRefs["custom"] = null;
+                  setCurrentQuestionYear(0);
                   setShowPrompt(true);
-                  console.log(`Paused video for year ${year} at 15 seconds`);
+                  console.log("Paused video for custom playlist at 15 seconds");
                 }
               }, 500);
-              console.log(`Set up interval for year ${year}`);
+              console.log("Set up interval for custom playlist");
             } else if (
               event.data === window.YT.PlayerState.PAUSED ||
               event.data === window.YT.PlayerState.ENDED
             ) {
-              if (currentIntervalRefs[year]) {
-                const interval = currentIntervalRefs[year];
+              if (currentIntervalRefs["custom"]) {
+                const interval = currentIntervalRefs["custom"];
                 if (interval) {
                   clearInterval(interval);
                   console.log(
-                    `Cleared interval for year ${year} due to video state change:`,
+                    "Cleared interval for custom playlist due to video state change:",
                     event.data,
                   );
                 }
-                currentIntervalRefs[year] = null;
+                currentIntervalRefs["custom"] = null;
               }
             }
           },
         },
       });
-    });
+    } else {
+      selectedYears.forEach((year) => {
+        const iframe = iframeRefs.current[year];
+        if (!iframe) return;
+        playerRefs.current[year] = new window.YT.Player(iframe, {
+          height: "0",
+          width: "0",
+          events: {
+            onReady: () => {
+              console.log(`YouTube Player for year ${year} is ready`);
+            },
+            onStateChange: (event: YT.OnStateChangeEvent) => {
+              const player = playerRefs.current[year];
+              if (!player) return;
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                const videoData = player.getVideoData();
+                if (videoData) {
+                  const { artist, song } = extractArtistAndSong(
+                    videoData.title ?? "",
+                    videoData.author ?? "",
+                  );
+                  setCurrentSong(song);
+                  setCurrentArtist(artist);
+                }
+                if (currentIntervalRefs[year]) {
+                  const interval = currentIntervalRefs[year];
+                  if (interval) {
+                    clearInterval(interval);
+                  }
+                  currentIntervalRefs[year] = null;
+                  console.log(`Cleared previous interval for year ${year}`);
+                }
+                console.log(`Setting up new interval for year ${year}`);
+                currentIntervalRefs[year] = setInterval(() => {
+                  const currentTime = player.getCurrentTime();
+                  console.log(
+                    `Year ${year} currentTime:`,
+                    currentTime,
+                    `Target: 15 seconds`,
+                  );
+                  if (currentTime >= 15) {
+                    console.log(
+                      `Year ${year} reached 15 seconds, pausing video`,
+                    );
+                    player.pauseVideo();
+                    const interval = currentIntervalRefs[year];
+                    if (interval) {
+                      clearInterval(interval);
+                    }
+                    currentIntervalRefs[year] = null;
+                    setCurrentQuestionYear(year);
+                    setShowPrompt(true);
+                    console.log(`Paused video for year ${year} at 15 seconds`);
+                  }
+                }, 500);
+                console.log(`Set up interval for year ${year}`);
+              } else if (
+                event.data === window.YT.PlayerState.PAUSED ||
+                event.data === window.YT.PlayerState.ENDED
+              ) {
+                if (currentIntervalRefs[year]) {
+                  const interval = currentIntervalRefs[year];
+                  if (interval) {
+                    clearInterval(interval);
+                    console.log(
+                      `Cleared interval for year ${year} due to video state change:`,
+                      event.data,
+                    );
+                  }
+                  currentIntervalRefs[year] = null;
+                }
+              }
+            },
+          },
+        });
+      });
+    }
+
     intervalRefs.current = currentIntervalRefs;
 
     const cleanupPlayerRefs = Object.assign({}, playerRefs.current);
     return () => {
-      Object.entries(currentIntervalRefs).forEach(([year, intervalId]) => {
+      Object.entries(currentIntervalRefs).forEach(([key, intervalId]) => {
         if (intervalId) {
           clearInterval(intervalId);
-          console.log(`Cleanup: Cleared interval for year ${year}`);
+          console.log(`Cleanup: Cleared interval for ${key}`);
         }
       });
       Object.values(cleanupPlayerRefs).forEach((player) => {
@@ -289,7 +375,7 @@ export default function PlayNowPage() {
         }
       });
     };
-  }, [showYouTubePlayer, selectedYears]);
+  }, [showYouTubePlayer, selectedYears, useCustomPlaylist, customPlaylistUrl]);
 
   const handleDeleteYear = (year: number) => {
     setSelectedYears((prev) => prev.filter((item) => item !== year));
@@ -416,35 +502,74 @@ export default function PlayNowPage() {
 
     setErrorIndexes(emptyIndexes);
 
-    if (validYears.length > 0 && validPlayers.length > 0) {
-      console.log("Valid years and players, starting game");
-      setTotalRounds(numberOfRounds);
-
-      const missingYears = validYears.filter((year) => !playlistLinks[year]);
-      if (missingYears.length > 0) {
-        alert(`No playlist available for year(s): ${missingYears.join(", ")}`);
+    if (useCustomPlaylist) {
+      if (!customPlaylistUrl.trim()) {
+        alert("Please enter a YouTube playlist URL.");
         return;
       }
 
-      const isMultiplayer = validPlayers.length > 1;
-      setGameMode(isMultiplayer ? "multiplayer" : "single");
-      if (isMultiplayer) {
-        const initialScores: Record<string, number> = {};
-        validPlayers.forEach((player) => {
-          initialScores[player] = 0;
-        });
-        setPlayerScores(initialScores);
-        setCurrentPlayerIndex(0);
+      if (!isValidYouTubePlaylistUrl(customPlaylistUrl)) {
+        alert("Please enter a valid YouTube playlist URL.");
+        return;
       }
 
-      setGameStarted(true);
-      setShowCountdown(true);
-      setCountdownNumber(3);
-      setFadeCountdown(false);
-      setGameFinished(false);
+      if (validPlayers.length > 0) {
+        console.log("Valid custom playlist and players, starting game");
+        setTotalRounds(numberOfRounds);
+
+        const isMultiplayer = validPlayers.length > 1;
+        setGameMode(isMultiplayer ? "multiplayer" : "single");
+        if (isMultiplayer) {
+          const initialScores: Record<string, number> = {};
+          validPlayers.forEach((player) => {
+            initialScores[player] = 0;
+          });
+          setPlayerScores(initialScores);
+          setCurrentPlayerIndex(0);
+        }
+
+        setGameStarted(true);
+        setShowCountdown(true);
+        setCountdownNumber(3);
+        setFadeCountdown(false);
+        setGameFinished(false);
+      } else {
+        console.log("Form incomplete");
+        alert("Please complete the form.");
+      }
     } else {
-      console.log("Form incomplete or invalid years");
-      alert("Please complete the form and select valid years.");
+      if (validYears.length > 0 && validPlayers.length > 0) {
+        console.log("Valid years and players, starting game");
+        setTotalRounds(numberOfRounds);
+
+        const missingYears = validYears.filter((year) => !playlistLinks[year]);
+        if (missingYears.length > 0) {
+          alert(
+            `No playlist available for year(s): ${missingYears.join(", ")}`,
+          );
+          return;
+        }
+
+        const isMultiplayer = validPlayers.length > 1;
+        setGameMode(isMultiplayer ? "multiplayer" : "single");
+        if (isMultiplayer) {
+          const initialScores: Record<string, number> = {};
+          validPlayers.forEach((player) => {
+            initialScores[player] = 0;
+          });
+          setPlayerScores(initialScores);
+          setCurrentPlayerIndex(0);
+        }
+
+        setGameStarted(true);
+        setShowCountdown(true);
+        setCountdownNumber(3);
+        setFadeCountdown(false);
+        setGameFinished(false);
+      } else {
+        console.log("Form incomplete or invalid years");
+        alert("Please complete the form and select valid years.");
+      }
     }
   };
 
@@ -537,6 +662,12 @@ export default function PlayNowPage() {
     return correctWords.some((word) => normalizedUser.includes(word));
   }
 
+  function isValidYouTubePlaylistUrl(url: string): boolean {
+    const youtubePlaylistRegex =
+      /^https?:\/\/(www\.)?(youtube\.com\/playlist\?list=|youtu\.be\/.*\?list=)/;
+    return youtubePlaylistRegex.test(url);
+  }
+
   useEffect(() => {
     let frame: number;
     const animate = () => {
@@ -569,14 +700,6 @@ export default function PlayNowPage() {
       setShowSong(false);
     }
   }, [showPrompt]);
-
-  useEffect(() => {
-    const bgMusic = document.getElementById("bg-music") as HTMLAudioElement;
-    if (bgMusic && !bgMusic.paused) {
-      bgMusic.pause();
-      bgMusic.currentTime = 0;
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -809,60 +932,103 @@ export default function PlayNowPage() {
           </p>
 
           <div className="mt-6 flex w-full max-w-sm flex-col items-center">
-            <div className="relative flex w-full justify-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="px-6 py-3 text-lg"
-                    style={{ minWidth: "px", marginLeft: "5%" }}
-                  >
-                    Choose A Year
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuLabel>Years</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {Array.from(
-                    { length: new Date().getFullYear() - 2000 + 1 },
-                    (_, i) => 2000 + i,
-                  ).map((year) => (
-                    <DropdownMenuCheckboxItem
-                      key={year}
-                      checked={selectedYears.includes(year)}
-                      onCheckedChange={() => {
-                        if (selectedYears.includes(year)) {
-                          setSelectedYears((prev) =>
-                            prev.filter((y) => y !== year),
-                          );
-                        } else {
-                          setSelectedYears((prev) => prev.concat([year]));
-                        }
-                      }}
-                    >
-                      {year}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div className="mb-6 flex items-center gap-4">
+              <label className="flex items-center gap-2 text-white">
+                <input
+                  type="checkbox"
+                  checked={useCustomPlaylist}
+                  onChange={(e) => {
+                    setUseCustomPlaylist(e.target.checked);
+                    if (e.target.checked) {
+                      setSelectedYears([]);
+                    } else {
+                      setCustomPlaylistUrl("");
+                    }
+                  }}
+                  className="h-4 w-4"
+                />
+                Use Custom Playlist
+              </label>
             </div>
 
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
-              {selectedYears.map((year) => (
-                <div
-                  key={year}
-                  className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
+            {useCustomPlaylist ? (
+              <div className="w-full">
+                <label
+                  htmlFor="playlist-url"
+                  className="mb-2 block text-xl text-white"
                 >
-                  <span>{year}</span>
-                  <button
-                    onClick={() => handleDeleteYear(year)}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    ❌
-                  </button>
+                  YouTube Playlist URL
+                </label>
+                <input
+                  type="url"
+                  id="playlist-url"
+                  value={customPlaylistUrl}
+                  onChange={(e) => setCustomPlaylistUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/playlist?list=..."
+                  className="w-full rounded-lg px-4 py-2 text-black"
+                />
+                <p className="mt-2 text-sm text-white/60">
+                  Paste a YouTube playlist URL to play songs from that playlist
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="relative flex w-full justify-center">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="px-6 py-3 text-lg"
+                        style={{ minWidth: "px", marginLeft: "5%" }}
+                      >
+                        Choose A Year
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuLabel>Years</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {Array.from(
+                        { length: new Date().getFullYear() - 2000 + 1 },
+                        (_, i) => 2000 + i,
+                      ).map((year) => (
+                        <DropdownMenuCheckboxItem
+                          key={year}
+                          checked={selectedYears.includes(year)}
+                          onCheckedChange={() => {
+                            if (selectedYears.includes(year)) {
+                              setSelectedYears((prev) =>
+                                prev.filter((y) => y !== year),
+                              );
+                            } else {
+                              setSelectedYears((prev) => prev.concat([year]));
+                            }
+                          }}
+                        >
+                          {year}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-              ))}
-            </div>
+
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
+                  {selectedYears.map((year) => (
+                    <div
+                      key={year}
+                      className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
+                    >
+                      <span>{year}</span>
+                      <button
+                        onClick={() => handleDeleteYear(year)}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             <div className="mt-6 flex w-full max-w-sm flex-col items-center">
               <label htmlFor="rounds" className="mb-2 block text-xl text-white">
@@ -1183,7 +1349,9 @@ export default function PlayNowPage() {
               </div>
             </div>
             <p className="mb-4">
-              Now playing songs from: {selectedYears.join(", ")}
+              {useCustomPlaylist
+                ? "Now playing songs from custom playlist"
+                : `Now playing songs from: ${selectedYears.join(", ")}`}
             </p>
             {showVolumeReminder && (
               <div className="mb-4 font-bold text-green-400">
@@ -1193,16 +1361,10 @@ export default function PlayNowPage() {
 
             <div className="flex items-start justify-center gap-8">
               <div>
-                {showYouTubePlayer &&
-                  selectedYears.length > 0 &&
-                  selectedYears.map((year) => {
-                    const playlistURL = playlistLinks[year];
-                    if (!playlistURL) return null;
-
-                    const showVisualizer = showYouTubePlayer;
-                    return (
+                {showYouTubePlayer && (
+                  <>
+                    {useCustomPlaylist && customPlaylistUrl ? (
                       <div
-                        key={year}
                         className="relative mx-auto w-fit"
                         style={{ zIndex: 0 }}
                       >
@@ -1218,10 +1380,10 @@ export default function PlayNowPage() {
                         >
                           <iframe
                             ref={(el) => {
-                              iframeRefs.current[year] = el;
+                              iframeRefs.current["custom"] = el;
                             }}
-                            id={`youtube-player-${year}`}
-                            src={`${playlistURL}&enablejsapi=1&index=${index}`}
+                            id="youtube-player-custom"
+                            src={`${customPlaylistUrl}&enablejsapi=1&index=${index}`}
                             width="640"
                             height="390"
                             frameBorder="0"
@@ -1236,7 +1398,17 @@ export default function PlayNowPage() {
                             }}
                             loading="lazy"
                           />
-                          {showVisualizer && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              top: 0,
+                              width: "100%",
+                              height: "100%",
+                              zIndex: 9999,
+                              pointerEvents: "none",
+                            }}
+                          >
                             <div
                               style={{
                                 position: "absolute",
@@ -1244,114 +1416,267 @@ export default function PlayNowPage() {
                                 top: 0,
                                 width: "100%",
                                 height: "100%",
-                                zIndex: 9999,
+                                background: "black",
+                                opacity: 1,
+                                zIndex: 1,
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: "absolute",
+                                left: "50%",
+                                top: "50%",
+                                width: 320,
+                                height: 320,
+                                transform: "translate(-50%, -50%)",
                                 pointerEvents: "none",
+                                zIndex: 2,
                               }}
                             >
-                              <div
+                              <svg
+                                width="320"
+                                height="320"
                                 style={{
                                   position: "absolute",
                                   left: 0,
                                   top: 0,
-                                  width: "100%",
-                                  height: "100%",
-                                  background: "black",
-                                  opacity: 1,
-                                  zIndex: 1,
                                 }}
-                              />
+                              >
+                                {Array.from({ length: 48 }).map((_, i) => {
+                                  const center = 160;
+                                  const r0 = 100;
+                                  const phase = visualizerPhases.current
+                                    ? visualizerPhases.current[i]
+                                    : 0;
+                                  const t =
+                                    visualizerTime / 600 +
+                                    i * 0.18 +
+                                    (phase ?? 0);
+                                  const len = 24 + 36 * Math.abs(Math.sin(t));
+                                  const angle = i * 7.5;
+                                  const rad = (angle * Math.PI) / 180;
+                                  const x0 = center + r0 * Math.cos(rad);
+                                  const y0 = center + r0 * Math.sin(rad);
+                                  const x1 =
+                                    center + (r0 + len) * Math.cos(rad);
+                                  const y1 =
+                                    center + (r0 + len) * Math.sin(rad);
+                                  const color = `hsl(${angle}, 90%, 60%)`;
+                                  return (
+                                    <line
+                                      key={i}
+                                      x1={x0}
+                                      y1={y0}
+                                      x2={x1}
+                                      y2={y1}
+                                      stroke={color}
+                                      strokeWidth={5}
+                                      strokeLinecap="round"
+                                      style={{
+                                        filter: `drop-shadow(0 0 6px ${color})`,
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </svg>
                               <div
                                 style={{
                                   position: "absolute",
                                   left: "50%",
                                   top: "50%",
-                                  width: 320,
-                                  height: 320,
+                                  width: 200,
+                                  height: 200,
                                   transform: "translate(-50%, -50%)",
-                                  pointerEvents: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                   zIndex: 2,
                                 }}
                               >
-                                <svg
-                                  width="320"
-                                  height="320"
+                                <Image
+                                  src="/Guess-The-Jam-Logo.png"
+                                  alt="Guess the Jam Logo"
+                                  width={200}
+                                  height={200}
+                                  style={{
+                                    borderRadius: "50%",
+                                    boxShadow: "0 0 32px 8px #0008",
+                                    zIndex: 2,
+                                    position: "relative",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      selectedYears.length > 0 &&
+                      selectedYears.map((year) => {
+                        const playlistURL = playlistLinks[year];
+                        if (!playlistURL) return null;
+
+                        const showVisualizer = showYouTubePlayer;
+                        return (
+                          <div
+                            key={year}
+                            className="relative mx-auto w-fit"
+                            style={{ zIndex: 0 }}
+                          >
+                            <div
+                              style={{
+                                width: "1100px",
+                                height: "600px",
+                                overflow: "hidden",
+                                borderRadius: "12px",
+                                position: "relative",
+                                marginTop: "2rem",
+                              }}
+                            >
+                              <iframe
+                                ref={(el) => {
+                                  iframeRefs.current[year] = el;
+                                }}
+                                id={`youtube-player-${year}`}
+                                src={`${playlistURL}&enablejsapi=1&index=${index}`}
+                                width="640"
+                                height="390"
+                                frameBorder="0"
+                                allowFullScreen={false}
+                                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                                style={{
+                                  borderRadius: "12px",
+                                  marginTop: "-30px",
+                                  pointerEvents: "none",
+                                  zIndex: 1,
+                                  position: "relative",
+                                }}
+                                loading="lazy"
+                              />
+                              {showVisualizer && (
+                                <div
                                   style={{
                                     position: "absolute",
                                     left: 0,
                                     top: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    zIndex: 9999,
+                                    pointerEvents: "none",
                                   }}
                                 >
-                                  {Array.from({ length: 48 }).map((_, i) => {
-                                    const center = 160;
-                                    const r0 = 100;
-                                    const phase = visualizerPhases.current
-                                      ? visualizerPhases.current[i]
-                                      : 0;
-                                    const t =
-                                      visualizerTime / 600 +
-                                      i * 0.18 +
-                                      (phase ?? 0);
-                                    const len = 24 + 36 * Math.abs(Math.sin(t));
-                                    const angle = i * 7.5;
-                                    const rad = (angle * Math.PI) / 180;
-                                    const x0 = center + r0 * Math.cos(rad);
-                                    const y0 = center + r0 * Math.sin(rad);
-                                    const x1 =
-                                      center + (r0 + len) * Math.cos(rad);
-                                    const y1 =
-                                      center + (r0 + len) * Math.sin(rad);
-                                    const color = `hsl(${angle}, 90%, 60%)`;
-                                    return (
-                                      <line
-                                        key={i}
-                                        x1={x0}
-                                        y1={y0}
-                                        x2={x1}
-                                        y2={y1}
-                                        stroke={color}
-                                        strokeWidth={5}
-                                        strokeLinecap="round"
-                                        style={{
-                                          filter: `drop-shadow(0 0 6px ${color})`,
-                                        }}
-                                      />
-                                    );
-                                  })}
-                                </svg>
-                                <div
-                                  style={{
-                                    position: "absolute",
-                                    left: "50%",
-                                    top: "50%",
-                                    width: 200,
-                                    height: 200,
-                                    transform: "translate(-50%, -50%)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    zIndex: 2,
-                                  }}
-                                >
-                                  <Image
-                                    src="/Guess-The-Jam-Logo.png"
-                                    alt="Guess the Jam Logo"
-                                    width={200}
-                                    height={200}
+                                  <div
                                     style={{
-                                      borderRadius: "50%",
-                                      boxShadow: "0 0 32px 8px #0008",
-                                      zIndex: 2,
-                                      position: "relative",
+                                      position: "absolute",
+                                      left: 0,
+                                      top: 0,
+                                      width: "100%",
+                                      height: "100%",
+                                      background: "black",
+                                      opacity: 1,
+                                      zIndex: 1,
                                     }}
                                   />
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      left: "50%",
+                                      top: "50%",
+                                      width: 320,
+                                      height: 320,
+                                      transform: "translate(-50%, -50%)",
+                                      pointerEvents: "none",
+                                      zIndex: 2,
+                                    }}
+                                  >
+                                    <svg
+                                      width="320"
+                                      height="320"
+                                      style={{
+                                        position: "absolute",
+                                        left: 0,
+                                        top: 0,
+                                      }}
+                                    >
+                                      {Array.from({ length: 48 }).map(
+                                        (_, i) => {
+                                          const center = 160;
+                                          const r0 = 100;
+                                          const phase = visualizerPhases.current
+                                            ? visualizerPhases.current[i]
+                                            : 0;
+                                          const t =
+                                            visualizerTime / 600 +
+                                            i * 0.18 +
+                                            (phase ?? 0);
+                                          const len =
+                                            24 + 36 * Math.abs(Math.sin(t));
+                                          const angle = i * 7.5;
+                                          const rad = (angle * Math.PI) / 180;
+                                          const x0 =
+                                            center + r0 * Math.cos(rad);
+                                          const y0 =
+                                            center + r0 * Math.sin(rad);
+                                          const x1 =
+                                            center + (r0 + len) * Math.cos(rad);
+                                          const y1 =
+                                            center + (r0 + len) * Math.sin(rad);
+                                          const color = `hsl(${angle}, 90%, 60%)`;
+                                          return (
+                                            <line
+                                              key={i}
+                                              x1={x0}
+                                              y1={y0}
+                                              x2={x1}
+                                              y2={y1}
+                                              stroke={color}
+                                              strokeWidth={5}
+                                              strokeLinecap="round"
+                                              style={{
+                                                filter: `drop-shadow(0 0 6px ${color})`,
+                                              }}
+                                            />
+                                          );
+                                        },
+                                      )}
+                                    </svg>
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        left: "50%",
+                                        top: "50%",
+                                        width: 200,
+                                        height: 200,
+                                        transform: "translate(-50%, -50%)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        zIndex: 2,
+                                      }}
+                                    >
+                                      <Image
+                                        src="/Guess-The-Jam-Logo.png"
+                                        alt="Guess the Jam Logo"
+                                        width={200}
+                                        height={200}
+                                        style={{
+                                          borderRadius: "50%",
+                                          boxShadow: "0 0 32px 8px #0008",
+                                          zIndex: 2,
+                                          position: "relative",
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                          </div>
+                        );
+                      })
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Chat Box for Chat Guess Mode */}
@@ -1438,7 +1763,11 @@ export default function PlayNowPage() {
               <div className="prompt-z fixed inset-0 z-[10001] flex items-center justify-center bg-black/80">
                 <div className="relative w-full max-w-md rounded-lg bg-[#1e1b4d] p-6 text-white">
                   <h2 className="mb-2 text-2xl font-bold">Guess the Song!</h2>
-                  <p className="mb-4">Year: {currentQuestionYear}</p>
+                  <p className="mb-4">
+                    {useCustomPlaylist
+                      ? "Custom Playlist"
+                      : `Year: ${currentQuestionYear}`}
+                  </p>
                   {inputError && (
                     <div className="mb-2 text-center font-semibold text-red-400">
                       {inputError}
@@ -1881,8 +2210,9 @@ export default function PlayNowPage() {
                                 setShowPrompt(false);
                                 setShowResult(false);
                                 setPointsEarned(null);
-                                const player =
-                                  playerRefs.current[currentQuestionYear!];
+                                const player = useCustomPlaylist
+                                  ? playerRefs.current["custom"]
+                                  : playerRefs.current[currentQuestionYear!];
                                 if (player) {
                                   player.nextVideo();
                                   player.playVideo();
@@ -1911,8 +2241,9 @@ export default function PlayNowPage() {
                                   setShowAllResults(false);
                                   setPlayerAnswers({});
                                   setCurrentPlayerIndex(0);
-                                  const player =
-                                    playerRefs.current[currentQuestionYear!];
+                                  const player = useCustomPlaylist
+                                    ? playerRefs.current["custom"]
+                                    : playerRefs.current[currentQuestionYear!];
                                   if (player) {
                                     player.nextVideo();
                                     player.playVideo();
@@ -2039,188 +2370,6 @@ export default function PlayNowPage() {
             fill="none"
           />
         </svg>
-      </div>
-
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-center text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-[4rem]">
-          Play Now
-        </h1>
-        <p className="max-w-2xl text-center text-xl text-white/80">
-          What year(s) do you want the songs to be from? Choose a year between
-          2000 and the current year.
-        </p>
-
-        <div className="mt-6 flex w-full max-w-sm flex-col items-center">
-          <div className="relative flex w-full justify-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="px-6 py-3 text-lg"
-                  style={{ minWidth: "px", marginLeft: "5%" }}
-                >
-                  Choose A Year
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Years</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Array.from(
-                  { length: new Date().getFullYear() - 2000 + 1 },
-                  (_, i) => 2000 + i,
-                ).map((year) => (
-                  <DropdownMenuCheckboxItem
-                    key={year}
-                    checked={selectedYears.includes(year)}
-                    onCheckedChange={() => {
-                      if (selectedYears.includes(year)) {
-                        setSelectedYears((prev) =>
-                          prev.filter((y) => y !== year),
-                        );
-                      } else {
-                        setSelectedYears((prev) => prev.concat([year]));
-                      }
-                    }}
-                  >
-                    {year}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            {selectedYears.map((year) => (
-              <div
-                key={year}
-                className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white"
-              >
-                <span>{year}</span>
-                <button
-                  onClick={() => handleDeleteYear(year)}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  ❌
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 flex w-full max-w-sm flex-col items-center">
-            <label htmlFor="rounds" className="mb-2 block text-xl text-white">
-              Number of Rounds
-            </label>
-            <div className="flex items-center gap-4">
-              <button
-                onMouseDown={startDecrement}
-                onMouseUp={stopDecrement}
-                onMouseLeave={stopDecrement}
-                onTouchStart={startDecrement}
-                onTouchEnd={stopDecrement}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
-                disabled={numberOfRounds <= 1}
-              >
-                -
-              </button>
-              <input
-                type="number"
-                value={numberOfRounds}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value) && value >= 1 && value <= 100000) {
-                    setNumberOfRounds(value);
-                  }
-                }}
-                className="min-w-[4rem] border-none bg-transparent text-center text-2xl font-bold text-white outline-none"
-                min="1"
-                max="100000"
-              />
-              <button
-                onMouseDown={startIncrement}
-                onMouseUp={stopIncrement}
-                onMouseLeave={stopIncrement}
-                onTouchStart={startIncrement}
-                onTouchEnd={stopIncrement}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
-                disabled={numberOfRounds >= 100000}
-              >
-                +
-              </button>
-            </div>
-            <p className="mt-2 text-sm text-white/60">
-              Choose between 1-100,000 rounds
-            </p>
-          </div>
-
-          <div className="mt-8 flex w-full max-w-sm flex-col items-center">
-            {playerNames.map((name, index) => (
-              <div key={index} className="mb-4 flex w-full items-center gap-2">
-                <div className="flex-1">
-                  <label
-                    htmlFor={`player-${index}`}
-                    className="mb-2 block text-xl text-white"
-                  >
-                    Player {index + 1} Name
-                  </label>
-                  <input
-                    type="text"
-                    id={`player-${index}`}
-                    value={name}
-                    onChange={(e) =>
-                      handlePlayerNameChange(index, e.target.value)
-                    }
-                    className={`w-full rounded-lg px-4 py-2 text-white ${errorIndexes.includes(index) ? "bg-red-600" : "bg-black"}`}
-                    placeholder={`Enter Player ${index + 1} Name`}
-                  />
-                </div>
-                {playerNames.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePlayer(index)}
-                    className="ml-2 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-2xl text-white transition hover:bg-red-700 focus:outline-none"
-                    aria-label="Remove player"
-                    style={{ boxShadow: "0 2px 8px #0002" }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        fontSize: "1.5rem",
-                        lineHeight: 1,
-                      }}
-                    >
-                      ×
-                    </span>
-                  </button>
-                )}
-              </div>
-            ))}
-
-            {duplicateNameError && (
-              <div className="mb-4 w-full text-center font-semibold text-red-400">
-                {duplicateNameError}
-              </div>
-            )}
-
-            {playerNames.length < 6 && (
-              <button
-                onClick={handleAddPlayer}
-                className="flex items-center rounded-full bg-white/10 px-4 py-2 text-white hover:bg-white/20"
-              >
-                <span className="mr-2 -translate-y-[2px] transform text-3xl text-pink-500">
-                  +
-                </span>
-                Add Player
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            className="mt-6 rounded-full bg-yellow-400 px-6 py-2 text-lg text-white transition-all hover:bg-yellow-500"
-          >
-            Play
-          </button>
-        </div>
       </div>
     </main>
   );
