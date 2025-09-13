@@ -210,9 +210,16 @@ export default function PlayNowPage() {
     if (useCustomPlaylist && customPlaylistUrl) {
       const iframe = iframeRefs.current["custom"];
       if (!iframe) return;
+      const playlistId = extractPlaylistId(customPlaylistUrl);
+      if (!playlistId) return;
+
       playerRefs.current["custom"] = new window.YT.Player(iframe, {
         height: "0",
         width: "0",
+        playerVars: {
+          listType: "playlist",
+          list: playlistId,
+        },
         events: {
           onReady: () => {
             console.log("YouTube Player for custom playlist is ready");
@@ -513,26 +520,54 @@ export default function PlayNowPage() {
         return;
       }
 
+      const playlistId = extractPlaylistId(customPlaylistUrl);
+      if (!playlistId) {
+        alert("Could not extract playlist ID from URL.");
+        return;
+      }
+
       if (validPlayers.length > 0) {
-        console.log("Valid custom playlist and players, starting game");
-        setTotalRounds(numberOfRounds);
+        console.log("Valid custom playlist and players, fetching songs");
 
-        const isMultiplayer = validPlayers.length > 1;
-        setGameMode(isMultiplayer ? "multiplayer" : "single");
-        if (isMultiplayer) {
-          const initialScores: Record<string, number> = {};
-          validPlayers.forEach((player) => {
-            initialScores[player] = 0;
-          });
-          setPlayerScores(initialScores);
-          setCurrentPlayerIndex(0);
+        try {
+          const res = await fetch(
+            `/api/getPlaylistSongs?playlistId=${playlistId}`,
+          );
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch playlist songs: ${res.status}`);
+          }
+
+          const data = (await res.json()) as Song[];
+
+          if (!Array.isArray(data) || data.length === 0) {
+            throw new Error("No songs available in the playlist");
+          }
+
+          setSongs(data);
+          setTotalRounds(numberOfRounds);
+
+          const isMultiplayer = validPlayers.length > 1;
+          setGameMode(isMultiplayer ? "multiplayer" : "single");
+          if (isMultiplayer) {
+            const initialScores: Record<string, number> = {};
+            validPlayers.forEach((player) => {
+              initialScores[player] = 0;
+            });
+            setPlayerScores(initialScores);
+            setCurrentPlayerIndex(0);
+          }
+
+          setGameStarted(true);
+          setShowCountdown(true);
+          setCountdownNumber(3);
+          setFadeCountdown(false);
+          setGameFinished(false);
+        } catch (error) {
+          console.error("Error fetching playlist songs:", error);
+          alert("Failed to fetch songs from playlist. Please try again.");
+          return;
         }
-
-        setGameStarted(true);
-        setShowCountdown(true);
-        setCountdownNumber(3);
-        setFadeCountdown(false);
-        setGameFinished(false);
       } else {
         console.log("Form incomplete");
         alert("Please complete the form.");
@@ -666,6 +701,12 @@ export default function PlayNowPage() {
     const youtubePlaylistRegex =
       /^https?:\/\/(www\.)?(youtube\.com\/playlist\?list=|youtu\.be\/.*\?list=)/;
     return youtubePlaylistRegex.test(url);
+  }
+
+  function extractPlaylistId(url: string): string | null {
+    const playlistRegex = /[?&]list=([a-zA-Z0-9_-]+)/;
+    const match = url.match(playlistRegex);
+    return match && match[1] ? match[1] : null;
   }
 
   useEffect(() => {
@@ -1383,7 +1424,7 @@ export default function PlayNowPage() {
                               iframeRefs.current["custom"] = el;
                             }}
                             id="youtube-player-custom"
-                            src={`${customPlaylistUrl}&enablejsapi=1&index=${index}`}
+                            src={`https://www.youtube.com/embed?listType=playlist&list=${extractPlaylistId(customPlaylistUrl)}&enablejsapi=1&index=${index}`}
                             width="640"
                             height="390"
                             frameBorder="0"
@@ -1679,7 +1720,6 @@ export default function PlayNowPage() {
                 )}
               </div>
 
-              {/* Chat Box for Chat Guess Mode */}
               {roomMode === "chat" && (
                 <div className="w-80 rounded-lg bg-white/10 p-4 backdrop-blur-sm">
                   <h3 className="mb-4 text-lg font-bold text-white">

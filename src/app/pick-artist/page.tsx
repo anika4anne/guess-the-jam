@@ -598,7 +598,6 @@ export default function PickArtistPage() {
       randomArtist.songs[Math.floor(Math.random() * randomArtist.songs.length)];
     if (!randomSong) return;
 
-    // Generate multiple choice options (correct answer + 3 wrong answers)
     const correctAnswer = randomArtist.name;
     const wrongAnswers = artists
       .filter((artist) => artist.id !== randomArtist.id)
@@ -617,7 +616,6 @@ export default function PickArtistPage() {
     setTimeLeft(30);
     setGamePhase("playing");
 
-    // Start timer
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {

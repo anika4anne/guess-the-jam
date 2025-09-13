@@ -107,25 +107,6 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-
-          {/* <div className="mt-4 flex flex-col items-center">
-            <a
-              href="https://discord.gg/Ny8Vr8zjYK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-xl border border-[#5865F2] bg-white/5 px-4 py-2 text-white shadow-sm transition-all hover:scale-105 hover:bg-[#5865F2]/20 focus:ring-2 focus:ring-[#5865F2] focus:ring-offset-2 focus:outline-none"
-              style={{ textDecoration: "none" }}
-            >
-              <Image
-                src="/discord.png"
-                alt="Discord logo"
-                width={28}
-                height={28}
-                className="rounded"
-              />
-              <span className="text-base font-semibold">Join the server!</span>
-            </a>
-          </div> */}
         </div>
       </main>
     </>
