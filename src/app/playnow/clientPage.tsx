@@ -30,11 +30,14 @@ interface Song {
 
 interface PlayerAnswer {
   song: string;
+  movie?: string;
   artist: string;
   points: number;
   songCorrect: boolean;
+  movieCorrect?: boolean;
   artistCorrect: boolean;
   songRaw?: string;
+  movieRaw?: string;
   artistRaw?: string;
 }
 
@@ -56,6 +59,15 @@ export default function PlayNowPage() {
   const [playerNames, setPlayerNames] = useState<string[]>([""]);
   const [useCustomPlaylist, setUseCustomPlaylist] = useState(false);
   const [customPlaylistUrl, setCustomPlaylistUrl] = useState("");
+  const [guessTypes, setGuessTypes] = useState<{
+    movie: boolean;
+    song: boolean;
+    artist: boolean;
+  }>({
+    movie: false,
+    song: true,
+    artist: true,
+  });
 
   const [, setSongs] = useState<Song[] | null>(null);
   const [errorIndexes, setErrorIndexes] = useState<number[]>([]);
@@ -74,7 +86,9 @@ export default function PlayNowPage() {
     null,
   );
   const [showPrompt, setShowPrompt] = useState(false);
+  const [isEarlyGuess, setIsEarlyGuess] = useState(false);
   const [userSongAnswer, setUserSongAnswer] = useState("");
+  const [userMovieAnswer, setUserMovieAnswer] = useState("");
   const [userArtistAnswer, setUserArtistAnswer] = useState("");
   const [currentSong, setCurrentSong] = useState("");
   const [currentArtist, setCurrentArtist] = useState("");
@@ -89,11 +103,14 @@ export default function PlayNowPage() {
       string,
       {
         song: string;
+        movie?: string;
         artist: string;
         points: number;
         songCorrect: boolean;
+        movieCorrect?: boolean;
         artistCorrect: boolean;
         songRaw?: string;
+        movieRaw?: string;
         artistRaw?: string;
       }
     >
@@ -216,10 +233,6 @@ export default function PlayNowPage() {
       playerRefs.current["custom"] = new window.YT.Player(iframe, {
         height: "0",
         width: "0",
-        playerVars: {
-          listType: "playlist",
-          list: playlistId,
-        },
         events: {
           onReady: () => {
             console.log("YouTube Player for custom playlist is ready");
@@ -526,6 +539,18 @@ export default function PlayNowPage() {
         return;
       }
 
+      const hasSelectedGuessType =
+        (useCustomPlaylist ? guessTypes.movie : false) ||
+        guessTypes.song ||
+        guessTypes.artist;
+      if (!hasSelectedGuessType) {
+        const availableOptions = useCustomPlaylist
+          ? "Movie Name, Song Name, or Artist Name"
+          : "Song Name or Artist Name";
+        alert(`Please select at least one guess type (${availableOptions}).`);
+        return;
+      }
+
       if (validPlayers.length > 0) {
         console.log("Valid custom playlist and players, fetching songs");
 
@@ -691,6 +716,15 @@ export default function PlayNowPage() {
   function isSongCorrect(userSong: string, correctSong: string) {
     const normalizedUser = normalize(userSong);
     const normalizedCorrect = normalize(correctSong);
+    const correctWords = normalizedCorrect
+      .split(" ")
+      .filter((w) => w.length > 2);
+    return correctWords.some((word) => normalizedUser.includes(word));
+  }
+
+  function isMovieCorrect(userMovie: string, correctMovie: string) {
+    const normalizedUser = normalize(userMovie);
+    const normalizedCorrect = normalize(correctMovie);
     const correctWords = normalizedCorrect
       .split(" ")
       .filter((w) => w.length > 2);
@@ -890,10 +924,16 @@ export default function PlayNowPage() {
     const answer = {
       song: userSongAnswer,
       songRaw: userSongAnswer,
+      movie: userMovieAnswer,
+      movieRaw: userMovieAnswer,
       artist: userArtistAnswer,
       artistRaw: userArtistAnswer,
       points,
       songCorrect,
+      movieCorrect:
+        useCustomPlaylist && guessTypes.movie
+          ? isMovieCorrect(userMovieAnswer, currentSong)
+          : false,
       artistCorrect,
     };
 
@@ -918,6 +958,15 @@ export default function PlayNowPage() {
       setWaitingForOthers(false);
     }
   }, [mode, roomId, round]);
+
+  useEffect(() => {
+    if (!useCustomPlaylist && guessTypes.movie) {
+      setGuessTypes((prev) => ({
+        ...prev,
+        movie: false,
+      }));
+    }
+  }, [useCustomPlaylist, guessTypes.movie]);
 
   if (!gameStarted) {
     return (
@@ -1006,11 +1055,67 @@ export default function PlayNowPage() {
                   value={customPlaylistUrl}
                   onChange={(e) => setCustomPlaylistUrl(e.target.value)}
                   placeholder="https://www.youtube.com/playlist?list=..."
-                  className="w-full rounded-lg px-4 py-2 text-black"
+                  className="w-full rounded-lg border-2 border-white px-4 py-2 text-white"
                 />
                 <p className="mt-2 text-sm text-white/60">
-                  Paste a YouTube playlist URL to play songs from that playlist
+                  <param name="" value="" />
+                  put a YouTube playlist URL to play songs from that playlist
                 </p>
+
+                <div className="mt-6">
+                  <label className="mb-3 block text-xl text-white">
+                    What do you want to guess?
+                  </label>
+                  <div className="space-y-3">
+                    {useCustomPlaylist && (
+                      <label className="flex items-center gap-3 text-white">
+                        <input
+                          type="checkbox"
+                          checked={guessTypes.movie}
+                          onChange={(e) =>
+                            setGuessTypes((prev) => ({
+                              ...prev,
+                              movie: e.target.checked,
+                            }))
+                          }
+                          className="h-4 w-4"
+                        />
+                        Movie Name
+                      </label>
+                    )}
+                    <label className="flex items-center gap-3 text-white">
+                      <input
+                        type="checkbox"
+                        checked={guessTypes.song}
+                        onChange={(e) =>
+                          setGuessTypes((prev) => ({
+                            ...prev,
+                            song: e.target.checked,
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      Song Name
+                    </label>
+                    <label className="flex items-center gap-3 text-white">
+                      <input
+                        type="checkbox"
+                        checked={guessTypes.artist}
+                        onChange={(e) =>
+                          setGuessTypes((prev) => ({
+                            ...prev,
+                            artist: e.target.checked,
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      Artist Name
+                    </label>
+                  </div>
+                  <p className="mt-2 text-sm text-white/60">
+                    Select one or more options. You can also choose multiple
+                  </p>
+                </div>
               </div>
             ) : (
               <>
@@ -1321,6 +1426,7 @@ export default function PlayNowPage() {
                     setPlayerAnswers({});
                     setCurrentPlayerIndex(0);
                     setShowPrompt(false);
+                    setIsEarlyGuess(false);
                     setShowAllResults(false);
                     setShowYouTubePlayer(false);
                     setShowCountdown(false);
@@ -1424,7 +1530,7 @@ export default function PlayNowPage() {
                               iframeRefs.current["custom"] = el;
                             }}
                             id="youtube-player-custom"
-                            src={`https://www.youtube.com/embed?listType=playlist&list=${extractPlaylistId(customPlaylistUrl)}&enablejsapi=1&index=${index}`}
+                            src={`https://www.youtube.com/embed/videoseries?list=${extractPlaylistId(customPlaylistUrl)}&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0&enablejsapi=1&index=${index}`}
                             width="640"
                             height="390"
                             frameBorder="0"
@@ -1847,32 +1953,61 @@ export default function PlayNowPage() {
                         gameMode === "single" && (
                           <div className="mb-6 w-full text-center text-lg font-bold">
                             {(() => {
-                              const anyWrong = !songCorrect || !artistCorrect;
-                              const bothWrong = !songCorrect && !artistCorrect;
+                              const movieCorrect =
+                                useCustomPlaylist && guessTypes.movie
+                                  ? isMovieCorrect(userMovieAnswer, currentSong)
+                                  : true;
+                              const anyWrong =
+                                !songCorrect || !artistCorrect || !movieCorrect;
+                              const allWrong =
+                                !songCorrect && !artistCorrect && !movieCorrect;
                               return (
                                 <>
                                   <span className="mt-6 block text-yellow-400">
                                     Your guess:{" "}
-                                    <span
-                                      className={
-                                        songCorrect
-                                          ? "text-green-500"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      {userSongAnswer ?? "(no guess)"}
-                                    </span>
-                                    {" - "}
-                                    <span
-                                      className={
-                                        artistCorrect
-                                          ? "text-green-500"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      {userArtistAnswer ?? "(no guess)"}
-                                    </span>
-                                    {bothWrong && (
+                                    {useCustomPlaylist && guessTypes.movie && (
+                                      <>
+                                        <span
+                                          className={
+                                            movieCorrect
+                                              ? "text-green-500"
+                                              : "text-red-500"
+                                          }
+                                        >
+                                          Movie:{" "}
+                                          {userMovieAnswer ?? "(no guess)"}
+                                        </span>
+                                        {" - "}
+                                      </>
+                                    )}
+                                    {(!useCustomPlaylist ||
+                                      guessTypes.song) && (
+                                      <>
+                                        <span
+                                          className={
+                                            songCorrect
+                                              ? "text-green-500"
+                                              : "text-red-500"
+                                          }
+                                        >
+                                          {userSongAnswer ?? "(no guess)"}
+                                        </span>
+                                        {" - "}
+                                      </>
+                                    )}
+                                    {(!useCustomPlaylist ||
+                                      guessTypes.artist) && (
+                                      <span
+                                        className={
+                                          artistCorrect
+                                            ? "text-green-500"
+                                            : "text-red-500"
+                                        }
+                                      >
+                                        {userArtistAnswer ?? "(no guess)"}
+                                      </span>
+                                    )}
+                                    {allWrong && (
                                       <span className="text-red-500"> ❌</span>
                                     )}
                                     {!anyWrong && (
@@ -2023,96 +2158,160 @@ export default function PlayNowPage() {
                             </div>
                           ) : (
                             <>
-                              <div className="relative mb-4">
-                                <label htmlFor="artist" className="mb-2 block">
-                                  Artist Name:
-                                </label>
-                                <input
-                                  type={
-                                    mode === "single" &&
-                                    gameMode === "multiplayer" &&
-                                    !showArtist
-                                      ? "password"
-                                      : "text"
-                                  }
-                                  id="artist"
-                                  value={userArtistAnswer}
-                                  onChange={(e) =>
-                                    setUserArtistAnswer(e.target.value)
-                                  }
-                                  className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
-                                  placeholder="Enter artist name"
-                                  autoComplete="off"
-                                  style={{ letterSpacing: "0.1em" }}
-                                  disabled={
-                                    mode === "private" && waitingForOthers
-                                  }
-                                />
-                                {mode === "single" &&
-                                  gameMode === "multiplayer" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowArtist((v) => !v)}
-                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
-                                      tabIndex={-1}
-                                      aria-label={
-                                        showArtist
-                                          ? "Hide artist"
-                                          : "Show artist"
-                                      }
-                                      style={{ padding: 0 }}
-                                    >
-                                      {showArtist ? "🙈" : "👁️"}
-                                    </button>
-                                  )}
-                              </div>
-                              <div className="relative mb-6">
-                                <label htmlFor="song" className="mb-2 block">
-                                  Song Title:
-                                </label>
-                                <input
-                                  type={
-                                    mode === "single" &&
-                                    gameMode === "multiplayer" &&
-                                    !showSong
-                                      ? "password"
-                                      : "text"
-                                  }
-                                  id="song"
-                                  value={userSongAnswer}
-                                  onChange={(e) =>
-                                    setUserSongAnswer(e.target.value)
-                                  }
-                                  className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
-                                  placeholder="Enter song title"
-                                  autoComplete="off"
-                                  style={{ letterSpacing: "0.1em" }}
-                                  disabled={
-                                    mode === "private" && waitingForOthers
-                                  }
-                                />
-                                {mode === "single" &&
-                                  gameMode === "multiplayer" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowSong((v) => !v)}
-                                      className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
-                                      tabIndex={-1}
-                                      aria-label={
-                                        showSong ? "Hide song" : "Show song"
-                                      }
-                                      style={{ padding: 0 }}
-                                    >
-                                      {showSong ? "🙈" : "👁️"}
-                                    </button>
-                                  )}
-                              </div>
+                              {(!useCustomPlaylist || guessTypes.artist) && (
+                                <div className="relative mb-4">
+                                  <label
+                                    htmlFor="artist"
+                                    className="mb-2 block"
+                                  >
+                                    Artist Name:
+                                  </label>
+                                  <input
+                                    type={
+                                      mode === "single" &&
+                                      gameMode === "multiplayer" &&
+                                      !showArtist
+                                        ? "password"
+                                        : "text"
+                                    }
+                                    id="artist"
+                                    value={userArtistAnswer}
+                                    onChange={(e) =>
+                                      setUserArtistAnswer(e.target.value)
+                                    }
+                                    className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
+                                    placeholder="Enter artist name"
+                                    autoComplete="off"
+                                    style={{ letterSpacing: "0.1em" }}
+                                    disabled={
+                                      mode === "private" && waitingForOthers
+                                    }
+                                  />
+                                  {mode === "single" &&
+                                    gameMode === "multiplayer" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowArtist((v) => !v)}
+                                        className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                        tabIndex={-1}
+                                        aria-label={
+                                          showArtist
+                                            ? "Hide artist"
+                                            : "Show artist"
+                                        }
+                                        style={{ padding: 0 }}
+                                      >
+                                        {showArtist ? "🙈" : "👁️"}
+                                      </button>
+                                    )}
+                                </div>
+                              )}
+                              {(!useCustomPlaylist || guessTypes.movie) && (
+                                <div className="relative mb-6">
+                                  <label htmlFor="movie" className="mb-2 block">
+                                    Movie Name:
+                                  </label>
+                                  <input
+                                    type={
+                                      mode === "single" &&
+                                      gameMode === "multiplayer" &&
+                                      !showSong
+                                        ? "password"
+                                        : "text"
+                                    }
+                                    id="movie"
+                                    value={userMovieAnswer}
+                                    onChange={(e) =>
+                                      setUserMovieAnswer(e.target.value)
+                                    }
+                                    className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
+                                    placeholder="Enter movie name"
+                                    autoComplete="off"
+                                    style={{ letterSpacing: "0.1em" }}
+                                    disabled={
+                                      mode === "private" && waitingForOthers
+                                    }
+                                  />
+                                  {mode === "single" &&
+                                    gameMode === "multiplayer" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowSong((v) => !v)}
+                                        className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                        tabIndex={-1}
+                                        aria-label={
+                                          showSong ? "Hide movie" : "Show movie"
+                                        }
+                                        style={{ padding: 0 }}
+                                      >
+                                        {showSong ? "🙈" : "👁️"}
+                                      </button>
+                                    )}
+                                </div>
+                              )}
+                              {(!useCustomPlaylist || guessTypes.song) && (
+                                <div className="relative mb-6">
+                                  <label htmlFor="song" className="mb-2 block">
+                                    Song Title:
+                                  </label>
+                                  <input
+                                    type={
+                                      mode === "single" &&
+                                      gameMode === "multiplayer" &&
+                                      !showSong
+                                        ? "password"
+                                        : "text"
+                                    }
+                                    id="song"
+                                    value={userSongAnswer}
+                                    onChange={(e) =>
+                                      setUserSongAnswer(e.target.value)
+                                    }
+                                    className="w-full rounded bg-black/50 p-2 pr-12 font-mono text-white"
+                                    placeholder="Enter song title"
+                                    autoComplete="off"
+                                    style={{ letterSpacing: "0.1em" }}
+                                    disabled={
+                                      mode === "private" && waitingForOthers
+                                    }
+                                  />
+                                  {mode === "single" &&
+                                    gameMode === "multiplayer" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowSong((v) => !v)}
+                                        className="absolute right-3 bottom-2 flex items-center text-2xl text-gray-300 hover:text-white focus:outline-none"
+                                        tabIndex={-1}
+                                        aria-label={
+                                          showSong ? "Hide song" : "Show song"
+                                        }
+                                        style={{ padding: 0 }}
+                                      >
+                                        {showSong ? "🙈" : "👁️"}
+                                      </button>
+                                    )}
+                                </div>
+                              )}
                               <div className="flex justify-end gap-4">
                                 <button
                                   onClick={() => {
+                                    const hasArtistGuess = useCustomPlaylist
+                                      ? !guessTypes.artist ||
+                                        userArtistAnswer.trim()
+                                      : userArtistAnswer.trim();
+                                    const hasSongGuess = useCustomPlaylist
+                                      ? !guessTypes.song ||
+                                        userSongAnswer.trim()
+                                      : userSongAnswer.trim();
+                                    const hasMovieGuess = useCustomPlaylist
+                                      ? !guessTypes.movie ||
+                                        userMovieAnswer.trim()
+                                      : false;
+
                                     if (
-                                      !userArtistAnswer.trim() &&
-                                      !userSongAnswer.trim()
+                                      !hasArtistGuess &&
+                                      !hasSongGuess &&
+                                      !hasMovieGuess
                                     ) {
                                       setInputError(
                                         "You have to guess at least one!",
@@ -2133,9 +2332,27 @@ export default function PlayNowPage() {
                                         userSongAnswer,
                                         currentSong,
                                       );
+                                      const movieCorrect =
+                                        useCustomPlaylist && guessTypes.movie
+                                          ? isMovieCorrect(
+                                              userMovieAnswer,
+                                              currentSong,
+                                            )
+                                          : false;
                                       let points = 0;
                                       if (artistCorrect) points += 5;
                                       if (songCorrect) points += 5;
+                                      if (movieCorrect) points += 5;
+
+                                      if (
+                                        isEarlyGuess &&
+                                        (artistCorrect ||
+                                          songCorrect ||
+                                          movieCorrect)
+                                      ) {
+                                        points += 1;
+                                      }
+
                                       void handleMultiplayerSubmit(
                                         points,
                                         artistCorrect,
@@ -2154,9 +2371,27 @@ export default function PlayNowPage() {
                                         userSongAnswer,
                                         currentSong,
                                       );
+                                      const movieCorrect =
+                                        useCustomPlaylist && guessTypes.movie
+                                          ? isMovieCorrect(
+                                              userMovieAnswer,
+                                              currentSong,
+                                            )
+                                          : false;
                                       let points = 0;
                                       if (artistCorrect) points += 5;
                                       if (songCorrect) points += 5;
+                                      if (movieCorrect) points += 5;
+
+                                      if (
+                                        isEarlyGuess &&
+                                        (artistCorrect ||
+                                          songCorrect ||
+                                          movieCorrect)
+                                      ) {
+                                        points += 1;
+                                      }
+
                                       const currentPlayerName =
                                         playerNames[currentPlayerIndex];
                                       if (
@@ -2170,10 +2405,20 @@ export default function PlayNowPage() {
                                         newAnswers[currentPlayerName] = {
                                           song: userSongAnswer,
                                           songRaw: userSongAnswer,
+                                          movie: userMovieAnswer,
+                                          movieRaw: userMovieAnswer,
                                           artist: userArtistAnswer,
                                           artistRaw: userArtistAnswer,
                                           points,
                                           songCorrect,
+                                          movieCorrect:
+                                            useCustomPlaylist &&
+                                            guessTypes.movie
+                                              ? isMovieCorrect(
+                                                  userMovieAnswer,
+                                                  currentSong,
+                                                )
+                                              : false,
                                           artistCorrect,
                                         };
                                         setPlayerAnswers(newAnswers);
@@ -2208,9 +2453,27 @@ export default function PlayNowPage() {
                                         userSongAnswer,
                                         currentSong,
                                       );
+                                      const movieCorrect =
+                                        useCustomPlaylist && guessTypes.movie
+                                          ? isMovieCorrect(
+                                              userMovieAnswer,
+                                              currentSong,
+                                            )
+                                          : false;
                                       let points = 0;
                                       if (artistCorrect) points += 5;
                                       if (songCorrect) points += 5;
+                                      if (movieCorrect) points += 5;
+
+                                      if (
+                                        isEarlyGuess &&
+                                        (artistCorrect ||
+                                          songCorrect ||
+                                          movieCorrect)
+                                      ) {
+                                        points += 1;
+                                      }
+
                                       setPointsEarned(points);
                                       setScore((prev) => prev + points);
                                       setShowResult(true);
@@ -2247,7 +2510,9 @@ export default function PlayNowPage() {
                                 setRound(round + 1);
                                 setUserArtistAnswer("");
                                 setUserSongAnswer("");
+                                setUserMovieAnswer("");
                                 setShowPrompt(false);
+                                setIsEarlyGuess(false);
                                 setShowResult(false);
                                 setPointsEarned(null);
                                 const player = useCustomPlaylist
@@ -2277,7 +2542,9 @@ export default function PlayNowPage() {
                                   setRound(round + 1);
                                   setUserArtistAnswer("");
                                   setUserSongAnswer("");
+                                  setUserMovieAnswer("");
                                   setShowPrompt(false);
+                                  setIsEarlyGuess(false);
                                   setShowAllResults(false);
                                   setPlayerAnswers({});
                                   setCurrentPlayerIndex(0);
@@ -2361,6 +2628,20 @@ export default function PlayNowPage() {
                       </div>
                     ))}
                 </div>
+              </div>
+            )}
+
+            {showYouTubePlayer && !showPrompt && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => {
+                    setIsEarlyGuess(true);
+                    setShowPrompt(true);
+                  }}
+                  className="animate-pulse rounded-full bg-pink-500 px-8 py-4 text-xl font-bold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:animate-none hover:bg-pink-600"
+                >
+                  Guess Now
+                </button>
               </div>
             )}
           </>

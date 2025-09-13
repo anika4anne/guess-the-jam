@@ -9,7 +9,7 @@
     "lib": ["dom", "dom.iterable", "ES2022"],
     "noEmit": true,
     "moduleResolution": "bundler",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "plugins": [
       {
         "name": "next"
