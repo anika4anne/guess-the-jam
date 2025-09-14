@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "~/components/ui/button";
 
 interface Artist {
@@ -878,10 +879,14 @@ export default function PickArtistPage() {
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>("");
   const [hintUsed, setHintUsed] = useState(false);
   const [hintCooldown, setHintCooldown] = useState(false);
+  const [visualizerTime, setVisualizerTime] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const visualizerPhases = useRef(
+    Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
+  );
 
   const genres = ["All", "Pop", "Hip-Hop", "K-Pop"];
 
@@ -911,14 +916,12 @@ export default function PickArtistPage() {
     try {
       console.log("Looking up YouTube video for:", songTitle, "by", artist);
 
-      // Look up the video ID from our predefined mapping
       const videoId = songVideoIds[songTitle];
 
       if (videoId) {
         console.log("Found video ID:", videoId);
         setYoutubeVideoId(videoId);
         setShowYouTubePlayer(true);
-        // Wait for DOM to update before initializing player
         setTimeout(() => {
           initializeYouTubePlayer(videoId);
         }, 100);
@@ -988,9 +991,12 @@ export default function PickArtistPage() {
     setHintCooldown(true);
     setHintUsed(true);
 
-    console.log("Hint used (iframe approach - no direct control)");
+    if (currentSong && currentArtist) {
+      searchAndPlayYouTubeVideo(currentSong, currentArtist.name);
+    }
 
-    // Simulate hint cooldown
+    console.log("Hint used - starting music playback");
+
     setTimeout(() => {
       setHintCooldown(false);
     }, 1000);
@@ -1039,10 +1045,6 @@ export default function PickArtistPage() {
     setHintUsed(false);
     setHintCooldown(false);
     setGamePhase("playing");
-
-    if (randomArtist && randomSong) {
-      searchAndPlayYouTubeVideo(randomSong, randomArtist.name);
-    }
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -1118,6 +1120,24 @@ export default function PickArtistPage() {
   const handleBack = () => {
     router.push("/");
   };
+
+  const handleEndGame = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setGamePhase("complete");
+  };
+
+  useEffect(() => {
+    let frame: number;
+    const animate = () => {
+      setVisualizerTime(performance.now());
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -1221,7 +1241,7 @@ export default function PickArtistPage() {
                 const shuffled = [...filteredArtists].sort(
                   () => Math.random() - 0.5,
                 );
-                const randomCount = Math.floor(Math.random() * 4) + 2; // 2-5 artists
+                const randomCount = Math.floor(Math.random() * 4) + 2;
                 setSelectedArtists(
                   shuffled.slice(0, randomCount).map((a) => a.id),
                 );
@@ -1257,6 +1277,29 @@ export default function PickArtistPage() {
             You scored{" "}
             <span className="font-bold text-yellow-400">{score}</span> points
           </p>
+
+          <div className="mb-6 rounded-lg bg-white/5 p-4">
+            <h2 className="mb-3 text-xl font-bold text-white">
+              Score Breakdown
+            </h2>
+            <div className="flex justify-center gap-8">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-400">{score}</p>
+                <p className="text-sm text-white/80">Correct</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-red-400">
+                  {round - 1 - score}
+                </p>
+                <p className="text-sm text-white/80">Wrong</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-400">{round - 1}</p>
+                <p className="text-sm text-white/80">Total</p>
+              </div>
+            </div>
+          </div>
+
           <p className="mb-8 text-lg text-white/80">
             {score >= 8
               ? "You know your music!"
@@ -1288,71 +1331,116 @@ export default function PickArtistPage() {
 
   return (
     <main className="pick-artist-background flex min-h-screen flex-col items-center justify-center px-6 text-white">
-      <div className="absolute top-6 left-6">
-        <Button
-          variant="outline"
-          onClick={handleBack}
-          className="border-white/20 bg-white/10 text-white hover:bg-white/20"
-        >
-          ← Back to Home
-        </Button>
-      </div>
-
       <div className="w-full max-w-2xl rounded-2xl bg-white/10 p-8 shadow-lg backdrop-blur-md">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-pink-300">Artist Challenge</h1>
-          <div className="text-right">
-            <p className="text-white">
-              Round {round} of {totalRounds}
-            </p>
-            <p className="font-bold text-yellow-400">Score: {score}</p>
-          </div>
-        </div>
-
         {gamePhase === "playing" && (
           <>
-            <div className="mb-6 text-center">
-              <h2 className="mb-4 text-xl text-white">Who sings this?</h2>
-              <div className="mb-4">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="text-left">
+                <h2 className="text-2xl font-bold text-pink-300">
+                  Artist Challenge
+                </h2>
+                <div className="text-white">
+                  <p>
+                    Round {round} of {totalRounds}
+                  </p>
+                  <p className="font-bold text-yellow-400">Score: {score}</p>
+                </div>
+              </div>
+              <div className="text-right">
                 <div className="mb-2 text-lg text-white">Time: {timeLeft}s</div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleEndGame}
+                    variant="outline"
+                    className="border-red-500/50 bg-red-500/10 px-3 py-1 text-xs text-red-300 hover:bg-red-500/20"
+                  >
+                    End Now
+                  </Button>
+                  <Button
+                    onClick={handleBack}
+                    variant="outline"
+                    className="border-white/20 bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
+                  >
+                    Exit
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {showYouTubePlayer && (
-              <div className="mb-6 flex justify-center">
+            <div className="mb-6 text-center">
+              <h2 className="mb-4 text-xl text-white">Who sings this?</h2>
+              <p className="mb-4 text-3xl font-bold text-pink-300">
+                {currentSong}
+              </p>
+              <div className="mb-4">
+                <p className="text-sm text-gray-300">
+                  Click "Hint" to hear the song
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6 flex justify-center">
+              <div
+                id="youtube-player-artist"
+                className="relative overflow-hidden rounded-lg"
+                style={{
+                  width: "640px",
+                  height: "390px",
+                  position: "relative",
+                }}
+              >
                 <div
-                  id="youtube-player-artist"
-                  className="relative overflow-hidden rounded-lg"
                   style={{
-                    width: "640px",
-                    height: "390px",
-                    position: "relative",
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    height: "100%",
+                    zIndex: 9999,
+                    pointerEvents: "auto",
+                    background: "black",
+                    opacity: 1,
+                  }}
+                />
+                <div
+                  className="absolute flex items-center justify-center"
+                  style={{
+                    top: "calc(80% + 2in - 1in - 0.2in)",
+                    left: "calc(75% + 2in - 0.5in)",
+                    width: 320,
+                    height: 320,
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                    zIndex: 10000,
                   }}
                 >
                   <div
+                    className="absolute flex items-center justify-center"
                     style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      width: "100%",
-                      height: "100%",
-                      zIndex: 9999,
-                      pointerEvents: "auto",
-                      background: "black",
-                      opacity: 1,
+                      top: "calc(80% + 2in - 1in - 0.2in)",
+                      left: "calc(75% + 2in - 0.5in)",
+                      width: 200,
+                      height: 200,
+                      transform: "translate(-50%, -50%)",
+                      zIndex: 2,
                     }}
-                  />
+                  >
+                    <Image
+                      src="/Guess-The-Jam-Logo.png"
+                      alt="Guess the Jam Logo"
+                      width={200}
+                      height={200}
+                      style={{
+                        borderRadius: "50%",
+                        boxShadow: "0 0 32px 8px #0008",
+                        zIndex: 2,
+                        position: "relative",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            )}
-
-            {!showYouTubePlayer && (
-              <div className="mb-6 flex justify-center">
-                <div className="rounded-lg bg-white/10 p-8 text-center">
-                  <p className="text-white/80">Loading song...</p>
-                </div>
-              </div>
-            )}
+            </div>
 
             <div className="mb-6 flex justify-center">
               <Button
