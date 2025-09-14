@@ -9,6 +9,7 @@ export const env = createEnv({
         : z.string().optional(),
     AUTH_DISCORD_ID: z.string().optional(),
     AUTH_DISCORD_SECRET: z.string().optional(),
+    YOUTUBE_API_KEY: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -22,6 +23,7 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
     AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
+    YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
   },
