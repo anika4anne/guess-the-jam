@@ -12,6 +12,319 @@ interface Artist {
   genre: string;
 }
 
+const songVideoIds: Record<string, string> = {
+  "Shake It Off": "nfWlot6h_JM",
+  "Love Story": "8xg3vE8Ie_E",
+  "Anti-Hero": "b1kbLwvqugk",
+  "Blank Space": "e-ORhEE9VVg",
+  "You Belong With Me": "VuNIsY6JdUw",
+  Cardigan: "K-a8s8OLBSE",
+  Willow: "RsEZmictANA",
+  "Lavender Haze": "mkR_Qwix4Ho",
+  "Midnight Rain": "Odh9ddPUkEY",
+  Bejeweled: "b7QlX3yR2xs",
+
+  //drake
+  "God's Plan": "xpVfcZ0ZcFM",
+  "One Dance": "3IIspaicSnY",
+  "Hotline Bling": "uxpDa-c-4Mc",
+  "In My Feelings": "DRS_PpOrUZ4",
+  "Started From The Bottom": "RubBzkZzpUA",
+  "Nice For What": "U9BwWKXjVaI",
+  Nonstop: "TbL6x6cBd_Y",
+  "Toosie Slide": "3CxtK7-XtE0",
+  "Laugh Now Cry Later": "JFm7YDVlqnI",
+  "Way 2 Sexy": "vX9msKu75qs",
+
+  //billie eilish
+  "Bad Guy": "DyDfgMOUjCI",
+  Lovely: "V1Pl8CzNzCw",
+  "Happier Than Ever": "5GJWxDKyk3A",
+  "Therefore I Am": "RUQl6YcMalg",
+  "Ocean Eyes": "viimfQi_pUw",
+  "Everything I Wanted": "EgBJmlPo8Xw",
+  "My Future": "Dm9Zf1WYQ_A",
+  "Lost Cause": "BVEpVhXZsXg",
+  NDA: "OORBa32WFcM",
+  "Getting Older": "z2mh5HzzvHw",
+
+  // Thhe weekend
+  "Blinding Lights": "4NRXx6U8ABQ",
+  Starboy: "34Na4j8AVgA",
+  "The Hills": "yzTuBuRdAyA",
+  "Save Your Tears": "XXYlFuWEuKI",
+  "Can't Feel My Face": "KEI4qSrkPAs",
+  "After Hours": "ygTZZpVkmKg",
+  "Die For You": "uPD0QOGTmMI",
+  "Take My Breath": "VOgFZfRVaww",
+  Sacrifice: "xcJtL7QggTI",
+  "Less Than Zero": "SJzI1C0mFNU",
+
+  // ariagne grande
+  "Thank U, Next": "gl1aHhXnN1k",
+  "7 Rings": "QYh6mYIJG2Y",
+  Positions: "tcYodQoapMg",
+  "Side To Side": "SXiSVQZLje8",
+  "No Tears Left To Cry": "ffxKSjUwKdU",
+  "Break Up With Your Girlfriend": "LH4Y1ZUUx2g",
+  "God Is A Woman": "kHLHSlExFis",
+  Breathin: "kN0iD0pI3o0",
+  "Into You": "1ekZEVeXwek",
+  Problem: "iS1g8G_njx8",
+
+  // ed shreean
+  "Shape of You": "JGwWNGJdvx8",
+  Perfect: "2Vv-BfVoq4g",
+  "Thinking Out Loud": "lp-EO5I60KA",
+  Photograph: "nSDgHBxUbVQ",
+  "Castle on the Hill": "K0ibBPhiaG0",
+  "Bad Habits": "orJSJGHjBLI",
+  Shivers: "Il0S8BoucSA",
+  "Galway Girl": "87gWaABqGYs",
+  "Happier (Ed)": "iWZmdoY1aTE",
+  "I Don't Care": "y83x7MgzWOA",
+
+  // post malone
+  Circles: "wXhTHyIgQ_U",
+  Sunflower: "ApXoWvfEYVU",
+  Rockstar: "UceaB4D0jpo",
+  "Better Now": "UYwF-jdcVjY",
+  Goodbyes: "ba7mB8oueCY",
+  Wow: "393C3pr2ioY",
+  Congratulations: "SC4xMk98Pdc",
+  "I Fall Apart": "2ZBtPf7FOoM",
+  Psycho: "au2n7VVGv_c",
+  "Stay (Post Malone)": "0s5EEpkEcfU",
+
+  // harry styls
+  "As It Was": "H5v3kku4y6Q",
+  "Watermelon Sugar": "E07s5ZYygMg",
+  "Adore You": "VF-r5TtlT9w",
+  "Sign of the Times": "qN4ooNx77u0",
+  "Late Night Talking": "2OKo7LhU6Zk",
+  Golden: "P3cffdsEXXw",
+  Falling: "olGSAVOkkTI",
+  "Lights Up": "9NZvM1918_E",
+  Kiwi: "MrPpFIrXvXM",
+  Matilda: "tGhpGzW03hY",
+
+  // olivia rodrigo
+  "Drivers License": "ZmDBbnmKpqQ",
+  "Good 4 U": "gNi_6U5Pm_o",
+  "Deja Vu": "cii6ruuycQA",
+  Traitor: "CRrfyVHotP4",
+  Vampire: "Bg7EzQ0X9nA",
+  Brutal: "OGUy2UmRxJc",
+  "Happier (Olivia)": "zmiZJ9Bx-PY",
+  "Jealousy, Jealousy": "FqQlz9zYZSg",
+  "1 Step Forward, 3 Steps Back": "QQj_8jaE4oQ",
+  "Favorite Crime": "RgQ8Y2fI9Bw",
+
+  // bad bunny
+  "Tití Me Preguntó": "QpKkNvmWlS8",
+  "Moscow Mule": "lk1mQCgrKJg",
+  "Después de la Playa": "Rzo8zZ9LZXA",
+  Efecto: "Rw5kBmljVXo",
+  "Un Coco": "avPK10Z2Mwo",
+  "Me Porto Bonito": "OSUxrSe5GbI",
+  "Ojitos Lindos": "UqtJGyqJkNA",
+  Neverita: "6iJ0Z4l5o3c",
+  "El Apagón": "qPq3sofgNmQ",
+  "Yo No Soy Celoso": "R6m2eN6CY6Y",
+
+  // SZA
+  "Kill Bill": "MSRcC626prw",
+  Snooze: "LDY_XyxBu8A",
+  "Good Days": "38M7GcN0lD0",
+  "I Hate U": "hhYxs5ft5YM",
+  Shirt: "dBRwF4HY0HM",
+  "Love Galore": "hHXfCOjb3fk",
+  "The Weekend": "dzmF6_BM4Ao",
+  "Broken Clocks": "WRJYngjLqR0",
+  "Drew Barrymore": "dp45V_M4Akw",
+  "Normal Girl": "xLsmgHYiOdA",
+
+  // kendrick lamar
+  "HUMBLE.": "tvTRZJ-4EyI",
+  "DNA.": "NLZRYQMLDW4",
+  "LOVE.": "ox7RsX1Ee34",
+  Alright: "Z-48u_uWMHY",
+  "Swimming Pools": "8-ejyHzz3XE",
+  "King Kunta": "hRK7PVJFbS8",
+  "Bitch, Don't Kill My Vibe": "GF8aaTu2kg0",
+  "Money Trees": "Z-48u_uWMHY",
+  "Poetic Justice": "QJLxruO3su0",
+  "Backseat Freestyle": "NLZRYQMLDW4",
+
+  // dojo cat
+  "Say So": "pok8H_KF1FA",
+  "Kiss Me More": "0EVVKs6DQLo",
+  Woman: "yxW5yuzVi8w",
+  "Need to Know": "dI3xkL7qUAc",
+  "Agora Hills": "9j1NHcIftwY",
+  Streets: "jJdlgKzVsnI",
+  "Get Into It (Yuh)": "9Ko-nEYJ1GE",
+  "Like That": "Bsqht2ddJVU",
+  "Boss Bitch": "gr8Y2GFCGuk",
+  "Paint The Town Red": "m4_9TFeMfJE",
+
+  // travis scott
+  "SICKO MODE": "6ONRf7h3Mdk",
+  goosebumps: "Dst9gZkq1a8",
+  "Butterfly Effect": "_EyZUTDAH0U",
+  "Highest in the Room": "tvTRZJ-4EyI",
+  "FE!N": "7PyCshJXoRQ",
+  Antidote: "KnZ8h3MRuYg",
+  "90210": "4xj5cGoJQWI",
+  Mamacita: "4xj5cGoJQWI",
+  Uptown: "cspqIt4GFtQ",
+  "Upper Echelon": "cspqIt4GFtQ",
+
+  // bts
+  Dynamite: "gdZLi9oWNZg",
+  Butter: "WMweEpGlu_U",
+  "Permission to Dance": "CuklIb9d3fI",
+  "Boy With Luv": "XsX3ATc3FbA",
+  DNA: "MBdVXkSdhwU",
+  "Spring Day": "xEeFrLSkMm8",
+  "Blood Sweat & Tears": "hmE9f-TEutc",
+  "Fake Love": "7C2z4GqqS5E",
+  Idol: "pBuZEGYXA6E",
+  "Life Goes On": "-5q5mZbe3V8",
+
+  // blackpink
+  "How You Like That": "ioNng23DkIM",
+  "Kill This Love": "2S24-y0Ij3Y",
+  "DDU-DU DDU-DU": "IHNzOHi8sJs",
+  "Pink Venom": "gQlMMD8auMs",
+  "Shut Down": "POe9SOEKotk",
+  "As If It's Your Last": "Amq-qlqbjYA",
+  "Playing With Fire": "9pdj4iJD08s",
+  Whistle: "dISNgvVpWlo",
+  "Lovesick Girls": "dyRsYk0LyA8",
+  "Ice Cream": "vRXZj0DzXIA",
+
+  // imagine dragons
+  Thunder: "fKopy74weus",
+  Believer: "7wtfhZwyrcc",
+  Radioactive: "ktvTqknDobU",
+  Demons: "mWRsgZuwf_8",
+  Natural: "0I647GU3Jsc",
+  "Whatever It Takes": "gOsM-DYAEhY",
+  Bones: "TO-_3tck2tg",
+  Enemy: "D9G1VOjN_84",
+  Sharks: "kUBN2huj-mw",
+  "Follow You": "kOn1GZqUvQc",
+
+  // shawn mendes
+  Stitches: "VbfpW0pbvaU",
+  "Treat You Better": "lY2yjAdbvdQ",
+  "There's Nothing Holdin' Me Back": "dT2owtxkU8k",
+  Senorita: "Pkh8UtuejGw",
+  Wonder: "fHeQemJJQII",
+  Mercy: "KkGVmN68ByU",
+  "In My Blood": "36tggrpRoTI",
+  "Lost in Japan": "ycy30LIbq4w",
+  "If I Can't Have You": "oTJ-oqwxdZY",
+  "Summer of Love": "HCjNJDNzw8Y",
+
+  // justin bieber
+  Sorry: "fRh_vgS2dFE",
+  "Love Yourself": "oyEuk8j8imI",
+  Peaches: "tQ0yjYUFKAE",
+  "Stay (Justin Bieber)": "kTJczUoc26U",
+  Ghost: "Fp8msa5uYsc",
+  "What Do You Mean?": "DK_0jXPuIr0",
+  Baby: "kffacxfA7G4",
+  Yummy: "8EJ3zbKTWQ8",
+  Intentions: "9pG2SduYzEo",
+  "Hold On": "LWeiydKl0mU",
+
+  // adele
+  Hello: "YQHsXMglC9A",
+  "Easy On Me": "U3ASj1L6_sY",
+  "Someone Like You": "hLQl3WQQoQ0",
+  "Rolling in the Deep": "rYEDA3JcQqw",
+  "Set Fire to the Rain": "Ri7-vnrJD3k",
+  "When We Were Young": "DDWKuo3gXMQ",
+  "Water Under the Bridge": "7Z5p47kJJNg",
+  "Send My Love": "fk4BbF7B29w",
+  "All I Ask": "Qxw5fQeKDeA",
+  "I Drink Wine": "jzW4vlU4iMk",
+
+  // bruno
+  "Uptown Funk": "OPf0YbXqDm0",
+  "24K Magic": "UqyT8IEBkvY",
+  "That's What I Like": "PMivT7MJ41M",
+  Grenade: "SR6iYWJxHqs",
+  "Just The Way You Are": "LjhCEhWiKXk",
+  "Locked Out of Heaven": "e-fA-gBCkj0",
+  "When I Was Your Man": "ekzHIouo8Q4",
+  "Count on Me": "yJYXItns2ik",
+  "The Lazy Song": "fLexgOxsZu0",
+  Finesse: "LsoLEjrDogU",
+
+  // kanye west
+  Stronger: "PsO6ZnUZI0g",
+  "Gold Digger": "6vwNcNOTVzY",
+  Heartless: "Co0tTeuUVhU",
+  "All of the Lights": "HAfFfqiYLp0",
+  Runaway: "Bm5iA4Zupek",
+  "Jesus Walks": "MYF7H_fpc-g",
+  "Through the Wire": "uvb-1wjAtk4",
+  "Touch the Sky": "YtciJ0n3P1c",
+  "Flashing Lights": "ila-hAUXR5U",
+  Power: "L53gjP-TtGE",
+
+  // eminem
+  "Lose Yourself": "_Yhyp-_hX2s",
+  "Not Afraid": "j5-yKhDd64s",
+  "Love The Way You Lie": "uelHwf8o7_U",
+  "Rap God": "XbGs_qK2PQA",
+  Stan: "gOMhN-hfMtY",
+  "The Real Slim Shady": "eJO5HU_7_1w",
+  "Without Me": "YVkUvmDQ3HY",
+  "My Name Is": "sNPnbI1arSE",
+  "Cleanin' Out My Closet": "RQ9_TKayu9s",
+  Mockingbird: "S9bCLPwzSC0",
+
+  // twice
+  Fancy: "kOHB85vDuow",
+  "Feel Special": "3ymwOvzhwHs",
+  "The Feels": "f5_wn8mexmM",
+  "I Can't Stop Me": "CM4CkVFmTds",
+  Scientist: "vPwaXytZcgI",
+  "What is Love?": "i0p1bmr0EmE",
+  "Yes or Yes": "mAKsZ26SabQ",
+  Likey: "V2hlQkVJZhE",
+  TT: "ePpPVE-GGJw",
+  "Cheer Up": "c7rCyll5AeY",
+
+  // new jeans
+  Attention: "js1CtxSY38I",
+  "Hype Boy": "11cta61wi0g",
+  OMG: "As9sEuP02Z0",
+  Ditto: "pSUydWEqKwE",
+  "Get Up": "kdOQ0pOpi5c",
+  Cookie: "VOmIplFAGeg",
+  Hurt: "tVIXY14aJms",
+  "New Jeans": "kcelgrGY1h8",
+  "Super Shy": "ArmDp-zijuc",
+  ETA: "jOTfBlKSQYY",
+
+  // stray kids
+  "God's Menu": "TQTlCHxyuu8",
+  Thunderous: "EaswWiwMVs8",
+  Maniac: "OvioeS1ZZ7o",
+  "Case 143": "jYSlpC6Ud2A",
+  "S-Class": "JsOOis4bBFg",
+  "Back Door": "X-uJtV8ScYk",
+  "My Pace": "3nlSDxvt6JU",
+  Hellevator: "AdfIfFGCqgo",
+  "Side Effects": "57n4dZAPxNY",
+  Levanter: "UEnvBHB3bDM",
+};
+
 const artists: Artist[] = [
   {
     id: "1",
@@ -122,7 +435,7 @@ const artists: Artist[] = [
       "Bad Habits",
       "Shivers",
       "Galway Girl",
-      "Happier",
+      "Happier (Ed)",
       "I Don't Care",
     ],
     genre: "Pop",
@@ -142,7 +455,7 @@ const artists: Artist[] = [
       "Congratulations",
       "I Fall Apart",
       "Psycho",
-      "Stay",
+      "Stay (Post Malone)",
     ],
     genre: "Hip-Hop",
   },
@@ -177,7 +490,7 @@ const artists: Artist[] = [
       "Traitor",
       "Vampire",
       "Brutal",
-      "Happier",
+      "Happier (Olivia)",
       "Jealousy, Jealousy",
       "1 Step Forward, 3 Steps Back",
       "Favorite Crime",
@@ -366,7 +679,7 @@ const artists: Artist[] = [
       "Sorry",
       "Love Yourself",
       "Peaches",
-      "Stay",
+      "Stay (Justin Bieber)",
       "Ghost",
       "What Do You Mean?",
       "Baby",
@@ -533,6 +846,17 @@ const artists: Artist[] = [
   },
 ];
 
+interface YouTubePlayer extends YT.Player {
+  __intervalAttached?: boolean;
+}
+
+declare global {
+  interface Window {
+    YT: typeof YT;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
 export default function PickArtistPage() {
   const router = useRouter();
   const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
@@ -550,8 +874,14 @@ export default function PickArtistPage() {
   const [answerOptions, setAnswerOptions] = useState<string[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("All");
   const [showAllArtists, setShowAllArtists] = useState(false);
+  const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string>("");
+  const [hintUsed, setHintUsed] = useState(false);
+  const [hintCooldown, setHintCooldown] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const genres = ["All", "Pop", "Hip-Hop", "K-Pop"];
 
@@ -572,6 +902,134 @@ export default function PickArtistPage() {
         return [...prev, artistId];
       }
     });
+  };
+
+  const searchAndPlayYouTubeVideo = async (
+    songTitle: string,
+    artist: string,
+  ) => {
+    try {
+      console.log("Looking up YouTube video for:", songTitle, "by", artist);
+
+      // Look up the video ID from our predefined mapping
+      const videoId = songVideoIds[songTitle];
+
+      if (videoId) {
+        console.log("Found video ID:", videoId);
+        setYoutubeVideoId(videoId);
+        setShowYouTubePlayer(true);
+        // Wait for DOM to update before initializing player
+        setTimeout(() => {
+          initializeYouTubePlayer(videoId);
+        }, 100);
+      } else {
+        console.log("No video ID found for song:", songTitle);
+        setShowYouTubePlayer(true);
+      }
+    } catch (error) {
+      console.error("Error looking up YouTube video:", error);
+      setShowYouTubePlayer(true);
+    }
+  };
+
+  const initializeYouTubePlayer = (videoId: string) => {
+    const iframe = document.getElementById("youtube-player-artist");
+    if (!iframe) {
+      console.error("YouTube player iframe not found");
+      return;
+    }
+
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      if (firstScriptTag?.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
+
+      window.onYouTubeIframeAPIReady = () => {
+        console.log("YouTube API is ready");
+        createPlayer(videoId);
+      };
+    } else {
+      createPlayer(videoId);
+    }
+  };
+
+  const createPlayer = (videoId: string) => {
+    const iframe = document.getElementById("youtube-player-artist");
+    if (!iframe || !window.YT) return;
+
+    playerRef.current = new window.YT.Player(iframe, {
+      height: "390",
+      width: "640",
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        mute: 1,
+        controls: 0,
+        disablekb: 1,
+        modestbranding: 1,
+        rel: 0,
+        fs: 0,
+        iv_load_policy: 3,
+        playsinline: 1,
+        showinfo: 0,
+      },
+      events: {
+        onReady: (event: YT.PlayerEvent) => {
+          console.log("YouTube Player for artist challenge is ready");
+          event.target.playVideo();
+        },
+        onStateChange: (event: YT.OnStateChangeEvent) => {
+          if (event.data === window.YT.PlayerState.PLAYING) {
+            if (!playerRef.current?.__intervalAttached && playerRef.current) {
+              playerRef.current.__intervalAttached = true;
+              intervalRef.current = setInterval(() => {
+                if (playerRef.current && playerRef.current.getCurrentTime) {
+                  const currentTime = playerRef.current.getCurrentTime();
+                  const duration = playerRef.current.getDuration();
+
+                  if (duration && currentTime >= duration - 5) {
+                    playerRef.current?.seekTo(0, true);
+                  }
+                }
+              }, 1000);
+            }
+          }
+        },
+      },
+    });
+  };
+
+  const playHint = () => {
+    if (hintCooldown) return;
+
+    setHintCooldown(true);
+    setHintUsed(true);
+
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration();
+      const randomStartTime = Math.random() * Math.max(0, duration - 10);
+
+      playerRef.current.seekTo(randomStartTime, true);
+      playerRef.current.unMute();
+
+      // Stop playing after exactly 10 seconds
+      setTimeout(() => {
+        if (playerRef.current) {
+          playerRef.current.mute();
+          playerRef.current.pauseVideo();
+        }
+        setHintCooldown(false);
+      }, 10000);
+    } else {
+      // Fallback when no YouTube player is available
+      console.log("Hint used (no YouTube player available)");
+      setTimeout(() => {
+        setHintCooldown(false);
+      }, 1000);
+    }
   };
 
   const startGame = () => {
@@ -614,7 +1072,13 @@ export default function PickArtistPage() {
     setAnswerOptions(allOptions);
     setUserGuess("");
     setTimeLeft(30);
+    setHintUsed(false);
+    setHintCooldown(false);
     setGamePhase("playing");
+
+    if (randomArtist && randomSong) {
+      searchAndPlayYouTubeVideo(randomSong, randomArtist.name);
+    }
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -647,7 +1111,7 @@ export default function PickArtistPage() {
     setUserGuess(selectedArtist);
 
     if (isCorrectGuess) {
-      setScore((prev) => prev + 10);
+      setScore((prev) => prev + (hintUsed ? 5 : 10));
     }
 
     setGamePhase("result");
@@ -672,10 +1136,18 @@ export default function PickArtistPage() {
     setCurrentArtist(null);
     setCurrentSong("");
     setAnswerOptions([]);
+    setShowYouTubePlayer(false);
+    setYoutubeVideoId("");
+    setHintUsed(false);
+    setHintCooldown(false);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   };
 
@@ -687,6 +1159,9 @@ export default function PickArtistPage() {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
   }, []);
@@ -882,6 +1357,42 @@ export default function PickArtistPage() {
               </div>
             </div>
 
+            {showYouTubePlayer && (
+              <div className="mb-6 flex justify-center">
+                <div
+                  id="youtube-player-artist"
+                  className="rounded-lg"
+                  style={{ width: "640px", height: "390px" }}
+                ></div>
+              </div>
+            )}
+
+            {!showYouTubePlayer && (
+              <div className="mb-6 flex justify-center">
+                <div className="rounded-lg bg-white/10 p-8 text-center">
+                  <p className="text-white/80">Loading song...</p>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6 flex justify-center">
+              <Button
+                onClick={playHint}
+                disabled={hintCooldown || hintUsed}
+                className={`px-6 py-2 text-white ${
+                  hintCooldown || hintUsed
+                    ? "cursor-not-allowed bg-gray-600"
+                    : "bg-pink-500 hover:bg-pink-600"
+                }`}
+              >
+                {hintCooldown
+                  ? "Hint Playing..."
+                  : hintUsed
+                    ? "Hint Used"
+                    : "🎵 Hint"}
+              </Button>
+            </div>
+
             <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
               {answerOptions.map((option, index) => (
                 <Button
@@ -923,7 +1434,9 @@ export default function PickArtistPage() {
                 </span>
               </p>
               {isCorrect && (
-                <p className="mt-2 font-bold text-green-400">+10 points!</p>
+                <p className="mt-2 font-bold text-green-400">
+                  +{hintUsed ? "5" : "10"} points!
+                </p>
               )}
             </div>
 
