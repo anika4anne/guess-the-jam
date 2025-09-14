@@ -933,73 +933,53 @@ export default function PickArtistPage() {
   };
 
   const initializeYouTubePlayer = (videoId: string) => {
-    const iframe = document.getElementById("youtube-player-artist");
-    if (!iframe) {
-      console.error("YouTube player iframe not found");
+    const container = document.getElementById("youtube-player-artist");
+    if (!container) {
+      console.error("YouTube player container not found");
       return;
     }
 
-    if (!window.YT) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      if (firstScriptTag?.parentNode) {
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      }
-
-      window.onYouTubeIframeAPIReady = () => {
-        console.log("YouTube API is ready");
-        createPlayer(videoId);
-      };
-    } else {
-      createPlayer(videoId);
+    const existingIframe = container.querySelector("iframe");
+    if (existingIframe) {
+      existingIframe.remove();
     }
+
+    createPlayer(videoId);
   };
 
   const createPlayer = (videoId: string) => {
-    const iframe = document.getElementById("youtube-player-artist");
-    if (!iframe || !window.YT) return;
+    const container = document.getElementById("youtube-player-artist");
+    if (!container) return;
 
-    playerRef.current = new window.YT.Player(iframe, {
-      height: "390",
-      width: "640",
-      videoId: videoId,
-      playerVars: {
-        autoplay: 1,
-        mute: 1,
-        controls: 0,
-        disablekb: 1,
-        modestbranding: 1,
-        rel: 0,
-        fs: 0,
-        iv_load_policy: 3,
-        playsinline: 1,
-        showinfo: 0,
-      },
-      events: {
-        onReady: (event: YT.PlayerEvent) => {
-          console.log("YouTube Player for artist challenge is ready");
-          event.target.playVideo();
-        },
-        onStateChange: (event: YT.OnStateChangeEvent) => {
-          if (event.data === window.YT.PlayerState.PLAYING) {
-            if (!playerRef.current?.__intervalAttached && playerRef.current) {
-              playerRef.current.__intervalAttached = true;
-              intervalRef.current = setInterval(() => {
-                if (playerRef.current && playerRef.current.getCurrentTime) {
-                  const currentTime = playerRef.current.getCurrentTime();
-                  const duration = playerRef.current.getDuration();
+    const iframe = document.createElement("iframe");
+    iframe.id = "youtube-iframe-artist";
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0&enablejsapi=1`;
+    iframe.width = "640";
+    iframe.height = "390";
+    iframe.frameBorder = "0";
+    iframe.allowFullscreen = false;
+    iframe.allow =
+      "autoplay; clipboard-write; encrypted-media; picture-in-picture";
+    iframe.style.borderRadius = "12px";
+    iframe.style.pointerEvents = "none";
+    iframe.style.zIndex = "1";
+    iframe.style.position = "relative";
+    iframe.loading = "lazy";
 
-                  if (duration && currentTime >= duration - 5) {
-                    playerRef.current?.seekTo(0, true);
-                  }
-                }
-              }, 1000);
-            }
-          }
-        },
-      },
-    });
+    container.insertBefore(iframe, container.firstChild);
+
+    playerRef.current = {
+      getDuration: () => 0,
+      getCurrentTime: () => 0,
+      seekTo: () => {},
+      playVideo: () => {},
+      pauseVideo: () => {},
+      mute: () => {},
+      unMute: () => {},
+      __intervalAttached: false,
+    } as any;
+
+    console.log("YouTube iframe created for artist challenge");
   };
 
   const playHint = () => {
@@ -1008,28 +988,12 @@ export default function PickArtistPage() {
     setHintCooldown(true);
     setHintUsed(true);
 
-    if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      const randomStartTime = Math.random() * Math.max(0, duration - 10);
+    console.log("Hint used (iframe approach - no direct control)");
 
-      playerRef.current.seekTo(randomStartTime, true);
-      playerRef.current.unMute();
-
-      // Stop playing after exactly 10 seconds
-      setTimeout(() => {
-        if (playerRef.current) {
-          playerRef.current.mute();
-          playerRef.current.pauseVideo();
-        }
-        setHintCooldown(false);
-      }, 10000);
-    } else {
-      // Fallback when no YouTube player is available
-      console.log("Hint used (no YouTube player available)");
-      setTimeout(() => {
-        setHintCooldown(false);
-      }, 1000);
-    }
+    // Simulate hint cooldown
+    setTimeout(() => {
+      setHintCooldown(false);
+    }, 1000);
   };
 
   const startGame = () => {
@@ -1349,9 +1313,6 @@ export default function PickArtistPage() {
           <>
             <div className="mb-6 text-center">
               <h2 className="mb-4 text-xl text-white">Who sings this?</h2>
-              <p className="mb-4 text-3xl font-bold text-pink-300">
-                {currentSong}
-              </p>
               <div className="mb-4">
                 <div className="mb-2 text-lg text-white">Time: {timeLeft}s</div>
               </div>
@@ -1361,9 +1322,27 @@ export default function PickArtistPage() {
               <div className="mb-6 flex justify-center">
                 <div
                   id="youtube-player-artist"
-                  className="rounded-lg"
-                  style={{ width: "640px", height: "390px" }}
-                ></div>
+                  className="relative overflow-hidden rounded-lg"
+                  style={{
+                    width: "640px",
+                    height: "390px",
+                    position: "relative",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      width: "100%",
+                      height: "100%",
+                      zIndex: 9999,
+                      pointerEvents: "auto",
+                      background: "black",
+                      opacity: 1,
+                    }}
+                  />
+                </div>
               </div>
             )}
 
@@ -1413,12 +1392,6 @@ export default function PickArtistPage() {
               <h2 className="mb-4 text-2xl font-bold">
                 {isCorrect ? "Nice!" : "Wrong"}
               </h2>
-              <p className="mb-2 text-lg text-white">
-                Song:{" "}
-                <span className="font-bold text-pink-300">
-                  &quot;{currentSong}&quot;
-                </span>
-              </p>
               <p className="mb-2 text-lg text-white">
                 Artist:{" "}
                 <span className="font-bold text-yellow-400">
