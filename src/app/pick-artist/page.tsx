@@ -877,16 +877,13 @@ export default function PickArtistPage() {
   const [showAllArtists, setShowAllArtists] = useState(false);
   const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>("");
+  const [visualizerTime, setVisualizerTime] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [hintCooldown, setHintCooldown] = useState(false);
-  const [visualizerTime, setVisualizerTime] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const visualizerPhases = useRef(
-    Array.from({ length: 48 }, () => Math.random() * Math.PI * 2),
-  );
 
   const genres = ["All", "Pop", "Hip-Hop", "K-Pop"];
 
@@ -980,7 +977,7 @@ export default function PickArtistPage() {
       mute: () => {},
       unMute: () => {},
       __intervalAttached: false,
-    } as any;
+    } as unknown as YouTubePlayer;
 
     console.log("YouTube iframe created for artist challenge");
   };
@@ -992,7 +989,7 @@ export default function PickArtistPage() {
     setHintUsed(true);
 
     if (currentSong && currentArtist) {
-      searchAndPlayYouTubeVideo(currentSong, currentArtist.name);
+      void searchAndPlayYouTubeVideo(currentSong, currentArtist.name);
     }
 
     console.log("Hint used - starting music playback");
@@ -1210,9 +1207,11 @@ export default function PickArtistPage() {
               >
                 <div className="text-center">
                   <div className="mx-auto mb-2 h-16 w-16 overflow-hidden rounded-full">
-                    <img
+                    <Image
                       src={artist.image}
                       alt={artist.name}
+                      width={64}
+                      height={64}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -1374,7 +1373,7 @@ export default function PickArtistPage() {
               </p>
               <div className="mb-4">
                 <p className="text-sm text-gray-300">
-                  Click "Hint" to hear the song
+                  Click &quot;Hint&quot; to hear the song
                 </p>
               </div>
             </div>

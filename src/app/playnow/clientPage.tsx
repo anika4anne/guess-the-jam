@@ -225,12 +225,12 @@ export default function PlayNowPage() {
     const currentIntervalRefs = Object.assign({}, intervalRefs.current);
 
     if (useCustomPlaylist && customPlaylistUrl) {
-      const iframe = iframeRefs.current["custom"];
+      const iframe = iframeRefs.current.custom;
       if (!iframe) return;
       const playlistId = extractPlaylistId(customPlaylistUrl);
       if (!playlistId) return;
 
-      playerRefs.current["custom"] = new window.YT.Player(iframe, {
+      playerRefs.current.custom = new window.YT.Player(iframe, {
         height: "0",
         width: "0",
         events: {
@@ -238,7 +238,7 @@ export default function PlayNowPage() {
             console.log("YouTube Player for custom playlist is ready");
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
-            const player = playerRefs.current["custom"];
+            const player = playerRefs.current.custom;
             if (!player) return;
             if (event.data === window.YT.PlayerState.PLAYING) {
               const videoData = player.getVideoData();
@@ -250,16 +250,16 @@ export default function PlayNowPage() {
                 setCurrentSong(song);
                 setCurrentArtist(artist);
               }
-              if (currentIntervalRefs["custom"]) {
-                const interval = currentIntervalRefs["custom"];
+              if (currentIntervalRefs.custom) {
+                const interval = currentIntervalRefs.custom;
                 if (interval) {
                   clearInterval(interval);
                 }
-                currentIntervalRefs["custom"] = null;
+                currentIntervalRefs.custom = null;
                 console.log("Cleared previous interval for custom playlist");
               }
               console.log("Setting up new interval for custom playlist");
-              currentIntervalRefs["custom"] = setInterval(() => {
+              currentIntervalRefs.custom = setInterval(() => {
                 const currentTime = player.getCurrentTime();
                 console.log(
                   "Custom playlist currentTime:",
@@ -271,11 +271,11 @@ export default function PlayNowPage() {
                     "Custom playlist reached 15 seconds, pausing video",
                   );
                   player.pauseVideo();
-                  const interval = currentIntervalRefs["custom"];
+                  const interval = currentIntervalRefs.custom;
                   if (interval) {
                     clearInterval(interval);
                   }
-                  currentIntervalRefs["custom"] = null;
+                  currentIntervalRefs.custom = null;
                   setCurrentQuestionYear(0);
                   setShowPrompt(true);
                   console.log("Paused video for custom playlist at 15 seconds");
@@ -286,8 +286,8 @@ export default function PlayNowPage() {
               event.data === window.YT.PlayerState.PAUSED ||
               event.data === window.YT.PlayerState.ENDED
             ) {
-              if (currentIntervalRefs["custom"]) {
-                const interval = currentIntervalRefs["custom"];
+              if (currentIntervalRefs.custom) {
+                const interval = currentIntervalRefs.custom;
                 if (interval) {
                   clearInterval(interval);
                   console.log(
@@ -295,7 +295,7 @@ export default function PlayNowPage() {
                     event.data,
                   );
                 }
-                currentIntervalRefs["custom"] = null;
+                currentIntervalRefs.custom = null;
               }
             }
           },
@@ -739,8 +739,8 @@ export default function PlayNowPage() {
 
   function extractPlaylistId(url: string): string | null {
     const playlistRegex = /[?&]list=([a-zA-Z0-9_-]+)/;
-    const match = url.match(playlistRegex);
-    return match && match[1] ? match[1] : null;
+    const match = playlistRegex.exec(url);
+    return match?.[1] ?? null;
   }
 
   useEffect(() => {
@@ -1527,7 +1527,7 @@ export default function PlayNowPage() {
                         >
                           <iframe
                             ref={(el) => {
-                              iframeRefs.current["custom"] = el;
+                              iframeRefs.current.custom = el;
                             }}
                             id="youtube-player-custom"
                             src={`https://www.youtube.com/embed/videoseries?list=${extractPlaylistId(customPlaylistUrl)}&autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1&rel=0&fs=0&iv_load_policy=3&playsinline=1&showinfo=0&enablejsapi=1&index=${index}`}
@@ -2516,7 +2516,7 @@ export default function PlayNowPage() {
                                 setShowResult(false);
                                 setPointsEarned(null);
                                 const player = useCustomPlaylist
-                                  ? playerRefs.current["custom"]
+                                  ? playerRefs.current.custom
                                   : playerRefs.current[currentQuestionYear!];
                                 if (player) {
                                   player.nextVideo();
@@ -2549,7 +2549,7 @@ export default function PlayNowPage() {
                                   setPlayerAnswers({});
                                   setCurrentPlayerIndex(0);
                                   const player = useCustomPlaylist
-                                    ? playerRefs.current["custom"]
+                                    ? playerRefs.current.custom
                                     : playerRefs.current[currentQuestionYear!];
                                   if (player) {
                                     player.nextVideo();
