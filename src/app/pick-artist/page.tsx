@@ -875,9 +875,6 @@ export default function PickArtistPage() {
   const [answerOptions, setAnswerOptions] = useState<string[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("All");
   const [showAllArtists, setShowAllArtists] = useState(false);
-  const [showYouTubePlayer, setShowYouTubePlayer] = useState(false);
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string>("");
-  const [visualizerTime, setVisualizerTime] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [hintCooldown, setHintCooldown] = useState(false);
 
@@ -917,18 +914,15 @@ export default function PickArtistPage() {
 
       if (videoId) {
         console.log("Found video ID:", videoId);
-        setYoutubeVideoId(videoId);
-        setShowYouTubePlayer(true);
+
         setTimeout(() => {
           initializeYouTubePlayer(videoId);
         }, 100);
       } else {
         console.log("No video ID found for song:", songTitle);
-        setShowYouTubePlayer(true);
       }
     } catch (error) {
       console.error("Error looking up YouTube video:", error);
-      setShowYouTubePlayer(true);
     }
   };
 
@@ -971,11 +965,21 @@ export default function PickArtistPage() {
     playerRef.current = {
       getDuration: () => 0,
       getCurrentTime: () => 0,
-      seekTo: () => {},
-      playVideo: () => {},
-      pauseVideo: () => {},
-      mute: () => {},
-      unMute: () => {},
+      seekTo: () => {
+        void 0;
+      },
+      playVideo: () => {
+        void 0;
+      },
+      pauseVideo: () => {
+        void 0;
+      },
+      mute: () => {
+        void 0;
+      },
+      unMute: () => {
+        void 0;
+      },
       __intervalAttached: false,
     } as unknown as YouTubePlayer;
 
@@ -1099,8 +1103,6 @@ export default function PickArtistPage() {
     setCurrentArtist(null);
     setCurrentSong("");
     setAnswerOptions([]);
-    setShowYouTubePlayer(false);
-    setYoutubeVideoId("");
     setHintUsed(false);
     setHintCooldown(false);
 
@@ -1129,7 +1131,6 @@ export default function PickArtistPage() {
   useEffect(() => {
     let frame: number;
     const animate = () => {
-      setVisualizerTime(performance.now());
       frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
